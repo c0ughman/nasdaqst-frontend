@@ -1458,7 +1458,13 @@
         let sentimentDataset = [];
         let currentCompositeScore = 0;
         
-        // API Base URL - adjust if needed
+        // ========================================
+        // API Configuration
+        // ========================================
+        // TODO: Replace YOUR_RAILWAY_URL below with your actual Railway backend URL
+        // Find it at: Railway Dashboard → Your Service → Settings → Domains
+        // Format: https://your-app-name.up.railway.app/api
+        //
         // Dynamic API URL - detects localhost, file://, or production
         const API_BASE_URL = (
             window.location.protocol === 'file:' ||
@@ -1466,7 +1472,7 @@
             window.location.hostname === '127.0.0.1' ||
             window.location.hostname === ''
         ) ? 'http://localhost:8000/api'
-          : (window.BACKEND_URL || 'https://be6c59a4b213.ngrok-free.app');
+          : 'https://be6c59a4b213.ngrok-free.app/api';
 
         // Fetch dashboard data (composite score + 3 drivers + historical data)
         async function fetchDashboardData() {

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chart Data Test</title>
+</head>
+<body>
+    <h1>Chart Data Test</h1>
+    <div id="output"></div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api';
+        const output = document.getElementById('output');
+
+        async function testChart() {
+            try {
+                output.innerHTML += '<p>Fetching data from API...</p>';
+
+                const response = await fetch(`${API_BASE_URL}/dashboard/`);
+                const data = await response.json();
+
+                output.innerHTML += `<p>✓ Got ${data.historical.length} historical points</p>`;
+                output.innerHTML += `<p>Composite Score: ${data.composite_score}</p>`;
+
+                // Convert to chart format
+                const sentimentDataset = data.historical.map(point => ({
+                    timestamp: new Date(point.timestamp),
+                    sentiment: point.composite_score
+                }));
+
+                output.innerHTML += `<p>✓ Converted ${sentimentDataset.length} points</p>`;
+
+                // Filter last 4 hours
+                const now = new Date();
+                const cutoffTime = new Date(now.getTime() - (240 * 60 * 1000));
+                const filtered = sentimentDataset.filter(d => d.timestamp >= cutoffTime);
+
+                output.innerHTML += `<p>✓ Filtered to ${filtered.length} points (last 4 hours)</p>`;
+                if (filtered.length > 0) {
+                    output.innerHTML += `<p>First: ${filtered[0].timestamp.toISOString()} = ${filtered[0].sentiment}</p>`;
+                    output.innerHTML += `<p>Last: ${filtered[filtered.length-1].timestamp.toISOString()} = ${filtered[filtered.length-1].sentiment}</p>`;
+                }
+
+                output.innerHTML += '<p style="color: green; font-weight: bold;">✓ Chart data is working correctly!</p>';
+
+            } catch (error) {
+                output.innerHTML += `<p style="color: red;">ERROR: ${error.message}</p>`;
+                console.error('Full error:', error);
+            }
+        }
+
+        testChart();
+    </script>
+</body>
+</html>

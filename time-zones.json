@@ -1,0 +1,192 @@
+[
+    {
+      "offset": "-12:00",
+      "name": "Baker Island Time",
+      "code": "BIT"
+    },
+    {
+      "offset": "-11:00",
+      "name": "Samoa Standard Time",
+      "code": "SST"
+    },
+    {
+      "offset": "-10:00",
+      "name": "Hawaii-Aleutian Standard Time",
+      "code": "HST"
+    },
+    {
+      "offset": "-09:30",
+      "name": "Marquesas Islands Time",
+      "code": "MART"
+    },
+    {
+      "offset": "-09:00",
+      "name": "Alaska Standard Time",
+      "code": "AKST"
+    },
+    {
+      "offset": "-08:00",
+      "name": "Pacific Standard Time",
+      "code": "PST"
+    },
+    {
+      "offset": "-07:00",
+      "name": "Mountain Standard Time",
+      "code": "MST"
+    },
+    {
+      "offset": "-06:00",
+      "name": "Central Standard Time",
+      "code": "CST"
+    },
+    {
+      "offset": "-05:00",
+      "name": "Eastern Standard Time",
+      "code": "EST"
+    },
+    {
+      "offset": "-04:00",
+      "name": "Atlantic Standard Time",
+      "code": "AST"
+    },
+    {
+      "offset": "-03:30",
+      "name": "Newfoundland Standard Time",
+      "code": "NST"
+    },
+    {
+      "offset": "-03:00",
+      "name": "Argentina Time",
+      "code": "ART"
+    },
+    {
+      "offset": "-02:00",
+      "name": "South Georgia Time",
+      "code": "GST"
+    },
+    {
+      "offset": "-01:00",
+      "name": "Azores Standard Time",
+      "code": "AZOST"
+    },
+    {
+      "offset": "+00:00",
+      "name": "Coordinated Universal Time",
+      "code": "UTC"
+    },
+    {
+      "offset": "+01:00",
+      "name": "Central European Time",
+      "code": "CET"
+    },
+    {
+      "offset": "+02:00",
+      "name": "Eastern European Time",
+      "code": "EET"
+    },
+    {
+      "offset": "+03:00",
+      "name": "Moscow Standard Time",
+      "code": "MSK"
+    },
+    {
+      "offset": "+03:30",
+      "name": "Iran Standard Time",
+      "code": "IRST"
+    },
+    {
+      "offset": "+04:00",
+      "name": "Gulf Standard Time",
+      "code": "GST"
+    },
+    {
+      "offset": "+04:30",
+      "name": "Afghanistan Time",
+      "code": "AFT"
+    },
+    {
+      "offset": "+05:00",
+      "name": "Pakistan Standard Time",
+      "code": "PKT"
+    },
+    {
+      "offset": "+05:30",
+      "name": "India Standard Time",
+      "code": "IST"
+    },
+    {
+      "offset": "+05:45",
+      "name": "Nepal Time",
+      "code": "NPT"
+    },
+    {
+      "offset": "+06:00",
+      "name": "Bangladesh Standard Time",
+      "code": "BST"
+    },
+    {
+      "offset": "+06:30",
+      "name": "Myanmar Time",
+      "code": "MMT"
+    },
+    {
+      "offset": "+07:00",
+      "name": "Indochina Time",
+      "code": "ICT"
+    },
+    {
+      "offset": "+08:00",
+      "name": "China Standard Time",
+      "code": "CST"
+    },
+    {
+      "offset": "+08:45",
+      "name": "Australian Central Western Standard Time",
+      "code": "ACWST"
+    },
+    {
+      "offset": "+09:00",
+      "name": "Japan Standard Time",
+      "code": "JST"
+    },
+    {
+      "offset": "+09:30",
+      "name": "Australian Central Standard Time",
+      "code": "ACST"
+    },
+    {
+      "offset": "+10:00",
+      "name": "Australian Eastern Standard Time",
+      "code": "AEST"
+    },
+    {
+      "offset": "+10:30",
+      "name": "Lord Howe Standard Time",
+      "code": "LHST"
+    },
+    {
+      "offset": "+11:00",
+      "name": "Solomon Islands Time",
+      "code": "SBT"
+    },
+    {
+      "offset": "+12:00",
+      "name": "New Zealand Standard Time",
+      "code": "NZST"
+    },
+    {
+      "offset": "+12:45",
+      "name": "Chatham Islands Standard Time",
+      "code": "CHAST"
+    },
+    {
+      "offset": "+13:00",
+      "name": "Tonga Time",
+      "code": "TOT"
+    },
+    {
+      "offset": "+14:00",
+      "name": "Line Islands Time",
+      "code": "LINT"
+    }
+  ]
