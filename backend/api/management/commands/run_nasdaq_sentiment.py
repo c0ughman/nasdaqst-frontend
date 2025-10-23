@@ -1226,15 +1226,18 @@ class Command(BaseCommand):
         interval = options['interval']
         run_once = options['once']
 
-        # Check if market is open
-        market_open, reason = is_market_open()
-        if not market_open:
-            self.stdout.write(self.style.WARNING(
-                f'⏸️  Market Closed - Skipping Run\n'
-                f'   Reason: {reason}\n'
-                f'   Current time: {get_market_status()["current_time_ct"]}'
-            ))
-            return
+        # Check if market is open (can be skipped with SKIP_MARKET_HOURS_CHECK env var)
+        skip_market_check = os.environ.get('SKIP_MARKET_HOURS_CHECK', 'False') == 'True'
+
+        if not skip_market_check:
+            market_open, reason = is_market_open()
+            if not market_open:
+                self.stdout.write(self.style.WARNING(
+                    f'⏸️  Market Closed - Skipping Run\n'
+                    f'   Reason: {reason}\n'
+                    f'   Current time: {get_market_status()["current_time_ct"]}'
+                ))
+                return
 
         # Validate API keys
         if not FINNHUB_API_KEY:

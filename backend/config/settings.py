@@ -82,15 +82,24 @@ if os.environ.get('USE_SQLITE', 'False') == 'True':
         }
     }
 else:
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL',
-                'postgresql://admin:admin@localhost:5432/nasdaq_sentiment_db'
-            ),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
+    # Use DATABASE_URL from environment (Railway provides this)
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        DATABASES = {
+            'default': dj_database_url.parse(database_url, conn_max_age=600)
+        }
+    else:
+        # Fallback to default PostgreSQL for local development
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': 'nasdaq_sentiment_db',
+                'USER': 'admin',
+                'PASSWORD': 'admin',
+                'HOST': 'localhost',
+                'PORT': '5432',
+            }
+        }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
