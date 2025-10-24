@@ -660,6 +660,23 @@
             display: none;
         }
 
+        .chart-time-label {
+            position: absolute;
+            bottom: 22px;
+            background: #ff8c42;
+            color: #0f0f0f;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            pointer-events: none;
+            display: none;
+            white-space: nowrap;
+            transform: translateX(-50%);
+            z-index: 101;
+            box-shadow: 0 2px 8px rgba(255, 140, 66, 0.4);
+        }
+
         .chart-tooltip {
             position: absolute;
             background: #1a1a1a;
@@ -1117,11 +1134,13 @@
                     <span class="chart-title">Historical Sentiment Trend</span>
                     <div class="chart-controls">
                         <div class="timeframe-selector">
-                            <button class="timeframe-btn" data-timeframe="1m">1m</button>
-                            <button class="timeframe-btn" data-timeframe="5m">5m</button>
-                            <button class="timeframe-btn" data-timeframe="15m">15m</button>
-                            <button class="timeframe-btn" data-timeframe="30m">30m</button>
-                            <button class="timeframe-btn active" data-timeframe="1h">1h</button>
+                            <button class="timeframe-btn" data-timeframe="5m">5 min</button>
+                            <button class="timeframe-btn" data-timeframe="15m">15 min</button>
+                            <button class="timeframe-btn" data-timeframe="30m">30 min</button>
+                            <button class="timeframe-btn active" data-timeframe="1h">1 hr</button>
+                            <button class="timeframe-btn" data-timeframe="2h">2 hrs</button>
+                            <button class="timeframe-btn" data-timeframe="4h">4 hrs</button>
+                            <button class="timeframe-btn" data-timeframe="8h">8 hrs</button>
                 </div>
                     </div>
                 </div>
@@ -1152,6 +1171,7 @@
                             <g id="chart-dots"></g>
                         </svg>
                         <div class="chart-hover-line" id="hover-line"></div>
+                        <div class="chart-time-label" id="time-label">00:00:00</div>
                         <div class="chart-tooltip" id="chart-tooltip">
                             <div class="tooltip-label">Sentiment Score</div>
                             <div class="tooltip-value">+56</div>
@@ -1785,30 +1805,40 @@
         
         // Timeframe configurations - how many minutes of data to show
         const timeframeConfig = {
-            '1m': {
-                minutes: 10,  // Show last 10 minutes of data
-                labelCount: 5,
-                label: '10min'
-            },
             '5m': {
+                minutes: 5,   // Show last 5 minutes of data
+                labelCount: 5,
+                label: '5min'
+            },
+            '15m': {
+                minutes: 15,  // Show last 15 minutes
+                labelCount: 5,
+                label: '15min'
+            },
+            '30m': {
                 minutes: 30,  // Show last 30 minutes
                 labelCount: 6,
                 label: '30min'
             },
-            '15m': {
+            '1h': {
                 minutes: 60,  // Show last 1 hour
                 labelCount: 5,
                 label: '1hr'
             },
-            '30m': {
+            '2h': {
                 minutes: 120, // Show last 2 hours
-                labelCount: 5,
-                label: '2hr'
+                labelCount: 6,
+                label: '2hrs'
             },
-            '1h': {
+            '4h': {
                 minutes: 240, // Show last 4 hours
                 labelCount: 6,
-                label: '4hr'
+                label: '4hrs'
+            },
+            '8h': {
+                minutes: 480, // Show last 8 hours
+                labelCount: 6,
+                label: '8hrs'
             }
         };
 
@@ -2100,6 +2130,7 @@
         // Chart hover functionality
         const chartCanvas = document.getElementById('chart-canvas');
         const hoverLine = document.getElementById('hover-line');
+        const timeLabel = document.getElementById('time-label');
         const tooltip = document.getElementById('chart-tooltip');
         const tooltipValue = tooltip.querySelector('.tooltip-value');
         const tooltipTime = tooltip.querySelector('.tooltip-time');
@@ -2144,6 +2175,11 @@
             hoverLine.style.display = 'block';
             hoverLine.style.left = x + 'px';
             
+            // Show time label at bottom of hover line
+            timeLabel.style.display = 'block';
+            timeLabel.style.left = x + 'px';
+            timeLabel.textContent = result.time;
+            
             // Show tooltip with actual data (add +/- sign for sentiment)
             tooltip.style.display = 'block';
             const sentimentDisplay = result.value > 0 ? `+${result.value}` : result.value;
@@ -2168,6 +2204,7 @@
 
         chartCanvas.addEventListener('mouseleave', () => {
             hoverLine.style.display = 'none';
+            timeLabel.style.display = 'none';
             tooltip.style.display = 'none';
         });
 
