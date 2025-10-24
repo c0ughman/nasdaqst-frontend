@@ -1150,6 +1150,7 @@
                     </div>
                 </div>
                 <div class="chart-container" id="chart-container" style="flex: 1; min-height: 300px;">
+                    <div class="chart-data-info" id="chart-data-info" style="position: absolute; top: 12px; right: 12px; color: #888; font-size: 11px; z-index: 100;"></div>
                     <div class="y-axis">
                         <span class="y-axis-label">+100</span>
                         <span class="y-axis-label">+50</span>
@@ -1946,8 +1947,11 @@
                     chartPath.setAttribute('d', '');
                     const dotsContainer = document.getElementById('chart-dots');
                     if (dotsContainer) dotsContainer.innerHTML = '';
-                    xAxisLabels.innerHTML = `<span style="color: #ef4444; font-weight: 600;">⚠️ Not Enough Data</span>
-                                            <span style="color: #888; margin-left: 10px; font-size: 12px;">(${data.count} point${data.count !== 1 ? 's' : ''} - need at least 3)</span>`;
+                    xAxisLabels.innerHTML = `<span style="color: #ef4444; font-weight: 600;">⚠️ Not Enough Data</span>`;
+                    const dataInfoElement = document.getElementById('chart-data-info');
+                    if (dataInfoElement) {
+                        dataInfoElement.textContent = `${data.count} point${data.count !== 1 ? 's' : ''} - need at least 3`;
+                    }
                     return;
                 }
 
@@ -1955,21 +1959,27 @@
                     console.warn('No data to display');
                     chartPath.setAttribute('d', '');
                     xAxisLabels.innerHTML = '<span style="color: #666;">No data available - waiting for analysis to run...</span>';
+                    const dataInfoElement = document.getElementById('chart-data-info');
+                    if (dataInfoElement) {
+                        dataInfoElement.textContent = 'No data available';
+                    }
                     return;
                 }
 
-                // Update X-axis labels with data count
+                // Update X-axis labels
                 if (data.labels && data.labels.length > 0) {
                     const labelsHtml = data.labels.map(label =>
                         `<span>${label}</span>`
                     ).join('');
-
-                    // Add data point count indicator
-                    const dataInfo = `<span style="color: #888; font-size: 11px; margin-left: 10px;">(${data.count} points over ${data.timeRange})</span>`;
-
-                    xAxisLabels.innerHTML = labelsHtml + dataInfo;
+                    xAxisLabels.innerHTML = labelsHtml;
                 } else {
                     xAxisLabels.innerHTML = '<span>Loading...</span>';
+                }
+
+                // Update data info in top right
+                const dataInfoElement = document.getElementById('chart-data-info');
+                if (dataInfoElement) {
+                    dataInfoElement.textContent = `${data.count} points over ${data.timeRange}`;
                 }
 
                 // Hide the original curved path (we're using the new smooth line with dots instead)
