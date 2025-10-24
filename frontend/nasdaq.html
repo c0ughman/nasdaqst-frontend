@@ -662,7 +662,7 @@
 
         .chart-time-label {
             position: absolute;
-            bottom: -32px;
+            bottom: 18px;
             left: 0;
             background: #ff8c42;
             color: #000;
@@ -2141,7 +2141,7 @@
         const tooltipTime = tooltip.querySelector('.tooltip-time');
 
         function interpolateValue(x, dataPoints) {
-            if (!dataPoints || dataPoints.length === 0) return { value: 0, time: 'Now' };
+            if (!dataPoints || dataPoints.length === 0) return { value: 0, time: 'Now', timestamp: new Date() };
             
             // Find the two closest data points
             let before = dataPoints[0];
@@ -2158,9 +2158,17 @@
             // Linear interpolation for sentiment value
             const ratio = (x - before.x) / (after.x - before.x);
             const value = before.sentiment + ratio * (after.sentiment - before.sentiment);
-            const time = ratio < 0.5 ? before.time : after.time;
             
-            return { value: Math.round(value), time: time };
+            // Use the closest data point's time
+            const closestPoint = ratio < 0.5 ? before : after;
+            const time = closestPoint.timeLabel || closestPoint.timestamp?.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }) || 'N/A';
+            
+            return { value: Math.round(value), time: time, timestamp: closestPoint.timestamp };
         }
 
         chartCanvas.addEventListener('mousemove', (e) => {
