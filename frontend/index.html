@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASDAQ Sentiment Tracker</title>
+
+    <!-- Clerk SDK -->
+    <script
+        async
+        crossorigin="anonymous"
+        data-clerk-publishable-key="YOUR_CLERK_PUBLISHABLE_KEY"
+        src="https://clerk.com/clerk.browser.js"
+        type="text/javascript"
+    ></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            padding: 20px 50px;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: #000000;
+            z-index: 100;
+        }
+
+        .branding {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-main {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-sub {
+            font-size: 11px;
+            font-weight: 500;
+            color: #888;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #888;
+            border: 1px solid #2a2a2a;
+        }
+
+        .btn-secondary:hover {
+            color: #fff;
+            border-color: #fff;
+        }
+
+        .btn-primary {
+            background: #fff;
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #e0e0e0;
+        }
+
+        /* Hero Section */
+        .hero {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 120px 50px 80px;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-size: 56px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+            line-height: 1.1;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            color: #888;
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-large {
+            padding: 16px 40px;
+            font-size: 16px;
+        }
+
+        /* Features Grid */
+        .features {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 0 50px 80px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .feature-card {
+            background: #282828;
+            padding: 32px;
+            border-radius: 16px;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .feature-card:hover {
+            border-color: #2a2a2a;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        .feature-description {
+            font-size: 14px;
+            color: #888;
+            line-height: 1.6;
+        }
+
+        /* Stats */
+        .stats {
+            max-width: 1200px;
+            margin: 0 auto 80px;
+            padding: 0 50px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 32px;
+            background: #0f0f0f;
+            border-radius: 12px;
+        }
+
+        .stat-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Footer */
+        .footer {
+            border-top: 1px solid #2a2a2a;
+            padding: 32px 50px;
+            text-align: center;
+        }
+
+        .footer-text {
+            font-size: 13px;
+            color: #666;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .hero {
+                padding: 80px 20px 60px;
+            }
+
+            .hero-title {
+                font-size: 36px;
+            }
+
+            .hero-subtitle {
+                font-size: 16px;
+            }
+
+            .hero-cta {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn-large {
+                width: 100%;
+            }
+
+            .features {
+                padding: 0 20px 60px;
+            }
+
+            .stats {
+                padding: 0 20px;
+            }
+
+            .footer {
+                padding: 24px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="branding">
+            <div class="logo-text">
+                <div class="logo-main">NASDAQ</div>
+                <div class="logo-sub">Sentiment Tracker</div>
+            </div>
+        </div>
+        <nav class="header-nav">
+            <a href="login.html" class="btn btn-secondary">Sign In</a>
+            <a href="signup.html" class="btn btn-primary">Get Started</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1 class="hero-title">Real-Time Market Sentiment Analysis</h1>
+            <p class="hero-subtitle">Track NASDAQ sentiment with AI-powered analysis. Comprehensive data, actionable insights, professional-grade tools.</p>
+            <div class="hero-cta">
+                <a href="signup.html" class="btn btn-primary btn-large">Get Started</a>
+                <a href="login.html" class="btn btn-secondary btn-large">Sign In</a>
+            </div>
+        </section>
+
+        <section class="stats">
+            <div class="stat-card">
+                <div class="stat-value">Real-Time</div>
+                <div class="stat-label">Live Data Updates</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">AI-Powered</div>
+                <div class="stat-label">Sentiment Analysis</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">24/7</div>
+                <div class="stat-label">Market Monitoring</div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3 class="feature-title">Composite Sentiment Score</h3>
+                    <p class="feature-description">Aggregate sentiment data from multiple sources into a single, actionable metric. Track market mood in real-time.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="feature-title">Historical Trend Analysis</h3>
+                    <p class="feature-description">Visualize sentiment trends over customizable timeframes. Identify patterns and predict market movements.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="feature-title">Multi-Source Data Integration</h3>
+                    <p class="feature-description">Combines news sentiment, social media signals, technical indicators, and analyst recommendations.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="feature-title">Professional Dashboard</h3>
+                    <p class="feature-description">Clean, data-focused interface designed for traders and analysts. No distractions, just insights.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="feature-title">Market Status Monitoring</h3>
+                    <p class="feature-description">Automatic tracking of market hours and trading status. Clear indicators for open, closed, and pre/post-market sessions.</p>
+                </div>
+                <div class="feature-card">
+                    <h3 class="feature-title">Sentiment Drivers Breakdown</h3>
+                    <p class="feature-description">See exactly what's influencing market sentiment. Granular breakdown of contributing factors and their weights.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p class="footer-text">NASDAQ Sentiment Tracker - Professional Market Analysis Tool</p>
+    </footer>
+
+    <script>
+        // Check if user is already authenticated, redirect to dashboard
+        window.addEventListener('load', async function() {
+            try {
+                // Wait for Clerk to load
+                if (window.Clerk) {
+                    await window.Clerk.load();
+
+                    // If already signed in, redirect to dashboard
+                    if (window.Clerk.user) {
+                        window.location.href = '/nasdaq.html';
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+            }
+        });
+    </script>
+</body>
+</html>
