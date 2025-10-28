@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Feed - NASDAQ Sentiment Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: black;
+            min-height: 100vh;
+            margin: 0;
+            color: white;
+            padding: 10px 0px;
+        }
+
+        .main-wrapper {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .container {
+            width: 95%;
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            grid-template-rows: minmax(0, 0.6fr) auto;
+            row-gap: 25px;
+            column-gap: 15px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #282828;
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .left-top {
+            grid-column: 1;
+            grid-row: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 48px;
+            padding-bottom: 48px;
+            margin-top: 10px;
+        }
+
+        .right-top {
+            grid-column: 2;
+            grid-row: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            align-items: center;
+            margin-bottom: -14px;
+        }
+
+        .right-top-item {
+            background: #282828;
+            border-radius: 16px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 70%;
+            min-height: 56px;
+        }
+
+        .nav-link {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #ccc;
+        }
+
+        .time-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .time-display:hover {
+            opacity: 1;
+        }
+
+        .current-time {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            color: #fff;
+        }
+
+        .timezone-chevron {
+            font-size: 16px;
+            color: #888;
+            transition: transform 0.2s ease;
+        }
+
+        .time-display:hover .timezone-chevron {
+            color: #ccc;
+        }
+
+        .timezone-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 8px;
+            min-width: 420px;
+            max-width: 500px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+            opacity: 1;
+        }
+
+        .timezone-dropdown.show {
+            display: block;
+        }
+
+        .timezone-option {
+            padding: 10px 14px;
+            color: #ccc;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 4px;
+            opacity: 1;
+            background: transparent;
+        }
+
+        .timezone-option:hover {
+            background: #2a2a2a;
+            color: white;
+        }
+
+        .timezone-option.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            opacity: 1;
+        }
+
+        .timezone-option-main {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .timezone-option-offset {
+            display: inline-block;
+            min-width: 60px;
+            color: #10b981;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+        }
+
+        .timezone-option-code {
+            display: inline-block;
+            padding: 2px 6px;
+            background: #0f0f0f;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #888;
+            font-family: 'Courier New', monospace;
+            opacity: 1;
+        }
+
+        .timezone-option-datetime {
+            font-size: 11px;
+            color: #666;
+            margin-left: 60px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .timezone-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .timezone-dropdown::-webkit-scrollbar-track {
+            background: #0f0f0f;
+            border-radius: 6px;
+        }
+
+        .timezone-dropdown::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+            border-radius: 6px;
+        }
+
+        .timezone-dropdown::-webkit-scrollbar-thumb:hover {
+            background: #333;
+        }
+
+        .content-area {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            margin-top: 50px;
+        }
+
+        .news-container {
+            background: #282828;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .news-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .news-filters {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            color: #888;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .filter-btn:hover {
+            background: #1f1f1f;
+            color: #ccc;
+        }
+
+        .filter-btn.active {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .news-stats {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #1a1a1a;
+            border-radius: 12px;
+        }
+
+        .stat-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-value.positive {
+            color: #10b981;
+        }
+
+        .stat-value.negative {
+            color: #ef4444;
+        }
+
+        .stat-value.neutral {
+            color: #888;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .news-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .news-article {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .news-article:hover {
+            background: #1f1f1f;
+            border-color: #2a2a2a;
+            transform: translateY(-2px);
+        }
+
+        .article-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            gap: 16px;
+        }
+
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .article-source {
+            font-size: 12px;
+            font-weight: 600;
+            color: #10b981;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .article-time {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .sentiment-badge {
+            padding: 4px 12px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .sentiment-badge.positive {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .sentiment-badge.negative {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .sentiment-badge.neutral {
+            background: rgba(136, 136, 136, 0.15);
+            color: #888;
+            border: 1px solid rgba(136, 136, 136, 0.3);
+        }
+
+        .article-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .article-summary {
+            font-size: 14px;
+            color: #aaa;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .article-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid #0f0f0f;
+        }
+
+        .article-link {
+            color: #10b981;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s ease;
+        }
+
+        .article-link:hover {
+            color: #34d399;
+        }
+
+        .article-score {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .no-articles {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+
+        .no-articles-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .news-container {
+                padding: 24px 20px;
+            }
+
+            .news-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .news-stats {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .article-header {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="container">
+            <!-- Left Top: Title -->
+            <div class="card left-top">
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 32px;">
+                    <div style="text-align: left; flex: 1;">
+                        <div style="font-size: 48px; font-weight: 700; color: #fff; line-height: 0.9; margin-bottom: 4px;">NASDAQ</div>
+                        <div style="font-size: 25px; font-weight: 400; color: #fff; line-height: 0.9;">Sentiment Tracker</div>
+                    </div>
+                    <div style="width: 80px; height: 80px; background: #1a1a1a; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px; border: 2px dashed #333;">
+                        Logo
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Top: Navigation & Time -->
+            <div class="right-top">
+                <div class="right-top-item">
+                    <a href="nasdaq.html" class="nav-link">Dashboard</a>
+                </div>
+                <div class="right-top-item">
+                    <a href="about.html" class="nav-link">About Us</a>
+                </div>
+                <div class="right-top-item">
+                    <a href="#" class="nav-link">Language</a>
+                </div>
+                <div class="right-top-item">
+                    <div class="time-display" id="timezone-selector" style="position: relative;">
+                        <span class="current-time" id="current-time">09:45:32</span>
+                        <span class="timezone-chevron">▼</span>
+                        <div class="timezone-dropdown" id="timezone-dropdown">
+                            <!-- Timezone options will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <div class="news-container">
+                    <div class="news-header">
+                        <h1 class="news-title">Latest News Feed</h1>
+                        <div class="news-filters">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="positive">Positive</button>
+                            <button class="filter-btn" data-filter="negative">Negative</button>
+                            <button class="filter-btn" data-filter="neutral">Neutral</button>
+                        </div>
+                    </div>
+
+                    <!-- News Statistics -->
+                    <div class="news-stats" id="news-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="total-articles">0</div>
+                            <div class="stat-label">Total Articles</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value positive" id="positive-count">0</div>
+                            <div class="stat-label">Positive</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value neutral" id="neutral-count">0</div>
+                            <div class="stat-label">Neutral</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value negative" id="negative-count">0</div>
+                            <div class="stat-label">Negative</div>
+                        </div>
+                    </div>
+
+                    <!-- News Articles List -->
+                    <div class="news-list" id="news-list">
+                        <div class="loading-spinner">
+                            <div style="font-size: 24px; margin-bottom: 12px;">📰</div>
+                            <div>Loading news articles...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Timezone data embedded directly (to avoid CORS issues with local file access)
+        const timezonesData = [
+            {"offset": "-12:00", "name": "Baker Island Time", "code": "BIT"},
+            {"offset": "-11:00", "name": "Samoa Standard Time", "code": "SST"},
+            {"offset": "-10:00", "name": "Hawaii-Aleutian Standard Time", "code": "HST"},
+            {"offset": "-09:30", "name": "Marquesas Islands Time", "code": "MART"},
+            {"offset": "-09:00", "name": "Alaska Standard Time", "code": "AKST"},
+            {"offset": "-08:00", "name": "Pacific Standard Time", "code": "PST"},
+            {"offset": "-07:00", "name": "Mountain Standard Time", "code": "MST"},
+            {"offset": "-06:00", "name": "Central Standard Time", "code": "CST"},
+            {"offset": "-05:00", "name": "Eastern Standard Time", "code": "EST"},
+            {"offset": "-04:00", "name": "Atlantic Standard Time", "code": "AST"},
+            {"offset": "-03:30", "name": "Newfoundland Standard Time", "code": "NST"},
+            {"offset": "-03:00", "name": "Argentina Time", "code": "ART"},
+            {"offset": "-02:00", "name": "South Georgia Time", "code": "GST"},
+            {"offset": "-01:00", "name": "Azores Standard Time", "code": "AZOST"},
+            {"offset": "+00:00", "name": "Coordinated Universal Time", "code": "UTC"},
+            {"offset": "+01:00", "name": "Central European Time", "code": "CET"},
+            {"offset": "+02:00", "name": "Eastern European Time", "code": "EET"},
+            {"offset": "+03:00", "name": "Moscow Standard Time", "code": "MSK"},
+            {"offset": "+03:30", "name": "Iran Standard Time", "code": "IRST"},
+            {"offset": "+04:00", "name": "Gulf Standard Time", "code": "GST"},
+            {"offset": "+04:30", "name": "Afghanistan Time", "code": "AFT"},
+            {"offset": "+05:00", "name": "Pakistan Standard Time", "code": "PKT"},
+            {"offset": "+05:30", "name": "India Standard Time", "code": "IST"},
+            {"offset": "+05:45", "name": "Nepal Time", "code": "NPT"},
+            {"offset": "+06:00", "name": "Bangladesh Standard Time", "code": "BST"},
+            {"offset": "+06:30", "name": "Myanmar Time", "code": "MMT"},
+            {"offset": "+07:00", "name": "Indochina Time", "code": "ICT"},
+            {"offset": "+08:00", "name": "China Standard Time", "code": "CST"},
+            {"offset": "+08:45", "name": "Australian Central Western Standard Time", "code": "ACWST"},
+            {"offset": "+09:00", "name": "Japan Standard Time", "code": "JST"},
+            {"offset": "+09:30", "name": "Australian Central Standard Time", "code": "ACST"},
+            {"offset": "+10:00", "name": "Australian Eastern Standard Time", "code": "AEST"},
+            {"offset": "+10:30", "name": "Lord Howe Standard Time", "code": "LHST"},
+            {"offset": "+11:00", "name": "Solomon Islands Time", "code": "SBT"},
+            {"offset": "+12:00", "name": "New Zealand Standard Time", "code": "NZST"},
+            {"offset": "+12:45", "name": "Chatham Islands Standard Time", "code": "CHAST"},
+            {"offset": "+13:00", "name": "Tonga Time", "code": "TOT"},
+            {"offset": "+14:00", "name": "Line Islands Time", "code": "LINT"}
+        ];
+
+        let currentTimezoneData = null;
+        let allArticles = [];
+        let currentFilter = 'all';
+
+        // API Configuration
+        const API_BASE_URL = (
+            window.location.protocol === 'file:' ||
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.hostname === ''
+        ) ? 'http://localhost:8000/api'
+          : 'https://nasdaqsentimenttracker-production.up.railway.app/api';
+
+        // Parse offset string to decimal hours (e.g., "-05:00" -> -5, "+05:30" -> 5.5)
+        function parseOffset(offsetStr) {
+            const sign = offsetStr.charAt(0) === '-' ? -1 : 1;
+            const parts = offsetStr.substring(1).split(':');
+            const hours = parseInt(parts[0]);
+            const minutes = parseInt(parts[1]);
+            return sign * (hours + minutes / 60);
+        }
+
+        // Format date and time for a given timezone
+        function getTimezoneDateTime(offsetHours) {
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const localTime = new Date(utc + (3600000 * offsetHours));
+
+            const year = localTime.getFullYear();
+            const month = String(localTime.getMonth() + 1).padStart(2, '0');
+            const day = String(localTime.getDate()).padStart(2, '0');
+            const hours = String(localTime.getHours()).padStart(2, '0');
+            const minutes = String(localTime.getMinutes()).padStart(2, '0');
+            const seconds = String(localTime.getSeconds()).padStart(2, '0');
+
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // Update the main clock display
+        function updateTime() {
+            if (!currentTimezoneData) {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                document.getElementById('current-time').textContent = `${hours}:${minutes}:${seconds}`;
+                return;
+            }
+
+            const offsetHours = parseOffset(currentTimezoneData.offset);
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const localTime = new Date(utc + (3600000 * offsetHours));
+
+            const hours = String(localTime.getHours()).padStart(2, '0');
+            const minutes = String(localTime.getMinutes()).padStart(2, '0');
+            const seconds = String(localTime.getSeconds()).padStart(2, '0');
+            document.getElementById('current-time').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        // Initialize timezone system
+        function loadTimezones() {
+            currentTimezoneData = timezonesData.find(tz => tz.code === 'EST') || timezonesData[0];
+            populateTimezoneDropdown();
+            updateTime();
+        }
+
+        // Populate the timezone dropdown with all options
+        function populateTimezoneDropdown() {
+            const dropdown = document.getElementById('timezone-dropdown');
+            if (!dropdown) return;
+
+            dropdown.innerHTML = '';
+
+            timezonesData.forEach((tz, index) => {
+                const offsetHours = parseOffset(tz.offset);
+                const dateTime = getTimezoneDateTime(offsetHours);
+
+                const option = document.createElement('div');
+                option.className = 'timezone-option';
+                if (currentTimezoneData && currentTimezoneData.code === tz.code) {
+                    option.classList.add('active');
+                }
+
+                option.innerHTML = `
+                    <div class="timezone-option-main">
+                        <span class="timezone-option-offset">${tz.offset}</span>
+                        <span class="timezone-option-code">${tz.code}</span>
+                        <span>${tz.name}</span>
+                    </div>
+                    <div class="timezone-option-datetime">${dateTime}</div>
+                `;
+
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectTimezone(tz);
+                });
+
+                dropdown.appendChild(option);
+            });
+        }
+
+        // Select a timezone
+        function selectTimezone(tz) {
+            currentTimezoneData = tz;
+
+            document.querySelectorAll('.timezone-option').forEach(opt => opt.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            updateTime();
+
+            document.getElementById('timezone-dropdown').classList.remove('show');
+            document.getElementById('timezone-selector').classList.remove('open');
+        }
+
+        // Update dropdown times every second
+        function updateDropdownTimes() {
+            const options = document.querySelectorAll('.timezone-option');
+            timezonesData.forEach((tz, index) => {
+                if (options[index]) {
+                    const offsetHours = parseOffset(tz.offset);
+                    const dateTime = getTimezoneDateTime(offsetHours);
+                    const dateTimeElem = options[index].querySelector('.timezone-option-datetime');
+                    if (dateTimeElem) {
+                        dateTimeElem.textContent = dateTime;
+                    }
+                }
+            });
+        }
+
+        // Fetch news articles from API
+        async function fetchNewsArticles() {
+            try {
+                console.log('Fetching news articles from API...');
+                const response = await fetch(`${API_BASE_URL}/news/`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('News articles received:', data);
+
+                allArticles = data.articles || [];
+
+                updateStats();
+                displayArticles(allArticles);
+
+                return data;
+            } catch (error) {
+                console.error('Error fetching news articles:', error);
+                displayError();
+                return null;
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            const positive = allArticles.filter(a => a.sentiment === 'positive').length;
+            const negative = allArticles.filter(a => a.sentiment === 'negative').length;
+            const neutral = allArticles.filter(a => a.sentiment === 'neutral').length;
+
+            document.getElementById('total-articles').textContent = allArticles.length;
+            document.getElementById('positive-count').textContent = positive;
+            document.getElementById('negative-count').textContent = negative;
+            document.getElementById('neutral-count').textContent = neutral;
+        }
+
+        // Display articles
+        function displayArticles(articles) {
+            const newsList = document.getElementById('news-list');
+
+            if (!articles || articles.length === 0) {
+                newsList.innerHTML = `
+                    <div class="no-articles">
+                        <div class="no-articles-icon">📰</div>
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">No news articles found</div>
+                        <div style="font-size: 14px; color: #666;">Check back later for the latest NASDAQ news</div>
+                    </div>
+                `;
+                return;
+            }
+
+            newsList.innerHTML = articles.map(article => createArticleHTML(article)).join('');
+        }
+
+        // Create HTML for a single article
+        function createArticleHTML(article) {
+            const publishedDate = new Date(article.published_at);
+            const timeAgo = getTimeAgo(publishedDate);
+            const sentimentClass = article.sentiment || 'neutral';
+            const sentimentLabel = (article.sentiment || 'neutral').toUpperCase();
+
+            return `
+                <div class="news-article" onclick="window.open('${article.url}', '_blank')">
+                    <div class="article-header">
+                        <div class="article-meta">
+                            <span class="article-source">${article.source || 'Unknown Source'}</span>
+                            <span class="article-time">${timeAgo}</span>
+                        </div>
+                        <span class="sentiment-badge ${sentimentClass}">${sentimentLabel}</span>
+                    </div>
+                    <h2 class="article-title">${article.title}</h2>
+                    ${article.summary ? `<p class="article-summary">${article.summary}</p>` : ''}
+                    <div class="article-footer">
+                        <a href="${article.url}" class="article-link" onclick="event.stopPropagation()">
+                            Read full article →
+                        </a>
+                        ${article.sentiment_score !== null && article.sentiment_score !== undefined ?
+                            `<span class="article-score">Score: ${article.sentiment_score > 0 ? '+' : ''}${article.sentiment_score.toFixed(1)}</span>`
+                            : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Calculate time ago
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000); // difference in seconds
+
+            if (diff < 60) return 'Just now';
+            if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+            if (diff < 604800) return `${Math.floor(diff / 86400)} days ago`;
+
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // Display error
+        function displayError() {
+            const newsList = document.getElementById('news-list');
+            newsList.innerHTML = `
+                <div class="no-articles">
+                    <div class="no-articles-icon">⚠️</div>
+                    <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #ef4444;">Unable to load news articles</div>
+                    <div style="font-size: 14px; color: #666;">Please check your connection and try again</div>
+                </div>
+            `;
+        }
+
+        // Filter articles
+        function filterArticles(sentiment) {
+            currentFilter = sentiment;
+
+            // Update active filter button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.filter === sentiment) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Filter and display
+            if (sentiment === 'all') {
+                displayArticles(allArticles);
+            } else {
+                const filtered = allArticles.filter(a => a.sentiment === sentiment);
+                displayArticles(filtered);
+            }
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTimezones();
+            fetchNewsArticles();
+
+            // Setup filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterArticles(btn.dataset.filter);
+                });
+            });
+
+            // Timezone dropdown toggle
+            const timezoneSelector = document.getElementById('timezone-selector');
+            const timezoneDropdown = document.getElementById('timezone-dropdown');
+
+            if (timezoneSelector && timezoneDropdown) {
+                timezoneSelector.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('timezone-option')) {
+                        timezoneDropdown.classList.toggle('show');
+                        timezoneSelector.classList.toggle('open');
+
+                        if (timezoneDropdown.classList.contains('show')) {
+                            updateDropdownTimes();
+                        }
+                    }
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!timezoneSelector.contains(e.target)) {
+                        timezoneDropdown.classList.remove('show');
+                        timezoneSelector.classList.remove('open');
+                    }
+                });
+            }
+        });
+
+        // Update time every second
+        setInterval(() => {
+            updateTime();
+            const dropdown = document.getElementById('timezone-dropdown');
+            if (dropdown && dropdown.classList.contains('show')) {
+                updateDropdownTimes();
+            }
+        }, 1000);
+
+        // Refresh news every 5 minutes
+        setInterval(() => {
+            console.log('Auto-refreshing news articles...');
+            fetchNewsArticles();
+        }, 300000);
+    </script>
+</body>
+</html>
