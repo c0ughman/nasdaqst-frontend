@@ -660,28 +660,6 @@
             display: none;
         }
 
-        .chart-time-label {
-            position: absolute;
-            bottom: 18px;
-            left: 0;
-            background: #ff8c42;
-            color: #000;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            font-family: monospace;
-            white-space: nowrap;
-            pointer-events: none;
-            z-index: 9999;
-            display: none;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-        
-        .chart-time-label.show {
-            display: block;
-        }
-
         .chart-tooltip {
             position: absolute;
             background: #1a1a1a;
@@ -987,10 +965,10 @@
             <!-- Right Top: Navigation & Time -->
             <div class="right-top">
                 <div class="right-top-item">
-                    <a href="#" class="nav-link">About Us</a>
+                    <a href="about.html" class="nav-link">About Us</a>
                 </div>
                 <div class="right-top-item">
-                    <a href="#" class="nav-link">News</a>
+                    <a href="news.html" class="nav-link">News</a>
                 </div>
                 <div class="right-top-item">
                     <a href="#" class="nav-link">Language</a>
@@ -1054,7 +1032,7 @@
                     </div>
 
                     <!-- Market Breadth Driver -->
-                    <div class="driver-item" style="opacity: 0;">
+                    <div class="driver-item">
                         <div class="driver-header">
                             <span class="driver-name">Market Breadth</span>
                             <span class="driver-value positive">+0.7</span>
@@ -1139,13 +1117,11 @@
                     <span class="chart-title">Historical Sentiment Trend</span>
                     <div class="chart-controls">
                         <div class="timeframe-selector">
-                            <button class="timeframe-btn" data-timeframe="5m">5 min</button>
-                            <button class="timeframe-btn" data-timeframe="15m">15 min</button>
-                            <button class="timeframe-btn" data-timeframe="30m">30 min</button>
-                            <button class="timeframe-btn active" data-timeframe="1h">1 hr</button>
-                            <button class="timeframe-btn" data-timeframe="2h">2 hrs</button>
-                            <button class="timeframe-btn" data-timeframe="4h">4 hrs</button>
-                            <button class="timeframe-btn" data-timeframe="8h">8 hrs</button>
+                            <button class="timeframe-btn" data-timeframe="1m">1m</button>
+                            <button class="timeframe-btn" data-timeframe="5m">5m</button>
+                            <button class="timeframe-btn" data-timeframe="15m">15m</button>
+                            <button class="timeframe-btn" data-timeframe="30m">30m</button>
+                            <button class="timeframe-btn active" data-timeframe="1h">1h</button>
                 </div>
                     </div>
                 </div>
@@ -1176,7 +1152,6 @@
                             <g id="chart-dots"></g>
                         </svg>
                         <div class="chart-hover-line" id="hover-line"></div>
-                        <div class="chart-time-label" id="time-label">00:00:00</div>
                         <div class="chart-tooltip" id="chart-tooltip">
                             <div class="tooltip-label">Sentiment Score</div>
                             <div class="tooltip-value">+56</div>
@@ -1483,7 +1458,13 @@
         let sentimentDataset = [];
         let currentCompositeScore = 0;
         
-        // API Base URL - adjust if needed
+        // ========================================
+        // API Configuration
+        // ========================================
+        // TODO: Replace YOUR_RAILWAY_URL below with your actual Railway backend URL
+        // Find it at: Railway Dashboard → Your Service → Settings → Domains
+        // Format: https://your-app-name.up.railway.app/api
+        //
         // Dynamic API URL - detects localhost, file://, or production
         const API_BASE_URL = (
             window.location.protocol === 'file:' ||
@@ -1491,7 +1472,7 @@
             window.location.hostname === '127.0.0.1' ||
             window.location.hostname === ''
         ) ? 'http://localhost:8000/api'
-          : (window.BACKEND_URL || 'https://nasdaqsentimenttracker-production.up.railway.app/api');
+          : 'https://be6c59a4b213.ngrok-free.app/api';
 
         // Fetch dashboard data (composite score + 3 drivers + historical data)
         async function fetchDashboardData() {
@@ -1810,40 +1791,30 @@
         
         // Timeframe configurations - how many minutes of data to show
         const timeframeConfig = {
+            '1m': {
+                minutes: 10,  // Show last 10 minutes of data
+                labelCount: 5,
+                label: '10min'
+            },
             '5m': {
-                minutes: 5,   // Show last 5 minutes of data
-                labelCount: 5,
-                label: '5min'
-            },
-            '15m': {
-                minutes: 15,  // Show last 15 minutes
-                labelCount: 5,
-                label: '15min'
-            },
-            '30m': {
                 minutes: 30,  // Show last 30 minutes
                 labelCount: 6,
                 label: '30min'
             },
-            '1h': {
+            '15m': {
                 minutes: 60,  // Show last 1 hour
                 labelCount: 5,
                 label: '1hr'
             },
-            '2h': {
+            '30m': {
                 minutes: 120, // Show last 2 hours
-                labelCount: 6,
-                label: '2hrs'
+                labelCount: 5,
+                label: '2hr'
             },
-            '4h': {
+            '1h': {
                 minutes: 240, // Show last 4 hours
                 labelCount: 6,
-                label: '4hrs'
-            },
-            '8h': {
-                minutes: 480, // Show last 8 hours
-                labelCount: 6,
-                label: '8hrs'
+                label: '4hr'
             }
         };
 
@@ -2135,13 +2106,12 @@
         // Chart hover functionality
         const chartCanvas = document.getElementById('chart-canvas');
         const hoverLine = document.getElementById('hover-line');
-        const timeLabel = document.getElementById('time-label');
         const tooltip = document.getElementById('chart-tooltip');
         const tooltipValue = tooltip.querySelector('.tooltip-value');
         const tooltipTime = tooltip.querySelector('.tooltip-time');
 
         function interpolateValue(x, dataPoints) {
-            if (!dataPoints || dataPoints.length === 0) return { value: 0, time: 'Now', timestamp: new Date() };
+            if (!dataPoints || dataPoints.length === 0) return { value: 0, time: 'Now' };
             
             // Find the two closest data points
             let before = dataPoints[0];
@@ -2158,17 +2128,9 @@
             // Linear interpolation for sentiment value
             const ratio = (x - before.x) / (after.x - before.x);
             const value = before.sentiment + ratio * (after.sentiment - before.sentiment);
+            const time = ratio < 0.5 ? before.time : after.time;
             
-            // Use the closest data point's time
-            const closestPoint = ratio < 0.5 ? before : after;
-            const time = closestPoint.timeLabel || closestPoint.timestamp?.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            }) || 'N/A';
-            
-            return { value: Math.round(value), time: time, timestamp: closestPoint.timestamp };
+            return { value: Math.round(value), time: time };
         }
 
         chartCanvas.addEventListener('mousemove', (e) => {
@@ -2187,13 +2149,6 @@
             // Show hover line
             hoverLine.style.display = 'block';
             hoverLine.style.left = x + 'px';
-            
-            // Show time label at bottom of hover line
-            timeLabel.classList.add('show');
-            const labelWidth = 90; // Approximate width of the time label
-            const labelX = Math.max(0, Math.min(x - (labelWidth / 2), rect.width - labelWidth));
-            timeLabel.style.left = labelX + 'px';
-            timeLabel.innerHTML = `<strong>${result.time}</strong>`;
             
             // Show tooltip with actual data (add +/- sign for sentiment)
             tooltip.style.display = 'block';
@@ -2219,7 +2174,6 @@
 
         chartCanvas.addEventListener('mouseleave', () => {
             hoverLine.style.display = 'none';
-            timeLabel.classList.remove('show');
             tooltip.style.display = 'none';
         });
 
