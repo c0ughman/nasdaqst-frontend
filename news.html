@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>News Feed - NASDAQ Sentiment Tracker</title>
-    
+
+    <!-- Translation System -->
+    <script src="translations.js"></script>
+
     <!-- Clerk SDK -->
     <script
         async
@@ -510,13 +513,13 @@
             <!-- Right Top: Navigation & Time -->
             <div class="right-top">
                 <div class="right-top-item">
-                    <a href="about.html" class="nav-link">About Us</a>
+                    <a href="about.html" class="nav-link" data-i18n="nav.about">About Us</a>
                 </div>
                 <div class="right-top-item">
-                    <a href="nasdaq.html" class="nav-link">Dashboard</a>
+                    <a href="nasdaq.html" class="nav-link" data-i18n="nav.dashboard">Dashboard</a>
                 </div>
                 <div class="right-top-item">
-                    <a href="#" class="nav-link">Language</a>
+                    <a href="#" class="nav-link" id="language-selector" data-i18n="nav.language">Language</a>
                 </div>
                 <div class="right-top-item">
                     <div class="time-display" id="timezone-selector" style="position: relative;">
@@ -533,12 +536,12 @@
             <div class="content-area">
                 <div class="news-container">
                     <div class="news-header">
-                        <h1 class="news-title">Latest News Feed</h1>
+                        <h1 class="news-title" data-i18n="news.title">Latest News Feed</h1>
                         <div class="news-filters">
-                            <button class="filter-btn active" data-filter="all">All</button>
-                            <button class="filter-btn" data-filter="positive">Positive</button>
-                            <button class="filter-btn" data-filter="negative">Negative</button>
-                            <button class="filter-btn" data-filter="neutral">Neutral</button>
+                            <button class="filter-btn active" data-filter="all" data-i18n="news.filter.all">All</button>
+                            <button class="filter-btn" data-filter="positive" data-i18n="news.filter.positive">Positive</button>
+                            <button class="filter-btn" data-filter="negative" data-i18n="news.filter.negative">Negative</button>
+                            <button class="filter-btn" data-filter="neutral" data-i18n="news.filter.neutral">Neutral</button>
                         </div>
                     </div>
 
@@ -546,19 +549,19 @@
                     <div class="news-stats" id="news-stats">
                         <div class="stat-item">
                             <div class="stat-value" id="total-articles">0</div>
-                            <div class="stat-label">Total Articles</div>
+                            <div class="stat-label" data-i18n="news.stat.total">Total Articles</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-value positive" id="positive-count">0</div>
-                            <div class="stat-label">Positive</div>
+                            <div class="stat-label" data-i18n="news.stat.positive">Positive</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-value neutral" id="neutral-count">0</div>
-                            <div class="stat-label">Neutral</div>
+                            <div class="stat-label" data-i18n="news.stat.neutral">Neutral</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-value negative" id="negative-count">0</div>
-                            <div class="stat-label">Negative</div>
+                            <div class="stat-label" data-i18n="news.stat.negative">Negative</div>
                         </div>
                     </div>
 
@@ -566,7 +569,7 @@
                     <div class="news-list" id="news-list">
                         <div class="loading-spinner">
                             <div style="font-size: 24px; margin-bottom: 12px;">📰</div>
-                            <div>Loading news articles...</div>
+                            <div data-i18n="news.loading">Loading news articles...</div>
                         </div>
                     </div>
                 </div>
@@ -826,10 +829,12 @@
                 newsList.innerHTML = `
                     <div class="no-articles">
                         <div class="no-articles-icon">📰</div>
-                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">No news articles found</div>
-                        <div style="font-size: 14px; color: #666;">Check back later for the latest NASDAQ news</div>
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;" data-i18n="news.no-articles">No news articles found</div>
+                        <div style="font-size: 14px; color: #666;" data-i18n="news.no-articles.subtitle">Check back later for the latest NASDAQ news</div>
                     </div>
                 `;
+                // Re-apply translations to newly added elements
+                initTranslations();
                 return;
             }
 
@@ -841,7 +846,8 @@
             const publishedDate = new Date(article.published_at);
             const timeAgo = getTimeAgo(publishedDate);
             const sentimentClass = article.sentiment || 'neutral';
-            const sentimentLabel = (article.sentiment || 'neutral').toUpperCase();
+            const sentimentKey = `news.sentiment.${sentimentClass}`;
+            const sentimentLabel = t(sentimentKey);
 
             return `
                 <div class="news-article" onclick="window.open('${article.url}', '_blank')">
@@ -855,7 +861,7 @@
                     <h2 class="article-title">${article.title}</h2>
                     ${article.summary ? `<p class="article-summary">${article.summary}</p>` : ''}
                     <div class="article-footer">
-                        <a href="${article.url}" class="article-link" onclick="event.stopPropagation()">
+                        <a href="${article.url}" class="article-link" onclick="event.stopPropagation()" data-i18n="news.article.read-more">
                             Read full article →
                         </a>
                         ${article.sentiment_score !== null && article.sentiment_score !== undefined ?
@@ -963,6 +969,130 @@
             console.log('Auto-refreshing news articles...');
             fetchNewsArticles();
         }, 300000);
+
+        // Language selector functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const languageSelector = document.getElementById('language-selector');
+            if (languageSelector) {
+                languageSelector.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showLanguageModal();
+                });
+            }
+
+            // Listen for language changes to refresh articles
+            window.addEventListener('languageChanged', () => {
+                // Re-render articles with new language
+                displayArticles(allArticles);
+            });
+        });
+
+        // Show language selection modal
+        function showLanguageModal() {
+            const languages = [
+                { code: 'en', name: 'English', nativeName: 'English' },
+                { code: 'es', name: 'Spanish', nativeName: 'Español' },
+                { code: 'fr', name: 'French', nativeName: 'Français' },
+                { code: 'de', name: 'German', nativeName: 'Deutsch' },
+                { code: 'zh', name: 'Chinese', nativeName: '中文' },
+                { code: 'ja', name: 'Japanese', nativeName: '日本語' }
+            ];
+
+            const currentLang = getCurrentLanguage();
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px);
+                z-index: 10000; display: flex; align-items: center; justify-content: center;
+            `;
+
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px;
+                max-width: 500px; width: 90%; padding: 40px 48px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            `;
+
+            const title = document.createElement('h2');
+            title.textContent = 'Select Language';
+            title.style.cssText = `
+                font-size: 28px; font-weight: 700; color: #fff;
+                margin-bottom: 24px; text-align: center;
+            `;
+
+            const langGrid = document.createElement('div');
+            langGrid.style.cssText = `
+                display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px;
+            `;
+
+            languages.forEach(lang => {
+                const langBtn = document.createElement('div');
+                langBtn.style.cssText = `
+                    background: #0f0f0f; border: 2px solid ${lang.code === currentLang ? '#10b981' : '#2a2a2a'};
+                    border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s ease;
+                    display: flex; flex-direction: column; gap: 4px; text-align: center;
+                `;
+
+                langBtn.innerHTML = `
+                    <div style="font-size: 16px; font-weight: 600; color: ${lang.code === currentLang ? '#10b981' : '#fff'};">${lang.nativeName}</div>
+                    <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px;">${lang.code}</div>
+                `;
+
+                langBtn.addEventListener('mouseenter', () => {
+                    if (lang.code !== currentLang) {
+                        langBtn.style.background = '#1a1a1a';
+                        langBtn.style.borderColor = '#333';
+                    }
+                });
+
+                langBtn.addEventListener('mouseleave', () => {
+                    if (lang.code !== currentLang) {
+                        langBtn.style.background = '#0f0f0f';
+                        langBtn.style.borderColor = '#2a2a2a';
+                    }
+                });
+
+                langBtn.addEventListener('click', () => {
+                    setLanguage(lang.code);
+                    document.body.removeChild(modal);
+                });
+
+                langGrid.appendChild(langBtn);
+            });
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = 'Close';
+            closeBtn.style.cssText = `
+                width: 100%; padding: 14px 32px; background: #ffffff; color: #000000;
+                border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
+                cursor: pointer; transition: all 0.2s ease; font-family: inherit;
+            `;
+
+            closeBtn.addEventListener('mouseenter', () => {
+                closeBtn.style.background = '#e0e0e0';
+            });
+
+            closeBtn.addEventListener('mouseleave', () => {
+                closeBtn.style.background = '#ffffff';
+            });
+
+            closeBtn.addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            content.appendChild(title);
+            content.appendChild(langGrid);
+            content.appendChild(closeBtn);
+            modal.appendChild(content);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+
+            document.body.appendChild(modal);
+        }
     </script>
 </body>
 </html>

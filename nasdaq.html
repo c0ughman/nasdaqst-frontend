@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NASDAQ Sentiment Dashboard</title>
-    
+
+    <!-- Translation System -->
+    <script src="translations.js"></script>
+
     <!-- Clerk SDK -->
     <script
         async
@@ -1216,8 +1219,8 @@
 
                 <!-- Step 1: Language Selection -->
                 <div class="onboarding-step active" id="step-language">
-                    <h2 class="onboarding-title">Select Your Language</h2>
-                    <p class="onboarding-subtitle">Choose your preferred language for the dashboard</p>
+                    <h2 class="onboarding-title" data-i18n="onboarding.title.language">Select Your Language</h2>
+                    <p class="onboarding-subtitle" data-i18n="onboarding.subtitle.language">Choose your preferred language for the dashboard</p>
                     <div class="language-options">
                         <div class="language-option" data-lang="en">
                             <div class="language-name">English</div>
@@ -1244,25 +1247,25 @@
                             <div class="language-code">JA</div>
                         </div>
                     </div>
-                    <button class="onboarding-button" id="language-continue-btn" disabled>Continue</button>
+                    <button class="onboarding-button" id="language-continue-btn" data-i18n="onboarding.button.continue" disabled>Continue</button>
                 </div>
 
                 <!-- Step 2: Disclaimer -->
                 <div class="onboarding-step" id="step-disclaimer">
-                    <h2 class="onboarding-title">Important Disclaimer</h2>
+                    <h2 class="onboarding-title" data-i18n="onboarding.title.disclaimer">Important Disclaimer</h2>
                     <div class="disclaimer-content">
                         <div class="disclaimer-section">
                             <h3 class="disclaimer-heading">
                                 <span>⚠️</span>
-                                <span>Important Information</span>
+                                <span data-i18n="onboarding.disclaimer.heading">Important Information</span>
                             </h3>
                             <div class="disclaimer-text">
-                                <p>This tool provides market sentiment analysis for informational purposes only. It is <strong>not</strong> financial advice, and should not be your only source of information when making investment decisions.</p>
-                                <p>Market sentiment can change rapidly, and past sentiment does not predict future market movements. Always do your own research, consult with financial professionals, and consider your personal financial situation before making any investment decisions.</p>
+                                <p data-i18n="onboarding.disclaimer.text1" data-i18n-html>This tool provides market sentiment analysis for informational purposes only. It is <strong>not</strong> financial advice, and should not be your only source of information when making investment decisions.</p>
+                                <p data-i18n="onboarding.disclaimer.text2">Market sentiment can change rapidly, and past sentiment does not predict future market movements. Always do your own research, consult with financial professionals, and consider your personal financial situation before making any investment decisions.</p>
                             </div>
                         </div>
                     </div>
-                    <button class="onboarding-button" id="disclaimer-continue-btn">Continue</button>
+                    <button class="onboarding-button" id="disclaimer-continue-btn" data-i18n="onboarding.button.continue">Continue</button>
                 </div>
             </div>
         </div>
@@ -1284,21 +1287,21 @@
 
             <!-- Left Bottom: Sentiment Score -->
             <div class="card left-bottom">
-                <div class="score-label">Composite Sentiment Score</div>
+                <div class="score-label" data-i18n="dashboard.score.label">Composite Sentiment Score</div>
             <div class="score-value">100</div>
-            <div class="score-status">BULLISH</div>
+            <div class="score-status" data-i18n="dashboard.status.bullish">BULLISH</div>
         </div>
 
             <!-- Right Top: Navigation & Time -->
             <div class="right-top">
                 <div class="right-top-item">
-                    <a href="about.html" class="nav-link">About Us</a>
+                    <a href="about.html" class="nav-link" data-i18n="nav.about">About Us</a>
                 </div>
                 <div class="right-top-item">
-                    <a href="news.html" class="nav-link">News</a>
+                    <a href="news.html" class="nav-link" data-i18n="nav.news">News</a>
                 </div>
                 <div class="right-top-item">
-                    <a href="#" class="nav-link">Language</a>
+                    <a href="#" class="nav-link" id="language-selector" data-i18n="nav.language">Language</a>
                 </div>
                 <div class="right-top-item">
                     <div class="time-display" id="timezone-selector" style="position: relative;">
@@ -1313,11 +1316,11 @@
 
             <!-- Right Middle: Sentiment Drivers -->
             <div class="card right-middle">
-                <h2 class="section-title">Sentiment Drivers</h2>
+                <h2 class="section-title" data-i18n="dashboard.drivers.title">Sentiment Drivers</h2>
                 <div class="drivers-grid-single">
                     <div class="driver-item">
                         <div class="driver-header">
-                            <span class="driver-name">Indicators</span>
+                            <span class="driver-name" data-i18n="dashboard.driver.indicators">Indicators</span>
                             <span class="driver-value negative">-1.2</span>
                         </div>
                         <div class="progress-bar">
@@ -1327,7 +1330,7 @@
 
                     <div class="driver-item">
                         <div class="driver-header">
-                            <span class="driver-name">Social Media</span>
+                            <span class="driver-name" data-i18n="dashboard.driver.social">Social Media</span>
                             <span class="driver-value positive">+0.5</span>
                         </div>
                         <div class="progress-bar">
@@ -1337,7 +1340,7 @@
 
                     <div class="driver-item">
                         <div class="driver-header">
-                            <span class="driver-name">News Sentiment</span>
+                            <span class="driver-name" data-i18n="dashboard.driver.news">News Sentiment</span>
                             <span class="driver-value positive">+0.1</span>
                         </div>
                         <div class="progress-bar">
@@ -1350,7 +1353,7 @@
                     <!-- New Driver 1 -->
                     <div class="driver-item">
                         <div class="driver-header">
-                            <span class="driver-name"> Recommendations</span>
+                            <span class="driver-name" data-i18n="dashboard.driver.recommendations">Recommendations</span>
                             <span class="driver-value positive">+0.3</span>
                         </div>
                         <div class="progress-bar">
@@ -1361,7 +1364,7 @@
                     <!-- Market Breadth Driver -->
                     <div class="driver-item" style="opacity: 0;">
                         <div class="driver-header">
-                            <span class="driver-name">Market Breadth</span>
+                            <span class="driver-name" data-i18n="dashboard.driver.breadth">Market Breadth</span>
                             <span class="driver-value positive">+0.7</span>
                         </div>
                         <div class="progress-bar">
@@ -1441,16 +1444,16 @@
             <!-- Bottom Row: Historical Sentiment Trend -->
             <div class="card bottom-row" style="position: relative;">
                 <div class="chart-header">
-                    <span class="chart-title">Historical Sentiment Trend</span>
+                    <span class="chart-title" data-i18n="dashboard.chart.title">Historical Sentiment Trend</span>
                     <div class="chart-controls">
                         <div class="timeframe-selector">
-                            <button class="timeframe-btn" data-timeframe="5m">5 min</button>
-                            <button class="timeframe-btn" data-timeframe="15m">15 min</button>
-                            <button class="timeframe-btn" data-timeframe="30m">30 min</button>
-                            <button class="timeframe-btn active" data-timeframe="1h">1 hr</button>
-                            <button class="timeframe-btn" data-timeframe="2h">2 hrs</button>
-                            <button class="timeframe-btn" data-timeframe="4h">4 hrs</button>
-                            <button class="timeframe-btn" data-timeframe="8h">8 hrs</button>
+                            <button class="timeframe-btn" data-timeframe="5m" data-i18n="dashboard.chart.timeframe.5m">5 min</button>
+                            <button class="timeframe-btn" data-timeframe="15m" data-i18n="dashboard.chart.timeframe.15m">15 min</button>
+                            <button class="timeframe-btn" data-timeframe="30m" data-i18n="dashboard.chart.timeframe.30m">30 min</button>
+                            <button class="timeframe-btn active" data-timeframe="1h" data-i18n="dashboard.chart.timeframe.1h">1 hr</button>
+                            <button class="timeframe-btn" data-timeframe="2h" data-i18n="dashboard.chart.timeframe.2h">2 hrs</button>
+                            <button class="timeframe-btn" data-timeframe="4h" data-i18n="dashboard.chart.timeframe.4h">4 hrs</button>
+                            <button class="timeframe-btn" data-timeframe="8h" data-i18n="dashboard.chart.timeframe.8h">8 hrs</button>
                 </div>
                     </div>
                 </div>
@@ -1965,15 +1968,18 @@
 
             // Update status and colors based on sentiment
             if (sentiment >= 30) {
-                scoreStatus.textContent = 'BULLISH';
+                scoreStatus.textContent = t('dashboard.status.bullish');
+                scoreStatus.setAttribute('data-i18n', 'dashboard.status.bullish');
                 scoreStatus.style.color = '#10b981';
                 scoreValueElement.style.background = 'linear-gradient(135deg, #10b981 0%, #34d399 100%)';
             } else if (sentiment >= -30) {
-                scoreStatus.textContent = 'NEUTRAL';
+                scoreStatus.textContent = t('dashboard.status.neutral');
+                scoreStatus.setAttribute('data-i18n', 'dashboard.status.neutral');
                 scoreStatus.style.color = '#888';
                 scoreValueElement.style.background = 'linear-gradient(135deg, #888 0%, #aaa 100%)';
             } else {
-                scoreStatus.textContent = 'BEARISH';
+                scoreStatus.textContent = t('dashboard.status.bearish');
+                scoreStatus.setAttribute('data-i18n', 'dashboard.status.bearish');
                 scoreStatus.style.color = '#ef4444';
                 scoreValueElement.style.background = 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)';
             }
@@ -2016,27 +2022,32 @@
             // Update the first 5 drivers with real data from API
             const driverData = [
                 {
-                    name: 'News Sentiment',
+                    name: t('dashboard.driver.news'),
+                    translationKey: 'dashboard.driver.news',
                     value: drivers.news_sentiment?.score || 0,
                     weight: drivers.news_sentiment?.weight || 40
                 },
                 {
-                    name: 'Social Media',
+                    name: t('dashboard.driver.social'),
+                    translationKey: 'dashboard.driver.social',
                     value: drivers.social_media?.score || 0,
                     weight: drivers.social_media?.weight || 30
                 },
                 {
-                    name: 'Technical Indicators',
+                    name: t('dashboard.driver.indicators'),
+                    translationKey: 'dashboard.driver.indicators',
                     value: drivers.technical_indicators?.score || 0,
                     weight: drivers.technical_indicators?.weight || 30
                 },
                 {
-                    name: ' Recommendations',
+                    name: t('dashboard.driver.recommendations'),
+                    translationKey: 'dashboard.driver.recommendations',
                     value: drivers.analyst_recommendations?.score || 0,
                     weight: drivers.analyst_recommendations?.weight || 0
                 },
                 {
-                    name: 'Market Breadth',
+                    name: t('dashboard.driver.breadth'),
+                    translationKey: 'dashboard.driver.breadth',
                     value: drivers.market_breadth?.score || 0, // Placeholder until implemented
                     weight: drivers.market_breadth?.weight || 0
                 }
@@ -2052,6 +2063,10 @@
                     // Update name
                     if (nameElement) {
                         nameElement.textContent = driver.name;
+                        // Add translation key as data attribute for future updates
+                        if (driver.translationKey) {
+                            nameElement.setAttribute('data-i18n', driver.translationKey);
+                        }
                     }
 
                     // Update value with +/- sign
@@ -2724,11 +2739,14 @@
                 option.addEventListener('click', () => {
                     // Remove previous selection
                     languageOptions.forEach(opt => opt.classList.remove('selected'));
-                    
+
                     // Select new option
                     option.classList.add('selected');
                     selectedLanguage = option.dataset.lang;
-                    
+
+                    // Apply language immediately
+                    setLanguage(selectedLanguage);
+
                     // Enable continue button
                     languageContinueBtn.disabled = false;
                 });
@@ -2737,11 +2755,11 @@
             // Continue from language step
             languageContinueBtn.addEventListener('click', () => {
                 if (!selectedLanguage) return;
-                
+
                 // Switch to disclaimer step
                 stepLanguage.classList.remove('active');
                 stepDisclaimer.classList.add('active');
-                
+
                 // Update progress dots
                 progressDot1.classList.remove('active');
                 progressDot2.classList.add('active');
@@ -2752,6 +2770,130 @@
                 completeOnboarding(selectedLanguage);
             });
         });
+
+        // Language selector functionality for main navigation
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Setting up language selector...');
+            const languageSelector = document.getElementById('language-selector');
+            console.log('Language selector element:', languageSelector);
+            if (languageSelector) {
+                languageSelector.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('Language selector clicked!');
+                    showLanguageModal();
+                });
+                console.log('Language selector event listener added');
+            } else {
+                console.error('Language selector element not found!');
+            }
+        });
+
+        // Show language selection modal
+        function showLanguageModal() {
+            const languages = [
+                { code: 'en', name: 'English', nativeName: 'English' },
+                { code: 'es', name: 'Spanish', nativeName: 'Español' },
+                { code: 'fr', name: 'French', nativeName: 'Français' },
+                { code: 'de', name: 'German', nativeName: 'Deutsch' },
+                { code: 'zh', name: 'Chinese', nativeName: '中文' },
+                { code: 'ja', name: 'Japanese', nativeName: '日本語' }
+            ];
+
+            const currentLang = getCurrentLanguage();
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px);
+                z-index: 10000; display: flex; align-items: center; justify-content: center;
+            `;
+
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px;
+                max-width: 500px; width: 90%; padding: 40px 48px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            `;
+
+            const title = document.createElement('h2');
+            title.textContent = 'Select Language';
+            title.style.cssText = `
+                font-size: 28px; font-weight: 700; color: #fff;
+                margin-bottom: 24px; text-align: center;
+            `;
+
+            const langGrid = document.createElement('div');
+            langGrid.style.cssText = `
+                display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px;
+            `;
+
+            languages.forEach(lang => {
+                const langBtn = document.createElement('div');
+                langBtn.style.cssText = `
+                    background: #0f0f0f; border: 2px solid ${lang.code === currentLang ? '#10b981' : '#2a2a2a'};
+                    border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.2s ease;
+                    display: flex; flex-direction: column; gap: 4px; text-align: center;
+                `;
+
+                langBtn.innerHTML = `
+                    <div style="font-size: 16px; font-weight: 600; color: ${lang.code === currentLang ? '#10b981' : '#fff'};">${lang.nativeName}</div>
+                    <div style="font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px;">${lang.code}</div>
+                `;
+
+                langBtn.addEventListener('mouseenter', () => {
+                    if (lang.code !== currentLang) {
+                        langBtn.style.background = '#1a1a1a';
+                        langBtn.style.borderColor = '#333';
+                    }
+                });
+
+                langBtn.addEventListener('mouseleave', () => {
+                    if (lang.code !== currentLang) {
+                        langBtn.style.background = '#0f0f0f';
+                        langBtn.style.borderColor = '#2a2a2a';
+                    }
+                });
+
+                langBtn.addEventListener('click', () => {
+                    setLanguage(lang.code);
+                    document.body.removeChild(modal);
+                });
+
+                langGrid.appendChild(langBtn);
+            });
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = 'Close';
+            closeBtn.style.cssText = `
+                width: 100%; padding: 14px 32px; background: #ffffff; color: #000000;
+                border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
+                cursor: pointer; transition: all 0.2s ease; font-family: inherit;
+            `;
+
+            closeBtn.addEventListener('mouseenter', () => {
+                closeBtn.style.background = '#e0e0e0';
+            });
+
+            closeBtn.addEventListener('mouseleave', () => {
+                closeBtn.style.background = '#ffffff';
+            });
+
+            closeBtn.addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            content.appendChild(title);
+            content.appendChild(langGrid);
+            content.appendChild(closeBtn);
+            modal.appendChild(content);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+
+            document.body.appendChild(modal);
+        }
     </script>
 </body>
 </html>
