@@ -1,6 +1,10 @@
+# Netlify configuration for Nasdaq Sentiment Tracker with Authentication
+
+# SPA fallback - serve index.html for routes that don't exist
+# This allows client-side routing while preserving access to actual files
 [[redirects]]
   from = "/*"
-  to = "/nasdaq.html"
+  to = "/index.html"
   status = 200
 
 [[headers]]
