@@ -269,7 +269,7 @@
         /* Stats */
         .stats {
             max-width: 1200px;
-            margin: 0 auto 80px;
+            margin: 120px auto 10px;
             padding: 0 50px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -297,20 +297,532 @@
             letter-spacing: 0.5px;
         }
 
-        /* Footer */
-        .footer {
-            border-top: 1px solid #2a2a2a;
-            padding: 32px 50px;
+        /* Composite Score Section */
+        .composite-score-section {
+            background: #000000;
+            padding: 120px 50px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .composite-score-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .composite-score-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .composite-score-content {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .section-heading-large {
+            font-size: 56px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 24px;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+        }
+
+        .section-description-large {
+            font-size: 20px;
+            color: #888;
+            line-height: 1.7;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .score-visualization {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 60px;
+            margin-bottom: 60px;
+        }
+
+        .score-scale {
+            display: flex;
+            width: 100%;
+            max-width: 900px;
+            gap: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #1a1a1a;
+        }
+
+        .score-range-item {
+            flex: 1;
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+        }
+
+        .bearish-range {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.03) 100%);
+            border-right: 1px solid #1a1a1a;
+        }
+
+        .neutral-range {
+            background: linear-gradient(135deg, rgba(136, 136, 136, 0.08) 0%, rgba(136, 136, 136, 0.03) 100%);
+            border-right: 1px solid #1a1a1a;
+        }
+
+        .bullish-range {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.03) 100%);
+        }
+
+        .range-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .range-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .range-indicators {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .score-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .score-gauge {
+            width: 320px;
+            height: 200px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .gauge-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.3));
+        }
+
+        .score-display {
             text-align: center;
         }
 
-        .footer-text {
-            font-size: 13px;
+        .score-number {
+            display: block;
+            font-size: 72px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+            margin-bottom: 12px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: -2px;
+        }
+
+        .score-status {
+            display: block;
+            font-size: 18px;
+            font-weight: 600;
+            color: #10b981;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .score-explanation {
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid #1a1a1a;
+        }
+
+        .explanation-text {
+            font-size: 16px;
             color: #666;
+            line-height: 1.6;
+        }
+
+        /* How It Works Section */
+        .how-it-works-section {
+            background: #0a0a0a;
+            padding: 120px 50px;
+            position: relative;
+        }
+
+        .how-it-works-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.02) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.02) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .how-it-works-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 100px;
+        }
+
+        .drivers-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            margin-bottom: 80px;
+        }
+
+        .driver-card {
+            background: #141414;
+            border: 1px solid #1a1a1a;
+            border-radius: 20px;
+            padding: 40px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .driver-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #10b981, transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .driver-card:hover {
+            border-color: #2a2a2a;
+            transform: translateY(-4px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .driver-card:hover::before {
+            opacity: 1;
+        }
+
+        .driver-card.primary {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .driver-visual {
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .driver-circle {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .driver-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .driver-card:hover .driver-svg {
+            transform: rotate(-90deg) scale(1.05);
+        }
+
+        .driver-progress {
+            transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .driver-weight {
+            position: absolute;
+            font-size: 20px;
+            font-weight: 700;
+            color: #10b981;
+            font-family: 'Courier New', monospace;
+        }
+
+        .driver-weight.negative-score {
+            color: #ef4444;
+        }
+
+        .driver-progress.negative {
+            stroke: #ef4444;
+        }
+
+        .driver-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 16px;
+            line-height: 1.3;
+        }
+
+        .driver-description {
+            font-size: 15px;
+            color: #888;
+            line-height: 1.7;
+        }
+
+        .integration-note {
+            text-align: center;
+            padding-top: 60px;
+            border-top: 1px solid #1a1a1a;
+        }
+
+        .integration-text {
+            font-size: 17px;
+            color: #888;
+            line-height: 1.8;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Call to Action Section */
+        .cta-section {
+            background: #000000;
+            padding: 120px 50px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(to top, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0.06) 40%, rgba(16, 185, 129, 0.02) 70%, transparent 100%),
+                radial-gradient(circle at 50% 40%, rgba(16, 185, 129, 0.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .cta-container {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-heading {
+            font-size: 48px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 24px;
+            letter-spacing: -1px;
+            line-height: 1.2;
+        }
+
+        .cta-description {
+            font-size: 20px;
+            color: #888;
+            line-height: 1.7;
+            margin-bottom: 48px;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button-wrapper {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .cta-button {
+            padding: 18px 48px;
+            font-size: 16px;
+            font-weight: 600;
+            background: #fff;
+            color: #000;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+        }
+
+        /* Footer */
+        .footer {
+            border-top: 1px solid #1a1a1a;
+            background: #0a0a0a;
+            padding: 64px 50px 32px;
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.2), transparent);
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 40px;
+            align-items: start;
+        }
+
+        .footer-branding {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .footer-brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        .footer-brand-subtitle {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            font-size: 14px;
+            color: #888;
+            text-decoration: none;
+            transition: color 0.2s ease;
+            position: relative;
+        }
+
+        .footer-link:hover {
+            color: #fff;
+        }
+
+        .footer-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: #10b981;
+            transition: width 0.2s ease;
+        }
+
+        .footer-link:hover::after {
+            width: 100%;
+        }
+
+        .footer-disclaimer {
+            text-align: right;
+        }
+
+        .footer-disclaimer-text {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.6;
+            max-width: 200px;
+            margin-left: auto;
         }
 
         /* Responsive */
         @media (max-width: 1024px) {
+            .composite-score-section,
+            .how-it-works-section {
+                padding: 80px 30px;
+            }
+
+            .section-heading-large {
+                font-size: 42px;
+            }
+
+            .section-description-large {
+                font-size: 18px;
+            }
+
+            .score-gauge {
+                width: 240px;
+                height: 240px;
+            }
+
+            .score-number {
+                font-size: 60px;
+            }
+
+            .drivers-grid {
+                grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+                gap: 24px;
+            }
+
+            .cta-section {
+                padding: 80px 30px;
+            }
+
+            .cta-heading {
+                font-size: 36px;
+            }
+
+            .cta-description {
+                font-size: 18px;
+            }
+
             .features-grid {
                 grid-template-columns: 1fr;
                 gap: 24px;
@@ -357,6 +869,76 @@
                 width: 100%;
             }
 
+            .composite-score-section,
+            .how-it-works-section {
+                padding: 60px 20px;
+            }
+
+            .section-heading-large {
+                font-size: 32px;
+            }
+
+            .section-description-large {
+                font-size: 16px;
+            }
+
+            .composite-score-content {
+                margin-bottom: 50px;
+            }
+
+            .score-scale {
+                flex-direction: column;
+            }
+
+            .score-range-item {
+                border-right: none;
+                border-bottom: 1px solid #1a1a1a;
+            }
+
+            .score-range-item:last-child {
+                border-bottom: none;
+            }
+
+            .score-gauge {
+                width: 200px;
+                height: 200px;
+            }
+
+            .score-number {
+                font-size: 48px;
+            }
+
+            .drivers-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .driver-card {
+                padding: 32px 24px;
+            }
+
+            .section-header {
+                margin-bottom: 60px;
+            }
+
+            .cta-section {
+                padding: 60px 20px;
+            }
+
+            .cta-heading {
+                font-size: 28px;
+            }
+
+            .cta-description {
+                font-size: 16px;
+                margin-bottom: 32px;
+            }
+
+            .cta-button {
+                padding: 16px 40px;
+                font-size: 14px;
+            }
+
             .features {
                 padding: 0 20px 60px;
             }
@@ -380,7 +962,31 @@
             }
 
             .footer {
-                padding: 24px 20px;
+                padding: 48px 20px 24px;
+            }
+
+            .footer-container {
+                grid-template-columns: 1fr;
+                gap: 32px;
+                text-align: center;
+            }
+
+            .footer-branding {
+                align-items: center;
+            }
+
+            .footer-links {
+                justify-content: center;
+                gap: 24px;
+            }
+
+            .footer-disclaimer {
+                text-align: center;
+            }
+
+            .footer-disclaimer-text {
+                margin: 0 auto;
+                max-width: 100%;
             }
         }
     </style>
@@ -429,38 +1035,246 @@
             </div>
         </section>
 
-        <section class="features">
-            <div class="features-grid">
-                <div class="feature-card">
-                    <h3 class="feature-title">Composite Sentiment Score</h3>
-                    <p class="feature-description">Aggregate sentiment data from multiple sources into a single, actionable metric. Track market mood in real-time.</p>
+        <!-- Composite Score Section -->
+        <section class="composite-score-section">
+            <div class="composite-score-container">
+                <div class="composite-score-content">
+                    <h2 class="section-heading-large">One Score. Complete Market Intelligence.</h2>
+                    <p class="section-description-large">
+                        Beyond price movements lies market sentiment—the collective psychology that drives trading decisions. 
+                        Our Composite Sentiment Score synthesizes multiple data streams into a single, actionable metric 
+                        that tells you exactly how the market feels about NASDAQ right now.
+                    </p>
                 </div>
-                <div class="feature-card">
-                    <h3 class="feature-title">Historical Trend Analysis</h3>
-                    <p class="feature-description">Visualize sentiment trends over customizable timeframes. Identify patterns and predict market movements.</p>
+                <div class="score-visualization">
+                    <div class="score-scale">
+                        <div class="score-range-item bearish-range">
+                            <span class="range-label">Bearish</span>
+                            <span class="range-value">-100</span>
                 </div>
-                <div class="feature-card">
-                    <h3 class="feature-title">Multi-Source Data Integration</h3>
-                    <p class="feature-description">Combines news sentiment, social media signals, technical indicators, and analyst recommendations.</p>
+                        <div class="score-range-item neutral-range">
+                            <span class="range-label">Neutral</span>
+                            <div class="range-indicators">
+                                <span class="range-value">-30</span>
+                                <span class="range-value">+30</span>
                 </div>
-                <div class="feature-card">
-                    <h3 class="feature-title">Professional Dashboard</h3>
-                    <p class="feature-description">Clean, data-focused interface designed for traders and analysts. No distractions, just insights.</p>
                 </div>
-                <div class="feature-card">
-                    <h3 class="feature-title">Market Status Monitoring</h3>
-                    <p class="feature-description">Automatic tracking of market hours and trading status. Clear indicators for open, closed, and pre/post-market sessions.</p>
+                        <div class="score-range-item bullish-range">
+                            <span class="range-label">Bullish</span>
+                            <span class="range-value">+100</span>
                 </div>
-                <div class="feature-card">
-                    <h3 class="feature-title">Sentiment Drivers Breakdown</h3>
-                    <p class="feature-description">See exactly what's influencing market sentiment. Granular breakdown of contributing factors and their weights.</p>
+                    </div>
+                    <div class="score-indicator">
+                        <div class="score-gauge">
+                            <svg viewBox="0 0 200 120" class="gauge-svg">
+                                <defs>
+                                    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
+                                        <stop offset="30%" style="stop-color:#888;stop-opacity:1" />
+                                        <stop offset="65%" style="stop-color:#888;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <path d="M 20 100 A 80 80 0 0 1 180 100" 
+                                      fill="none" 
+                                      stroke="url(#gaugeGradient)" 
+                                      stroke-width="12" 
+                                      stroke-linecap="round"
+                                      opacity="0.2"/>
+                                <path d="M 20 100 A 80 80 0 0 1 180 100" 
+                                      id="gaugeArc"
+                                      fill="none" 
+                                      stroke="url(#gaugeGradient)" 
+                                      stroke-width="12" 
+                                      stroke-linecap="round"
+                                      stroke-dasharray="251.3"
+                                      stroke-dashoffset="251.3"
+                                      style="transition: stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1);"/>
+                                <g id="gaugeNeedle" transform="rotate(-90 100 100)">
+                                    <line x1="100" y1="100" x2="100" y2="40" 
+                                          stroke="#fff" 
+                                          stroke-width="3" 
+                                          stroke-linecap="round"/>
+                                </g>
+                                <circle cx="100" cy="100" r="8" fill="#fff" filter="url(#glow)"/>
+                                <defs>
+                                    <filter id="glow">
+                                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                        <feMerge>
+                                            <feMergeNode in="coloredBlur"/>
+                                            <feMergeNode in="SourceGraphic"/>
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+                            </svg>
+                        </div>
+                        <div class="score-display">
+                            <span class="score-number" id="scoreNumber">+47</span>
+                            <span class="score-status" id="scoreStatus">Bullish</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="score-explanation">
+                    <p class="explanation-text">
+                        Real-time sentiment analysis updated automatically during market hours. 
+                        Track the pulse of NASDAQ with precision and clarity.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section class="how-it-works-section">
+            <div class="how-it-works-container">
+                <div class="section-header">
+                    <h2 class="section-heading-large">Six Drivers. One Unified Intelligence.</h2>
+                    <p class="section-description-large">
+                        Market sentiment isn't driven by a single factor. Our algorithm analyzes six critical 
+                        dimensions, each weighted by importance, to deliver a comprehensive understanding of 
+                        NASDAQ market psychology.
+                    </p>
+                </div>
+                <div class="drivers-grid">
+                    <div class="driver-card primary" data-score="+42">
+                        <div class="driver-visual">
+                            <div class="driver-circle">
+                                <svg viewBox="0 0 100 100" class="driver-svg">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(16, 185, 129, 0.2)" stroke-width="8"/>
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#10b981" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="85" class="driver-progress"/>
+                                </svg>
+                                <span class="driver-weight">+42</span>
+                            </div>
+                        </div>
+                        <h3 class="driver-title">News Sentiment Analysis</h3>
+                        <p class="driver-description">
+                            Continuous analysis of financial news from major sources. We evaluate each article based on 
+                            surprise factor, source credibility, positive and negative sentiment scores, and sentiment 
+                            analysis for each of the top NASDAQ stocks.
+                        </p>
+                    </div>
+                    <div class="driver-card" data-score="+28">
+                        <div class="driver-visual">
+                            <div class="driver-circle">
+                                <svg viewBox="0 0 100 100" class="driver-svg">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(16, 185, 129, 0.2)" stroke-width="8"/>
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#10b981" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="113" class="driver-progress"/>
+                                </svg>
+                                <span class="driver-weight">+28</span>
+                            </div>
+                        </div>
+                        <h3 class="driver-title">Social Media Sentiment</h3>
+                        <p class="driver-description">
+                            Reddit-first  sentiment analysis. We score posts and comment threads for surprise factor,
+                             positive/negative tone, and ticker-specific sentiment across the top NASDAQ names.
+                            Signals are de-duplicated and weighted by recency and discussion depth for higher fidelity.
+                        </p>
+                    </div>
+                    <div class="driver-card" data-score="-15">
+                        <div class="driver-visual">
+                            <div class="driver-circle">
+                                <svg viewBox="0 0 100 100" class="driver-svg">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(239, 68, 68, 0.2)" stroke-width="8"/>
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#ef4444" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="113" class="driver-progress negative"/>
+                                </svg>
+                                <span class="driver-weight negative-score">-15</span>
+                            </div>
+                        </div>
+                        <h3 class="driver-title">Technical Indicators</h3>
+                        <p class="driver-description">
+                            Professional-grade analysis using RSI (Relative Strength Index), MACD (Moving Average Convergence Divergence), 
+                            Bollinger Bands, and other key technical patterns. Examines price movements, trading volumes, 
+                            and the signals that institutional traders watch most closely.
+                        </p>
+                    </div>
+                    <div class="driver-card" data-score="-12">
+                        <div class="driver-visual">
+                            <div class="driver-circle">
+                                <svg viewBox="0 0 100 100" class="driver-svg">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(239, 68, 68, 0.2)" stroke-width="8"/>
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#ef4444" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="200" class="driver-progress negative"/>
+                                </svg>
+                                <span class="driver-weight negative-score">-12</span>
+                            </div>
+                        </div>
+                        <h3 class="driver-title">VIX</h3>
+                        <p class="driver-description">
+                            The CBOE Volatility Index measures market expectations for near-term volatility. 
+                            Higher VIX levels indicate increased fear and uncertainty, while lower levels suggest market confidence and stability.
+                        </p>
+                    </div>
+                    <div class="driver-card" data-score="+22">
+                        <div class="driver-visual">
+                            <div class="driver-circle">
+                                <svg viewBox="0 0 100 100" class="driver-svg">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(16, 185, 129, 0.2)" stroke-width="8"/>
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#10b981" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="200" class="driver-progress"/>
+                                </svg>
+                                <span class="driver-weight">+22</span>
+                            </div>
+                        </div>
+                        <h3 class="driver-title">Put-Call Ratio</h3>
+                        <p class="driver-description">
+                            Measures the ratio of put options to call options traded. Elevated ratios indicate bearish sentiment, 
+                            while lower ratios suggest bullish market expectations and investor optimism.
+                        </p>
+                    </div>
+                    <div class="driver-card" data-score="+25">
+                        <div class="driver-visual">
+                            <div class="driver-circle">
+                                <svg viewBox="0 0 100 100" class="driver-svg">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(16, 185, 129, 0.2)" stroke-width="8"/>
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="#10b981" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="200" class="driver-progress"/>
+                                </svg>
+                                <span class="driver-weight">+25</span>
+                            </div>
+                        </div>
+                        <h3 class="driver-title">Analyst Recommendations</h3>
+                        <p class="driver-description">
+                            Tracks hundreds of analyst recommendations including upgrades, downgrades, and target price 
+                            changes. Captures professional sentiment shifts from major financial institutions before they 
+                            impact retail markets.
+                        </p>
+                    </div>
+                </div>
+                <div class="integration-note">
+                    <p class="integration-text">
+                        These drivers work in concert, continuously analyzed and synthesized into your Composite Sentiment Score. 
+                        Each update reflects the latest market intelligence across all six dimensions.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Call to Action Section -->
+        <section class="cta-section">
+            <div class="cta-container">
+                <h2 class="cta-heading">Give Yourself an Advantage,<br>Feel the Pulse of the NASDAQ</h2>
+                <p class="cta-description">
+                    The composite score that synthesizes six data streams into a single signal. 
+                    Stop guessing. Start trading with conviction.
+                </p>
+                <div class="cta-button-wrapper">
+                    <a href="signup.html" class="btn cta-button">Get Started</a>
                 </div>
             </div>
         </section>
     </main>
 
     <footer class="footer">
-        <p class="footer-text">NASDAQ Sentiment Tracker - Professional Market Analysis Tool</p>
+        <div class="footer-container">
+            <div class="footer-branding">
+                <div class="footer-brand-name">NASDAQ</div>
+                <div class="footer-brand-subtitle">Sentiment Tracker</div>
+            </div>
+            <div class="footer-links">
+                <a href="about.html" class="footer-link">About</a>
+                <a href="nasdaq.html" class="footer-link">Dashboard</a>
+                <a href="news.html" class="footer-link">News</a>
+            </div>
+            <div class="footer-disclaimer">
+                <p class="footer-disclaimer-text">For informational purposes only. Not financial advice.</p>
+            </div>
+        </div>
     </footer>
 
     <script>
@@ -537,6 +1351,156 @@
             
             // Update on resize
             window.addEventListener('resize', updateParallax, { passive: true });
+        })();
+
+        // Animate score gauge on scroll into view
+        (function() {
+            const gaugeArc = document.getElementById('gaugeArc');
+            const gaugeNeedle = document.getElementById('gaugeNeedle');
+            const scoreNumber = document.getElementById('scoreNumber');
+            const scoreStatus = document.getElementById('scoreStatus');
+            const compositeSection = document.querySelector('.composite-score-section');
+
+            if (!gaugeArc || !gaugeNeedle || !scoreNumber || !compositeSection) return;
+
+            // Example score: +47 (bullish)
+            const targetScore = 47;
+            const maxScore = 100;
+            const minScore = -100;
+            const scoreRange = maxScore - minScore;
+
+            // Arc circumference for 180 degrees
+            const arcLength = Math.PI * 80; // radius is 80
+            
+            // Calculate percentage (0-100%)
+            const scorePercentage = ((targetScore - minScore) / scoreRange);
+            
+            // Calculate arc dash offset (0 = full, arcLength = empty)
+            const arcOffset = arcLength * (1 - scorePercentage);
+            
+            // Calculate angle for needle (-90 to +90 degrees, where -90 is bearish, 0 is neutral, +90 is bullish)
+            const needleAngle = (scorePercentage * 180) - 90;
+
+            // Determine status
+            let status = 'Neutral';
+            let statusColor = '#888';
+            if (targetScore >= 30) {
+                status = 'Bullish';
+                statusColor = '#10b981';
+            } else if (targetScore <= -30) {
+                status = 'Bearish';
+                statusColor = '#ef4444';
+            }
+
+            let hasAnimated = false;
+
+            function animateGauge() {
+                if (hasAnimated) return;
+
+                const rect = compositeSection.getBoundingClientRect();
+                const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+
+                if (isVisible && rect.top < window.innerHeight * 0.8) {
+                    hasAnimated = true;
+
+                    // Animate gauge arc
+                    gaugeArc.style.strokeDashoffset = arcOffset;
+
+                    // Animate needle smoothly
+                    let currentAngle = -90;
+                    const startAngle = -90;
+                    const endAngle = needleAngle;
+                    const needleDuration = 2000;
+                    const startTime = Date.now();
+                    
+                    function animateNeedle() {
+                        const elapsed = Date.now() - startTime;
+                        const progress = Math.min(elapsed / needleDuration, 1);
+                        const ease = 1 - Math.pow(1 - progress, 3); // cubic ease-out
+                        currentAngle = startAngle + (endAngle - startAngle) * ease;
+                        gaugeNeedle.setAttribute('transform', `rotate(${currentAngle} 100 100)`);
+                        
+                        if (progress < 1) {
+                            requestAnimationFrame(animateNeedle);
+                        }
+                    }
+                    
+                    requestAnimationFrame(animateNeedle);
+
+                    // Animate score number
+                    let currentNum = minScore;
+                    const increment = targetScore > minScore ? 1 : -1;
+                    const numberDuration = 2000;
+                    const steps = Math.abs(targetScore - minScore);
+                    const stepDuration = numberDuration / steps;
+
+                    const numberInterval = setInterval(() => {
+                        currentNum += increment;
+                        const sign = currentNum >= 0 ? '+' : '';
+                        scoreNumber.textContent = sign + currentNum;
+                        
+                        if (currentNum === targetScore) {
+                            clearInterval(numberInterval);
+                        }
+                    }, stepDuration);
+
+                    // Set status
+                    scoreStatus.textContent = status;
+                    scoreStatus.style.color = statusColor;
+                }
+            }
+
+            // Initial check
+            animateGauge();
+
+            // Check on scroll
+            window.addEventListener('scroll', animateGauge, { passive: true });
+            window.addEventListener('resize', animateGauge, { passive: true });
+        })();
+
+        // Animate driver progress rings on scroll into view
+        (function() {
+            const driverCards = document.querySelectorAll('.driver-card');
+            const howItWorksSection = document.querySelector('.how-it-works-section');
+
+            if (!driverCards.length || !howItWorksSection) return;
+
+            let hasAnimated = false;
+
+            function animateDrivers() {
+                if (hasAnimated) return;
+
+                const rect = howItWorksSection.getBoundingClientRect();
+                const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+
+                if (isVisible && rect.top < window.innerHeight * 0.8) {
+                    hasAnimated = true;
+
+                    driverCards.forEach((card, index) => {
+                        setTimeout(() => {
+                            const progressCircle = card.querySelector('.driver-progress');
+                            if (progressCircle) {
+                                progressCircle.style.strokeDashoffset = progressCircle.getAttribute('stroke-dashoffset') || '200';
+                                progressCircle.style.opacity = '1';
+                            }
+                            card.style.opacity = '0';
+                            card.style.transform = 'translateY(20px)';
+                            card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                            setTimeout(() => {
+                                card.style.opacity = '1';
+                                card.style.transform = 'translateY(0)';
+                            }, 50);
+                        }, index * 100);
+                    });
+                }
+            }
+
+            // Initial check
+            animateDrivers();
+
+            // Check on scroll
+            window.addEventListener('scroll', animateDrivers, { passive: true });
+            window.addEventListener('resize', animateDrivers, { passive: true });
         })();
     </script>
 </body>
