@@ -987,10 +987,10 @@
             <!-- Right Top: Navigation & Time -->
             <div class="right-top">
                 <div class="right-top-item">
-                    <a href="#" class="nav-link">About Us</a>
+                    <a href="about.html" class="nav-link">About Us</a>
                 </div>
                 <div class="right-top-item">
-                    <a href="#" class="nav-link">News</a>
+                    <a href="news.html" class="nav-link">News</a>
                 </div>
                 <div class="right-top-item">
                     <a href="#" class="nav-link">Language</a>
@@ -1708,9 +1708,9 @@
 
                     // Update progress bar
                     if (progressFill) {
-                        // Calculate width: map -100 to +100 to 0% to 100%
-                        // 0 should be at 50%
-                        const width = 50 + (driver.value / 2);
+                        // Calculate width based on absolute value (0-100 scale)
+                        // -80 and +80 both fill 80% of the bar
+                        const width = Math.abs(driver.value);
                         const clampedWidth = Math.max(0, Math.min(100, width));
 
                         progressFill.style.width = `${clampedWidth}%`;
