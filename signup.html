@@ -28,6 +28,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow-x: hidden;
         }
 
         /* Header */
@@ -115,6 +116,15 @@
         /* Clerk Component Container */
         #clerk-sign-up {
             margin-bottom: 32px;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        /* Ensure Clerk components don't overflow */
+        #clerk-sign-up * {
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         /* Loading State */
