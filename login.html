@@ -218,6 +218,111 @@
             padding: 0 !important;
         }
 
+        /* Comprehensive text color fixes - ensure all text is visible */
+        
+        /* General text elements - make visible on dark background */
+        #clerk-sign-in .cl-card p,
+        #clerk-sign-in .cl-card span:not(.cl-formButtonPrimary span),
+        #clerk-sign-in .cl-card div:not(.cl-formButtonPrimary):not(.cl-formButtonPrimary *) {
+            color: #fff !important;
+        }
+
+        /* Code input fields - verification codes */
+        #clerk-sign-in input[type="text"][class*="code"],
+        #clerk-sign-in input[type="text"][class*="Code"],
+        #clerk-sign-in input[class*="otp"],
+        #clerk-sign-in input[class*="Otp"],
+        #clerk-sign-in .cl-otpCodeFieldInput,
+        #clerk-sign-in .cl-codeFieldInput,
+        #clerk-sign-in .cl-codeInput {
+            background-color: #1a1a1a !important;
+            border: 1px solid #2a2a2a !important;
+            color: #fff !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            border-radius: 8px !important;
+        }
+
+        #clerk-sign-in input[type="text"][class*="code"]:focus,
+        #clerk-sign-in input[type="text"][class*="Code"]:focus,
+        #clerk-sign-in input[class*="otp"]:focus,
+        #clerk-sign-in input[class*="Otp"]:focus,
+        #clerk-sign-in .cl-otpCodeFieldInput:focus,
+        #clerk-sign-in .cl-codeFieldInput:focus,
+        #clerk-sign-in .cl-codeInput:focus {
+            border-color: #fff !important;
+            outline: none !important;
+        }
+
+        /* Labels and descriptions */
+        #clerk-sign-in label,
+        #clerk-sign-in .cl-formFieldLabel,
+        #clerk-sign-in .cl-formFieldLabelText {
+            color: #fff !important;
+        }
+
+        #clerk-sign-in .cl-formFieldDescriptionText,
+        #clerk-sign-in .cl-formFieldDescription {
+            color: #ccc !important;
+        }
+
+        /* Error and success messages */
+        #clerk-sign-in .cl-formFieldErrorText,
+        #clerk-sign-in .cl-alertText {
+            color: #ff6b6b !important;
+        }
+
+        #clerk-sign-in .cl-formFieldSuccessText {
+            color: #51cf66 !important;
+        }
+
+        /* Resend code button */
+        #clerk-sign-in .cl-formResendCodeButton,
+        #clerk-sign-in .cl-formResendCodeLink,
+        #clerk-sign-in button[class*="resend"],
+        #clerk-sign-in a[class*="resend"] {
+            color: #fff !important;
+        }
+
+        #clerk-sign-in .cl-formResendCodeButton:hover,
+        #clerk-sign-in .cl-formResendCodeLink:hover,
+        #clerk-sign-in button[class*="resend"]:hover,
+        #clerk-sign-in a[class*="resend"]:hover {
+            color: #ccc !important;
+        }
+
+        /* Form headers and subtitles */
+        #clerk-sign-in .cl-headerTitleText,
+        #clerk-sign-in .cl-formHeaderTitle {
+            color: #fff !important;
+        }
+
+        #clerk-sign-in .cl-headerSubtitleText,
+        #clerk-sign-in .cl-formHeaderSubtitle {
+            color: #ccc !important;
+        }
+
+        /* All input text should be white */
+        #clerk-sign-in input,
+        #clerk-sign-in input[type="text"],
+        #clerk-sign-in input[type="email"],
+        #clerk-sign-in input[type="password"],
+        #clerk-sign-in input[type="tel"] {
+            color: #fff !important;
+        }
+
+        /* Secondary buttons */
+        #clerk-sign-in .cl-formButtonSecondary {
+            background-color: transparent !important;
+            border: 1px solid #2a2a2a !important;
+            color: #fff !important;
+        }
+
+        #clerk-sign-in .cl-formButtonSecondary:hover {
+            background-color: #1a1a1a !important;
+            border-color: #333 !important;
+        }
+
         /* Fix Google button border radius and group with footer */
         #clerk-sign-in .cl-socialButtonsBlockButton,
         #clerk-sign-in button[class*="social"],
@@ -411,9 +516,115 @@
                             width: '100%',
                         },
                         formFieldLabel: {
-                            color: '#ccc',
+                            color: '#fff',
                             fontSize: '13px',
                             fontWeight: '500',
+                        },
+                        formFieldDescriptionText: {
+                            color: '#ccc',
+                            fontSize: '12px',
+                        },
+                        formFieldErrorText: {
+                            color: '#ff6b6b',
+                            fontSize: '12px',
+                        },
+                        formFieldSuccessText: {
+                            color: '#51cf66',
+                            fontSize: '12px',
+                        },
+                        otpCodeFieldInput: {
+                            backgroundColor: '#1a1a1a',
+                            border: '1px solid #2a2a2a',
+                            color: '#fff',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            borderRadius: '8px',
+                            '&:focus': {
+                                borderColor: '#fff',
+                            },
+                        },
+                        codeFieldInput: {
+                            backgroundColor: '#1a1a1a',
+                            border: '1px solid #2a2a2a',
+                            color: '#fff',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            borderRadius: '8px',
+                            '&:focus': {
+                                borderColor: '#fff',
+                            },
+                        },
+                        formResendCodeButton: {
+                            color: '#fff',
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            '&:hover': {
+                                color: '#ccc',
+                            },
+                        },
+                        headerTitleText: {
+                            color: '#fff',
+                        },
+                        headerSubtitleText: {
+                            color: '#ccc',
+                        },
+                        formHeaderTitle: {
+                            color: '#fff',
+                        },
+                        formHeaderSubtitle: {
+                            color: '#ccc',
+                        },
+                        alertText: {
+                            color: '#fff',
+                        },
+                        formAlert: {
+                            backgroundColor: '#1a1a1a',
+                            border: '1px solid #2a2a2a',
+                            color: '#fff',
+                        },
+                        formButtonText: {
+                            color: '#000',
+                        },
+                        formButtonSecondary: {
+                            backgroundColor: 'transparent',
+                            border: '1px solid #2a2a2a',
+                            color: '#fff',
+                            '&:hover': {
+                                backgroundColor: '#1a1a1a',
+                                borderColor: '#333',
+                            },
+                        },
+                        formButtonAlternative: {
+                            color: '#fff',
+                        },
+                        userButtonText: {
+                            color: '#fff',
+                        },
+                        userPreviewText: {
+                            color: '#fff',
+                        },
+                        userButtonBox: {
+                            color: '#fff',
+                        },
+                        accountSwitcherTriggerText: {
+                            color: '#fff',
+                        },
+                        profileSectionPrimaryButton: {
+                            color: '#fff',
+                        },
+                        formButtonText__signUp: {
+                            color: '#000',
+                        },
+                        formButtonText__signIn: {
+                            color: '#000',
+                        },
+                        formResendCodeLink: {
+                            color: '#fff',
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            '&:hover': {
+                                color: '#ccc',
+                            },
                         },
                         footerActionLink: {
                             display: 'none',
