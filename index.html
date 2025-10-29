@@ -145,6 +145,58 @@
             font-size: 16px;
         }
 
+        /* Showcase Section */
+        .showcase-wrapper {
+            width: 100%;
+            padding: 80px 0;
+            margin: 80px 0;
+            position: relative;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        .showcase-container {
+            width: 100%;
+            max-width: 98vw;
+            margin: 0 auto;
+            position: relative;
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        .showcase-image {
+            width: 90%;
+            height: auto;
+            display: block;
+            border-radius: 12px;
+            position: relative;
+            margin: 0 auto;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 0, 0.15),
+                0 0 50px rgba(0, 255, 0, 0.08),
+                0 20px 60px rgba(0, 0, 0, 0.5);
+            filter: drop-shadow(0 0 15px rgba(0, 255, 0, 0.1));
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .showcase-image::before {
+            content: '';
+            position: absolute;
+            inset: -20px;
+            border-radius: 12px;
+            background: radial-gradient(ellipse at center, rgba(0, 255, 0, 0.05) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .showcase-image.scrolling::before {
+            opacity: 1;
+        }
+
         /* Features Grid */
         .features {
             max-width: 1200px;
@@ -237,6 +289,15 @@
                 grid-template-columns: 1fr;
                 gap: 24px;
             }
+
+            .showcase-wrapper {
+                padding: 60px 0;
+                margin: 60px 0;
+            }
+
+            .showcase-container {
+                max-width: 95vw;
+            }
         }
 
         @media (max-width: 768px) {
@@ -273,6 +334,23 @@
                 padding: 0 20px;
             }
 
+            .showcase-wrapper {
+                padding: 40px 0;
+                margin: 40px 0;
+            }
+
+            .showcase-container {
+                max-width: 92vw;
+            }
+
+            .showcase-image {
+                box-shadow: 
+                    0 0 25px rgba(0, 255, 0, 0.12),
+                    0 0 40px rgba(0, 255, 0, 0.06),
+                    0 10px 30px rgba(0, 0, 0, 0.5);
+                filter: drop-shadow(0 0 12px rgba(0, 255, 0, 0.08));
+            }
+
             .footer {
                 padding: 24px 20px;
             }
@@ -300,6 +378,12 @@
             <div class="hero-cta">
                 <a href="signup.html" class="btn btn-primary btn-large">Get Started</a>
                 <a href="login.html" class="btn btn-secondary btn-large">Sign In</a>
+            </div>
+        </section>
+
+        <section class="showcase-wrapper">
+            <div class="showcase-container">
+                <img src="showcase.png" alt="NASDAQ Sentiment Tracker Dashboard" class="showcase-image" id="showcaseImage">
             </div>
         </section>
 
@@ -369,6 +453,73 @@
                 console.error('Error checking auth status:', error);
             }
         });
+
+        // Showcase scroll parallax effect
+        (function() {
+            const showcaseImage = document.getElementById('showcaseImage');
+            const showcaseContainer = showcaseImage?.parentElement;
+            if (!showcaseImage || !showcaseContainer) return;
+
+            let ticking = false;
+            let lastScrollY = window.scrollY;
+
+            function updateParallax() {
+                const rect = showcaseContainer.getBoundingClientRect();
+                const windowHeight = window.innerHeight;
+                
+                // Calculate how much of the element is visible
+                const elementTop = rect.top;
+                const elementHeight = rect.height;
+                const elementCenter = elementTop + elementHeight / 2;
+                const viewportCenter = windowHeight / 2;
+                
+                // Calculate scroll progress (-1 to 1)
+                const scrollProgress = (viewportCenter - elementCenter) / windowHeight;
+                const clampedProgress = Math.max(-1, Math.min(1, scrollProgress));
+                
+                // Apply 3D transform with perspective
+                const rotateX = clampedProgress * -8; // Tilt up to 8 degrees
+                const translateY = clampedProgress * 30; // Move up to 30px
+                const translateZ = Math.abs(clampedProgress) * 40; // Push forward when scrolling
+                
+                // Enhanced glow on scroll (subtle)
+                const glowIntensity = Math.abs(clampedProgress);
+                const boxShadowIntensity = 0.15 + (glowIntensity * 0.1);
+                
+                showcaseImage.style.transform = `perspective(1000px) rotateX(${rotateX}deg) translateY(${translateY}px) translateZ(${translateZ}px)`;
+                showcaseImage.style.boxShadow = `
+                    0 0 ${30 + glowIntensity * 15}px rgba(0, 255, 0, ${boxShadowIntensity}),
+                    0 0 ${50 + glowIntensity * 25}px rgba(0, 255, 0, ${0.08 + glowIntensity * 0.05}),
+                    0 20px 60px rgba(0, 0, 0, 0.5)
+                `;
+                
+                // Add/remove scrolling class for glow animation
+                if (Math.abs(clampedProgress) > 0.1) {
+                    showcaseImage.classList.add('scrolling');
+                } else {
+                    showcaseImage.classList.remove('scrolling');
+                }
+                
+                ticking = false;
+            }
+
+            function onScroll() {
+                if (!ticking) {
+                    window.requestAnimationFrame(updateParallax);
+                    ticking = true;
+                }
+                lastScrollY = window.scrollY;
+            }
+
+            // Initial call
+            updateParallax();
+            
+            // Listen to scroll events
+            window.addEventListener('scroll', onScroll, { passive: true });
+            
+            // Update on resize
+            window.addEventListener('resize', updateParallax, { passive: true });
+        })();
     </script>
 </body>
 </html>

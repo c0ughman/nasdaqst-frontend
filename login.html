@@ -89,7 +89,7 @@
 
         .auth-card {
             width: 100%;
-            max-width: 420px;
+            max-width: 546px;
             background: #282828;
             border-radius: 16px;
             padding: 48px 40px;
@@ -216,6 +216,9 @@
 
             // Mount the sign-in component
             const signInDiv = document.getElementById("clerk-sign-in");
+
+            // Clear the loading message
+            signInDiv.innerHTML = '';
 
             window.Clerk.mountSignIn(signInDiv, {
                 appearance: {
