@@ -961,6 +961,200 @@
         }
 
 
+        /* Onboarding Modal */
+        .onboarding-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .onboarding-modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .onboarding-modal {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 0;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        .onboarding-modal-content {
+            padding: 40px 48px;
+        }
+
+        .onboarding-step {
+            display: none;
+        }
+
+        .onboarding-step.active {
+            display: block;
+        }
+
+        .onboarding-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .onboarding-subtitle {
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 32px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .language-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .language-option {
+            background: #282828;
+            border: 2px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .language-option:hover {
+            background: #2a2a2a;
+            border-color: #10b981;
+        }
+
+        .language-option.selected {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: #10b981;
+        }
+
+        .language-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .language-code {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .disclaimer-content {
+            background: #0f0f0f;
+            border-left: 4px solid #10b981;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .disclaimer-section {
+            margin-bottom: 24px;
+        }
+
+        .disclaimer-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .disclaimer-heading {
+            font-size: 18px;
+            font-weight: 600;
+            color: #10b981;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .disclaimer-text {
+            font-size: 14px;
+            color: #ccc;
+            line-height: 1.8;
+        }
+
+        .disclaimer-text p {
+            margin-bottom: 12px;
+        }
+
+        .disclaimer-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        .onboarding-button {
+            width: 100%;
+            padding: 14px 32px;
+            background: #10b981;
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .onboarding-button:hover {
+            background: #34d399;
+            transform: translateY(-1px);
+        }
+
+        .onboarding-button:disabled {
+            background: #2a2a2a;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .onboarding-button:disabled:hover {
+            background: #2a2a2a;
+        }
+
+        .onboarding-progress {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+
+        .progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2a2a2a;
+            transition: all 0.2s ease;
+        }
+
+        .progress-dot.active {
+            background: #10b981;
+            width: 24px;
+            border-radius: 4px;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             body {
@@ -993,9 +1187,86 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        @media (max-width: 768px) {
+            .onboarding-modal-content {
+                padding: 32px 24px;
+            }
+
+            .onboarding-title {
+                font-size: 24px;
+            }
+
+            .language-options {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Onboarding Modal -->
+    <div class="onboarding-modal-overlay" id="onboarding-modal-overlay">
+        <div class="onboarding-modal">
+            <div class="onboarding-modal-content">
+                <!-- Progress Indicator -->
+                <div class="onboarding-progress">
+                    <div class="progress-dot active" id="progress-dot-1"></div>
+                    <div class="progress-dot" id="progress-dot-2"></div>
+                </div>
+
+                <!-- Step 1: Language Selection -->
+                <div class="onboarding-step active" id="step-language">
+                    <h2 class="onboarding-title">Select Your Language</h2>
+                    <p class="onboarding-subtitle">Choose your preferred language for the dashboard</p>
+                    <div class="language-options">
+                        <div class="language-option" data-lang="en">
+                            <div class="language-name">English</div>
+                            <div class="language-code">EN</div>
+                        </div>
+                        <div class="language-option" data-lang="es">
+                            <div class="language-name">Español</div>
+                            <div class="language-code">ES</div>
+                        </div>
+                        <div class="language-option" data-lang="fr">
+                            <div class="language-name">Français</div>
+                            <div class="language-code">FR</div>
+                        </div>
+                        <div class="language-option" data-lang="de">
+                            <div class="language-name">Deutsch</div>
+                            <div class="language-code">DE</div>
+                        </div>
+                        <div class="language-option" data-lang="zh">
+                            <div class="language-name">中文</div>
+                            <div class="language-code">ZH</div>
+                        </div>
+                        <div class="language-option" data-lang="ja">
+                            <div class="language-name">日本語</div>
+                            <div class="language-code">JA</div>
+                        </div>
+                    </div>
+                    <button class="onboarding-button" id="language-continue-btn" disabled>Continue</button>
+                </div>
+
+                <!-- Step 2: Disclaimer -->
+                <div class="onboarding-step" id="step-disclaimer">
+                    <h2 class="onboarding-title">Important Disclaimer</h2>
+                    <div class="disclaimer-content">
+                        <div class="disclaimer-section">
+                            <h3 class="disclaimer-heading">
+                                <span>⚠️</span>
+                                <span>Important Information</span>
+                            </h3>
+                            <div class="disclaimer-text">
+                                <p>This tool provides market sentiment analysis for informational purposes only. It is <strong>not</strong> financial advice, and should not be your only source of information when making investment decisions.</p>
+                                <p>Market sentiment can change rapidly, and past sentiment does not predict future market movements. Always do your own research, consult with financial professionals, and consider your personal financial situation before making any investment decisions.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="onboarding-button" id="disclaimer-continue-btn">Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="main-wrapper">
     <div class="container">
             <!-- Left Top: Title -->
@@ -1270,6 +1541,9 @@
                     window.location.href = '/index.html';
                     return;
                 }
+
+                // Check if onboarding is needed (initial sign-up)
+                await checkAndShowOnboarding();
                 
                 // Setup logout functionality
                 const logoutLink = document.getElementById('logout-link');
@@ -2354,6 +2628,130 @@
             hoverTooltip.style.left = x + 'px';
             hoverTooltip.style.top = y + 'px';
         }
+
+        // ===== ONBOARDING MODAL FUNCTIONALITY =====
+        
+        /**
+         * Check if user needs onboarding and show modal if needed
+         * Uses localStorage to track completion per user
+         */
+        async function checkAndShowOnboarding() {
+            try {
+                const user = window.Clerk.user;
+                if (!user) return;
+
+                const userId = user.id;
+                const onboardingKey = `onboarding_completed_${userId}`;
+                
+                // Check if user has already completed onboarding
+                const hasCompletedOnboarding = localStorage.getItem(onboardingKey) === 'true';
+                
+                if (!hasCompletedOnboarding) {
+                    // Show onboarding modal
+                    showOnboardingModal();
+                }
+            } catch (error) {
+                console.error('Error checking onboarding status:', error);
+            }
+        }
+
+        /**
+         * Show the onboarding modal
+         */
+        function showOnboardingModal() {
+            const overlay = document.getElementById('onboarding-modal-overlay');
+            if (overlay) {
+                overlay.classList.add('show');
+                // Prevent body scroll
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        /**
+         * Hide the onboarding modal
+         */
+        function hideOnboardingModal() {
+            const overlay = document.getElementById('onboarding-modal-overlay');
+            if (overlay) {
+                overlay.classList.remove('show');
+                // Restore body scroll
+                document.body.style.overflow = '';
+            }
+        }
+
+        /**
+         * Mark onboarding as completed
+         */
+        async function completeOnboarding(selectedLanguage) {
+            try {
+                const user = window.Clerk.user;
+                if (!user) return;
+
+                const userId = user.id;
+                const onboardingKey = `onboarding_completed_${userId}`;
+                
+                // Save selected language (optional, for future use)
+                if (selectedLanguage) {
+                    localStorage.setItem(`user_language_${userId}`, selectedLanguage);
+                }
+                
+                // Mark onboarding as completed
+                localStorage.setItem(onboardingKey, 'true');
+                
+                // Hide modal
+                hideOnboardingModal();
+            } catch (error) {
+                console.error('Error completing onboarding:', error);
+                // Hide modal anyway
+                hideOnboardingModal();
+            }
+        }
+
+        // Initialize onboarding modal functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const languageOptions = document.querySelectorAll('.language-option');
+            const languageContinueBtn = document.getElementById('language-continue-btn');
+            const disclaimerContinueBtn = document.getElementById('disclaimer-continue-btn');
+            const stepLanguage = document.getElementById('step-language');
+            const stepDisclaimer = document.getElementById('step-disclaimer');
+            const progressDot1 = document.getElementById('progress-dot-1');
+            const progressDot2 = document.getElementById('progress-dot-2');
+
+            let selectedLanguage = null;
+
+            // Language selection
+            languageOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    // Remove previous selection
+                    languageOptions.forEach(opt => opt.classList.remove('selected'));
+                    
+                    // Select new option
+                    option.classList.add('selected');
+                    selectedLanguage = option.dataset.lang;
+                    
+                    // Enable continue button
+                    languageContinueBtn.disabled = false;
+                });
+            });
+
+            // Continue from language step
+            languageContinueBtn.addEventListener('click', () => {
+                if (!selectedLanguage) return;
+                
+                // Switch to disclaimer step
+                stepLanguage.classList.remove('active');
+                stepDisclaimer.classList.add('active');
+                
+                // Update progress dots
+                progressDot1.classList.remove('active');
+                progressDot2.classList.add('active');
+            });
+
+            // Continue from disclaimer step (complete onboarding)
+            disclaimerContinueBtn.addEventListener('click', () => {
+                completeOnboarding(selectedLanguage);
+            });
+        });
     </script>
 </body>
 </html>
