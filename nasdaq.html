@@ -1244,23 +1244,52 @@
 
 
     <script>
-        // Clerk logout functionality
+        // Clerk authentication check - redirect if not logged in
         window.addEventListener('load', async function() {
-            await window.Clerk.load();
-            
-            const logoutLink = document.getElementById('logout-link');
-            if (logoutLink) {
-                logoutLink.addEventListener('click', async function(e) {
-                    e.preventDefault();
-                    try {
-                        await window.Clerk.signOut();
-                        window.location.href = '/index.html';
-                    } catch (error) {
-                        console.error('Error signing out:', error);
-                        // Fallback: redirect anyway
-                        window.location.href = '/index.html';
+            try {
+                // Wait for Clerk to be available
+                if (!window.Clerk) {
+                    // Wait a bit for async script to load
+                    let retries = 0;
+                    while (!window.Clerk && retries < 50) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        retries++;
                     }
-                });
+                    
+                    if (!window.Clerk) {
+                        console.error('Clerk SDK failed to load');
+                        window.location.href = '/index.html';
+                        return;
+                    }
+                }
+                
+                await window.Clerk.load();
+                
+                // Check if user is authenticated
+                if (!window.Clerk.user) {
+                    window.location.href = '/index.html';
+                    return;
+                }
+                
+                // Setup logout functionality
+                const logoutLink = document.getElementById('logout-link');
+                if (logoutLink) {
+                    logoutLink.addEventListener('click', async function(e) {
+                        e.preventDefault();
+                        try {
+                            await window.Clerk.signOut();
+                            window.location.href = '/index.html';
+                        } catch (error) {
+                            console.error('Error signing out:', error);
+                            // Fallback: redirect anyway
+                            window.location.href = '/index.html';
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading Clerk:', error);
+                // Redirect to index if Clerk fails to load
+                window.location.href = '/index.html';
             }
         });
 

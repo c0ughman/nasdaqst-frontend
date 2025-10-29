@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>News Feed - NASDAQ Sentiment Tracker</title>
+    
+    <!-- Clerk SDK -->
+    <script
+        async
+        crossorigin="anonymous"
+        data-clerk-publishable-key="pk_test_Zmxvd2luZy1naWJib24tNjUuY2xlcmsuYWNjb3VudHMuZGV2JA"
+        src="https://flowing-gibbon-65.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+        type="text/javascript"
+    ></script>
+    
     <style>
         * {
             margin: 0;
@@ -565,6 +575,39 @@
     </div>
 
     <script>
+        // Clerk authentication check - redirect if not logged in
+        window.addEventListener('load', async function() {
+            try {
+                // Wait for Clerk to be available
+                if (!window.Clerk) {
+                    // Wait a bit for async script to load
+                    let retries = 0;
+                    while (!window.Clerk && retries < 50) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        retries++;
+                    }
+                    
+                    if (!window.Clerk) {
+                        console.error('Clerk SDK failed to load');
+                        window.location.href = '/index.html';
+                        return;
+                    }
+                }
+                
+                await window.Clerk.load();
+                
+                // Check if user is authenticated
+                if (!window.Clerk.user) {
+                    window.location.href = '/index.html';
+                    return;
+                }
+            } catch (error) {
+                console.error('Error loading Clerk:', error);
+                // Redirect to index if Clerk fails to load
+                window.location.href = '/index.html';
+            }
+        });
+
         // Timezone data embedded directly (to avoid CORS issues with local file access)
         const timezonesData = [
             {"offset": "-12:00", "name": "Baker Island Time", "code": "BIT"},
