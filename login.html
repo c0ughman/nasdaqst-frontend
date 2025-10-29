@@ -119,12 +119,123 @@
             width: 100%;
             max-width: 100%;
             overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        /* Ensure Clerk components don't overflow */
+        /* Ensure Clerk components expand and are centered */
         #clerk-sign-in * {
-            max-width: 100%;
             box-sizing: border-box;
+        }
+
+        /* Make Clerk root elements expand to full width */
+        #clerk-sign-in > * {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        /* Center and expand form elements */
+        #clerk-sign-in form,
+        #clerk-sign-in .cl-rootBox,
+        #clerk-sign-in .cl-card,
+        #clerk-sign-in .cl-formButtonPrimary,
+        #clerk-sign-in .cl-formFieldInput,
+        #clerk-sign-in .cl-socialButtonsBlockButton {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        /* Make placeholder text more visible */
+        #clerk-sign-in input::placeholder,
+        #clerk-sign-in input::-webkit-input-placeholder,
+        #clerk-sign-in input::-moz-placeholder,
+        #clerk-sign-in input:-ms-input-placeholder {
+            color: #ffffff !important;
+            opacity: 0.9 !important;
+        }
+
+        /* Style identity preview section (Google already has account) */
+        #clerk-sign-in .cl-identityPreview,
+        #clerk-sign-in .cl-identityPreviewBox {
+            background-color: #1a1a1a !important;
+            border: 1px solid #2a2a2a !important;
+            border-radius: 8px !important;
+            padding: 16px !important;
+            margin-bottom: 16px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        #clerk-sign-in .cl-identityPreviewText,
+        #clerk-sign-in .cl-identityPreviewTextContainer {
+            color: #fff !important;
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            word-wrap: break-word !important;
+        }
+
+        #clerk-sign-in .cl-identityPreviewEditButton {
+            color: #fff !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            text-decoration: underline !important;
+            margin-top: 8px !important;
+            display: inline-block !important;
+        }
+
+        /* Hide the "Don't have an account?" footer inside Clerk */
+        #clerk-sign-in .cl-footerAction,
+        #clerk-sign-in .cl-footerActionText,
+        #clerk-sign-in .cl-footerActionLink {
+            display: none !important;
+        }
+
+        /* Style development mode badge and Clerk footer - grouped with Google button */
+        #clerk-sign-in .cl-badge,
+        #clerk-sign-in [class*="badge"],
+        #clerk-sign-in [class*="Badge"],
+        #clerk-sign-in .cl-footerPages {
+            background-color: transparent !important;
+            border: none !important;
+            margin-top: 16px !important;
+            padding-top: 16px !important;
+            border-top: 1px solid #1a1a1a !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 8px !important;
+            width: 100% !important;
+        }
+
+        #clerk-sign-in .cl-badge {
+            font-size: 12px !important;
+            color: #888 !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Fix Google button border radius and group with footer */
+        #clerk-sign-in .cl-socialButtonsBlockButton,
+        #clerk-sign-in button[class*="social"],
+        #clerk-sign-in button[type="button"][class*="social"],
+        #clerk-sign-in .cl-socialButtonsBlockButton__google {
+            border-radius: 8px !important;
+            -webkit-border-radius: 8px !important;
+            -moz-border-radius: 8px !important;
+        }
+
+        /* Group Google button with Clerk footer */
+        #clerk-sign-in .cl-socialButtonsBlockButton {
+            margin-bottom: 0 !important;
+        }
+
+        /* Ensure social buttons container spacing */
+        #clerk-sign-in .cl-socialButtons {
+            margin-bottom: 16px !important;
         }
 
         /* Loading State */
@@ -225,11 +336,19 @@
                     elements: {
                         rootBox: {
                             width: '100%',
+                            maxWidth: '100%',
+                            display: 'flex',
+                            justifyContent: 'center',
                         },
                         card: {
                             backgroundColor: 'transparent',
                             boxShadow: 'none',
                             padding: '0',
+                            width: '100%',
+                            maxWidth: '100%',
+                        },
+                        form: {
+                            width: '100%',
                         },
                         headerTitle: {
                             display: 'none',
@@ -243,6 +362,13 @@
                             color: '#fff',
                             fontSize: '14px',
                             fontWeight: '500',
+                            width: '100%',
+                            maxWidth: '100%',
+                            borderRadius: '8px',
+                            marginBottom: '0',
+                        },
+                        socialButtons: {
+                            marginBottom: '16px',
                         },
                         socialButtonsBlockButton__google: {
                             '&:hover': {
@@ -258,6 +384,8 @@
                             padding: '12px',
                             borderRadius: '8px',
                             textTransform: 'none',
+                            width: '100%',
+                            maxWidth: '100%',
                             '&:hover': {
                                 backgroundColor: '#e0e0e0',
                             },
@@ -269,9 +397,18 @@
                             fontSize: '14px',
                             padding: '12px',
                             borderRadius: '8px',
+                            width: '100%',
+                            maxWidth: '100%',
                             '&:focus': {
                                 borderColor: '#fff',
                             },
+                            '&::placeholder': {
+                                color: '#ffffff',
+                                opacity: 0.9,
+                            },
+                        },
+                        formField: {
+                            width: '100%',
                         },
                         formFieldLabel: {
                             color: '#ccc',
@@ -279,19 +416,62 @@
                             fontWeight: '500',
                         },
                         footerActionLink: {
+                            display: 'none',
+                        },
+                        footerActionText: {
+                            display: 'none',
+                        },
+                        footerAction: {
+                            display: 'none',
+                        },
+                        footer: {
+                            marginTop: '24px',
+                            paddingTop: '24px',
+                            borderTop: '1px solid #1a1a1a',
+                        },
+                        identityPreview: {
+                            backgroundColor: '#1a1a1a',
+                            border: '1px solid #2a2a2a',
+                            borderRadius: '8px',
+                            padding: '16px',
+                            marginBottom: '16px',
+                            width: '100%',
+                        },
+                        identityPreviewText: {
                             color: '#fff',
                             fontSize: '14px',
+                            lineHeight: '1.5',
+                            margin: '0',
+                        },
+                        identityPreviewEditButton: {
+                            color: '#fff',
+                            fontSize: '13px',
                             fontWeight: '500',
+                            textDecoration: 'underline',
+                            marginTop: '8px',
                             '&:hover': {
                                 color: '#ccc',
                             },
                         },
-                        footerActionText: {
+                        badge: {
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            borderRadius: '0',
+                            padding: '0',
+                            fontSize: '12px',
                             color: '#888',
-                            fontSize: '14px',
+                            textTransform: 'none',
+                            letterSpacing: '0',
+                            marginBottom: '0',
                         },
-                        identityPreviewText: {
-                            color: '#fff',
+                        footerPages: {
+                            marginTop: '24px',
+                            paddingTop: '20px',
+                            borderTop: '1px solid #1a1a1a',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '8px',
                         },
                         formFieldInputShowPasswordButton: {
                             color: '#888',
