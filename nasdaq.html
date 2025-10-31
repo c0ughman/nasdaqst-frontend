@@ -1371,6 +1371,17 @@
                             <div class="progress-fill positive" style="width: 75%"></div>
                         </div>
                     </div>
+
+                    <!-- VIX Driver -->
+                    <div class="driver-item">
+                        <div class="driver-header">
+                            <span class="driver-name" data-i18n="dashboard.driver.vix">VIX</span>
+                            <span class="driver-value neutral">0.0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill neutral" style="width: 50%"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1874,7 +1885,7 @@
 
                 // Update sentiment display and drivers
                 updateSentimentDisplay(data);
-                updateSentimentDrivers(data.drivers);
+                updateSentimentDrivers(data.drivers, data.vxn_index);
                 updateMarketStatus(data.market_status);
 
                 // Populate sentimentDataset for chart
@@ -2013,13 +2024,24 @@
         }
 
         // Update sentiment drivers with real data from API
-        function updateSentimentDrivers(drivers) {
+        function updateSentimentDrivers(drivers, vxnIndex) {
             if (!drivers) return;
 
             // Get driver elements
             const driverItems = document.querySelectorAll('.driver-item');
 
-            // Update the first 5 drivers with real data from API
+            // Convert VXN index to a sentiment score (-100 to +100)
+            // VXN typically ranges from ~10 to ~40
+            // Lower VXN = less volatility = more bullish
+            // Higher VXN = more volatility = more bearish
+            let vixScore = 0;
+            if (vxnIndex) {
+                // Normalize VXN: 15 is baseline (neutral), below is bullish, above is bearish
+                // Scale: VXN 10 = +100, VXN 15 = 0, VXN 40 = -100
+                vixScore = Math.max(-100, Math.min(100, ((15 - vxnIndex) / 15) * 100));
+            }
+
+            // Update the drivers with real data from API
             const driverData = [
                 {
                     name: t('dashboard.driver.news'),
@@ -2050,6 +2072,13 @@
                     translationKey: 'dashboard.driver.breadth',
                     value: drivers.market_breadth?.score || 0, // Placeholder until implemented
                     weight: drivers.market_breadth?.weight || 0
+                },
+                {
+                    name: t('dashboard.driver.vix'),
+                    translationKey: 'dashboard.driver.vix',
+                    value: vixScore,
+                    weight: 0,
+                    rawValue: vxnIndex // Store raw VXN value for display
                 }
             ];
 
@@ -2071,15 +2100,23 @@
 
                     // Update value with +/- sign
                     if (valueElement) {
-                        const displayValue = driver.value > 0 ? `+${driver.value.toFixed(1)}` : driver.value.toFixed(1);
+                        // Special handling for VIX - show raw VXN value instead of normalized score
+                        let displayValue;
+                        if (driver.rawValue !== undefined) {
+                            displayValue = driver.rawValue.toFixed(2);
+                        } else {
+                            displayValue = driver.value > 0 ? `+${driver.value.toFixed(1)}` : driver.value.toFixed(1);
+                        }
                         valueElement.textContent = displayValue;
 
                         // Update color based on positive/negative
-                        valueElement.classList.remove('positive', 'negative');
+                        valueElement.classList.remove('positive', 'negative', 'neutral');
                         if (driver.value > 0) {
                             valueElement.classList.add('positive');
                         } else if (driver.value < 0) {
                             valueElement.classList.add('negative');
+                        } else {
+                            valueElement.classList.add('neutral');
                         }
                     }
 
@@ -2093,11 +2130,13 @@
                         progressFill.style.width = `${clampedWidth}%`;
 
                         // Update color based on positive/negative
-                        progressFill.classList.remove('positive', 'negative');
+                        progressFill.classList.remove('positive', 'negative', 'neutral');
                         if (driver.value > 0) {
                             progressFill.classList.add('positive');
                         } else if (driver.value < 0) {
                             progressFill.classList.add('negative');
+                        } else {
+                            progressFill.classList.add('neutral');
                         }
                     }
                 }
