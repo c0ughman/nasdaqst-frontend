@@ -15,6 +15,7 @@ const translations = {
         'nav.about': 'About Us',
         'nav.news': 'News',
         'nav.language': 'Language',
+        'nav.logout': 'Logout',
 
         // Onboarding Modal
         'onboarding.title.language': 'Select Your Language',
@@ -111,6 +112,7 @@ const translations = {
         'nav.about': 'Acerca de',
         'nav.news': 'Noticias',
         'nav.language': 'Idioma',
+        'nav.logout': 'Cerrar sesión',
 
         // Onboarding Modal
         'onboarding.title.language': 'Selecciona tu idioma',
@@ -207,6 +209,7 @@ const translations = {
         'nav.about': 'À propos',
         'nav.news': 'Actualités',
         'nav.language': 'Langue',
+        'nav.logout': 'Déconnexion',
 
         // Onboarding Modal
         'onboarding.title.language': 'Sélectionnez votre langue',
@@ -303,6 +306,7 @@ const translations = {
         'nav.about': 'Über uns',
         'nav.news': 'Nachrichten',
         'nav.language': 'Sprache',
+        'nav.logout': 'Abmelden',
 
         // Onboarding Modal
         'onboarding.title.language': 'Wählen Sie Ihre Sprache',
@@ -399,6 +403,7 @@ const translations = {
         'nav.about': '关于我们',
         'nav.news': '新闻',
         'nav.language': '语言',
+        'nav.logout': '登出',
 
         // Onboarding Modal
         'onboarding.title.language': '选择您的语言',
@@ -495,6 +500,7 @@ const translations = {
         'nav.about': '概要',
         'nav.news': 'ニュース',
         'nav.language': '言語',
+        'nav.logout': 'ログアウト',
 
         // Onboarding Modal
         'onboarding.title.language': '言語を選択',
