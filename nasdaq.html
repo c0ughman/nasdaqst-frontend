@@ -627,55 +627,21 @@
             max-height: 400px;
         }
 
-        .chart-container.market-closed {
-            filter: blur(3px);
-            transition: filter 0.3s ease;
-        }
-
-        .market-status-overlay {
+        .market-status-indicator {
             position: absolute;
-            top: 60px;
-            left: 12px;
-            right: 12px;
-            bottom: 12px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            pointer-events: none;
+            bottom: 16px;
+            left: 16px;
+            font-size: 10px;
+            color: #888;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 8px;
+            border-radius: 4px;
+            z-index: 100;
         }
 
-        .market-status-overlay.show {
-            display: flex;
-        }
-
-        .market-status-content {
-            background: rgba(64, 64, 64, 0.95);
-            color: #e0e0e0;
-            padding: 24px 32px;
-            border-radius: 12px;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(128, 128, 128, 0.3);
-            backdrop-filter: blur(4px);
-        }
-
-        .market-status-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            letter-spacing: 0.5px;
-            color: #f0f0f0;
-        }
-
-        .market-status-reason {
-            font-size: 14px;
-            opacity: 0.8;
+        .market-status-indicator span {
+            color: #aaa;
             font-weight: 500;
-            color: #c0c0c0;
         }
 
         .chart-canvas {
@@ -1514,13 +1480,10 @@
                         <span>Now</span>
                     </div>
                 </div>
-                
-                <!-- Market Status Overlay - positioned outside chart container -->
-                <div class="market-status-overlay" id="market-status-overlay">
-                    <div class="market-status-content">
-                        <div class="market-status-title">Market Closed</div>
-                        <div class="market-status-reason" id="market-status-reason">Outside trading hours</div>
-                    </div>
+
+                <!-- Market Status Indicator (bottom-left) -->
+                <div class="market-status-indicator" id="market-status-indicator" style="display: none;">
+                    Market is currently closed. Latest data from <span id="market-close-time"></span>
                 </div>
             </div>
         </div>
@@ -2000,25 +1963,37 @@
             scoreValueElement.style.backgroundClip = 'text';
         }
 
-        // Update market status overlay
+        // Track market status globally
+        let isMarketOpen = true;
+
+        // Update market status indicator
         function updateMarketStatus(marketStatus) {
             if (!marketStatus) return;
 
-            const chartContainer = document.getElementById('chart-container');
-            const overlay = document.getElementById('market-status-overlay');
-            const reason = document.getElementById('market-status-reason');
+            const indicator = document.getElementById('market-status-indicator');
+            const closeTimeSpan = document.getElementById('market-close-time');
 
-            if (!chartContainer || !overlay || !reason) return;
+            if (!indicator || !closeTimeSpan) return;
+
+            // Update global market status
+            isMarketOpen = marketStatus.is_open;
 
             if (marketStatus.is_open) {
-                // Market is open - hide overlay and remove blur
-                overlay.classList.remove('show');
-                chartContainer.classList.remove('market-closed');
+                // Market is open - hide indicator
+                indicator.style.display = 'none';
             } else {
-                // Market is closed - show overlay with blur effect
-                reason.textContent = marketStatus.reason;
-                overlay.classList.add('show');
-                chartContainer.classList.add('market-closed');
+                // Market is closed - show small indicator with timestamp
+                const closeTime = new Date(marketStatus.last_close_time || new Date());
+                const formattedTime = closeTime.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                });
+                closeTimeSpan.textContent = formattedTime;
+                indicator.style.display = 'block';
             }
         }
 
@@ -2536,8 +2511,14 @@
             }
         }
 
-        // Update data periodically (every 60 seconds)
+        // Update data periodically (every 60 seconds) - only when market is open
         setInterval(async () => {
+            // Only refresh if market is open
+            if (!isMarketOpen) {
+                console.log('Market is closed - skipping auto-refresh');
+                return;
+            }
+
             try {
                 console.log('Auto-refreshing dashboard data...');
                 await fetchDashboardData();
@@ -2545,7 +2526,7 @@
             } catch (error) {
                 console.error('Error updating dashboard:', error);
             }
-        }, 60000); // Update every 60 seconds
+        }, 60000); // Check every 60 seconds
 
         // Chart hover functionality
         const chartCanvas = document.getElementById('chart-canvas');
