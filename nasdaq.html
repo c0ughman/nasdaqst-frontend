@@ -2248,10 +2248,15 @@
             }
 
             // Calculate cutoff time
-            const now = new Date();
+            // When market is closed, use the last data point's time as "now"
+            // When market is open, use current time
+            const now = isMarketOpen
+                ? new Date()
+                : (sentimentDataset.length > 0 ? new Date(sentimentDataset[sentimentDataset.length - 1].timestamp) : new Date());
             const cutoffTime = new Date(now.getTime() - (config.minutes * 60 * 1000));
             console.log('Cutoff time:', cutoffTime.toISOString());
-            console.log('Current time:', now.toISOString());
+            console.log('Reference time (now):', now.toISOString());
+            console.log('Market status:', isMarketOpen ? 'OPEN' : 'CLOSED');
 
             // Filter data points within the timeframe using actual timestamps
             const filteredData = sentimentDataset.filter(d => d.timestamp >= cutoffTime);
