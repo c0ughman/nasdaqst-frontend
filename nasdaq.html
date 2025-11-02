@@ -1435,6 +1435,9 @@
                             <button class="timeframe-btn" data-timeframe="2h" data-i18n="dashboard.chart.timeframe.2h">2 hrs</button>
                             <button class="timeframe-btn" data-timeframe="4h" data-i18n="dashboard.chart.timeframe.4h">4 hrs</button>
                             <button class="timeframe-btn" data-timeframe="8h" data-i18n="dashboard.chart.timeframe.8h">8 hrs</button>
+                            <button class="timeframe-btn" data-timeframe="1d" data-i18n="dashboard.chart.timeframe.1d">1 day</button>
+                            <button class="timeframe-btn" data-timeframe="2d" data-i18n="dashboard.chart.timeframe.2d">2 days</button>
+                            <button class="timeframe-btn" data-timeframe="3d" data-i18n="dashboard.chart.timeframe.3d">3 days</button>
                 </div>
                     </div>
                 </div>
@@ -1819,6 +1822,8 @@
         // ===== REAL NASDAQ SENTIMENT DATA =====
         // Fetch real composite sentiment data from the API
         let sentimentDataset = [];
+        let sentimentDataset2d = [];
+        let sentimentDataset3d = [];
         let currentCompositeScore = 0;
         
         // API Base URL - adjust if needed
@@ -1850,20 +1855,40 @@
                 updateSentimentDrivers(data.drivers, data.vxn_index);
                 updateMarketStatus(data.market_status);
 
-                // Populate sentimentDataset for chart
+                // Populate sentimentDataset for chart (24 hours)
                 if (data.historical && data.historical.length > 0) {
                     sentimentDataset = data.historical.map(point => ({
                         timestamp: new Date(point.timestamp),
-                        sentiment: point.composite_score,
-                        stock_price: point.stock_price,
-                        news_score: point.news_score,
-                        social_score: point.social_score,
-                        technical_score: point.technical_score
+                        sentiment: point.composite_score
                     }));
-                    console.log(`✓ Loaded ${sentimentDataset.length} historical data points for chart`);
+                    console.log(`✓ Loaded ${sentimentDataset.length} historical data points (24h)`);
                 } else {
                     console.warn('⚠️  No historical data in API response');
                     sentimentDataset = [];
+                }
+
+                // Populate sentimentDataset2d for chart (2 days)
+                if (data.historical_2d && data.historical_2d.length > 0) {
+                    sentimentDataset2d = data.historical_2d.map(point => ({
+                        timestamp: new Date(point.timestamp),
+                        sentiment: point.composite_score
+                    }));
+                    console.log(`✓ Loaded ${sentimentDataset2d.length} historical data points (2d)`);
+                } else {
+                    console.warn('⚠️  No 2-day historical data in API response');
+                    sentimentDataset2d = [];
+                }
+
+                // Populate sentimentDataset3d for chart (3 days)
+                if (data.historical_3d && data.historical_3d.length > 0) {
+                    sentimentDataset3d = data.historical_3d.map(point => ({
+                        timestamp: new Date(point.timestamp),
+                        sentiment: point.composite_score
+                    }));
+                    console.log(`✓ Loaded ${sentimentDataset3d.length} historical data points (3d)`);
+                } else {
+                    console.warn('⚠️  No 3-day historical data in API response');
+                    sentimentDataset3d = [];
                 }
 
                 return data;
@@ -1872,6 +1897,8 @@
                 // Fallback to default values
                 currentCompositeScore = 0;
                 sentimentDataset = [];
+                sentimentDataset2d = [];
+                sentimentDataset3d = [];
                 updateSentimentDisplay({
                     composite_score: currentCompositeScore,
                     sentiment_label: 'NEUTRAL'
@@ -1897,31 +1924,48 @@
                 const data = await response.json();
                 console.log('Dashboard API response received');
 
+                // Populate 24-hour dataset
                 if (!data.historical || data.historical.length === 0) {
                     console.warn('No historical data points in API response');
                     sentimentDataset = [];
-                    return data;
+                } else {
+                    sentimentDataset = data.historical.map(point => ({
+                        timestamp: new Date(point.timestamp),
+                        sentiment: point.composite_score
+                    }));
+                    console.log('Converted 24h dataset length:', sentimentDataset.length);
                 }
 
-                // Convert API data to chart format with actual timestamps
-                sentimentDataset = data.historical.map(point => ({
-                    timestamp: new Date(point.timestamp),
-                    sentiment: point.composite_score,
-                    stock_price: point.stock_price,
-                    news_score: point.news_score,
-                    social_score: point.social_score,
-                    technical_score: point.technical_score
-                }));
+                // Populate 2-day dataset
+                if (data.historical_2d && data.historical_2d.length > 0) {
+                    sentimentDataset2d = data.historical_2d.map(point => ({
+                        timestamp: new Date(point.timestamp),
+                        sentiment: point.composite_score
+                    }));
+                    console.log('Converted 2d dataset length:', sentimentDataset2d.length);
+                } else {
+                    sentimentDataset2d = [];
+                }
 
-                console.log('Converted dataset:', sentimentDataset);
-                console.log('Dataset length:', sentimentDataset.length);
+                // Populate 3-day dataset
+                if (data.historical_3d && data.historical_3d.length > 0) {
+                    sentimentDataset3d = data.historical_3d.map(point => ({
+                        timestamp: new Date(point.timestamp),
+                        sentiment: point.composite_score
+                    }));
+                    console.log('Converted 3d dataset length:', sentimentDataset3d.length);
+                } else {
+                    sentimentDataset3d = [];
+                }
 
                 return data;
             } catch (error) {
                 console.error('Error fetching historical data:', error);
                 console.error('Error details:', error.message);
-                // Fallback to empty dataset
+                // Fallback to empty datasets
                 sentimentDataset = [];
+                sentimentDataset2d = [];
+                sentimentDataset3d = [];
                 return null;
             }
         }
@@ -2203,47 +2247,86 @@
             '5m': {
                 minutes: 5,   // Show last 5 minutes of data
                 labelCount: 5,
-                label: '5min'
+                label: '5min',
+                dataset: 'sentimentDataset'
             },
             '15m': {
                 minutes: 15,  // Show last 15 minutes
                 labelCount: 5,
-                label: '15min'
+                label: '15min',
+                dataset: 'sentimentDataset'
             },
             '30m': {
                 minutes: 30,  // Show last 30 minutes
                 labelCount: 6,
-                label: '30min'
+                label: '30min',
+                dataset: 'sentimentDataset'
             },
             '1h': {
                 minutes: 60,  // Show last 1 hour
                 labelCount: 5,
-                label: '1hr'
+                label: '1hr',
+                dataset: 'sentimentDataset'
             },
             '2h': {
                 minutes: 120, // Show last 2 hours
                 labelCount: 6,
-                label: '2hrs'
+                label: '2hrs',
+                dataset: 'sentimentDataset'
             },
             '4h': {
                 minutes: 240, // Show last 4 hours
                 labelCount: 6,
-                label: '4hrs'
+                label: '4hrs',
+                dataset: 'sentimentDataset'
             },
             '8h': {
                 minutes: 480, // Show last 8 hours
                 labelCount: 6,
-                label: '8hrs'
+                label: '8hrs',
+                dataset: 'sentimentDataset'
+            },
+            '1d': {
+                minutes: 1440, // Show last 24 hours (1 day)
+                labelCount: 8,
+                label: '1day',
+                dataset: 'sentimentDataset'
+            },
+            '2d': {
+                minutes: 2880, // Show last 48 hours (2 days)
+                labelCount: 8,
+                label: '2days',
+                dataset: 'sentimentDataset2d'
+            },
+            '3d': {
+                minutes: 4320, // Show last 72 hours (3 days)
+                labelCount: 10,
+                label: '3days',
+                dataset: 'sentimentDataset3d'
             }
         };
 
         function getDataForTimeframe(timeframe) {
             const config = timeframeConfig[timeframe];
             console.log(`\n=== Getting data for ${timeframe} (last ${config.minutes} minutes) ===`);
-            console.log('Total dataset length:', sentimentDataset.length);
 
-            if (!sentimentDataset || sentimentDataset.length === 0) {
-                console.log('❌ No sentiment data available');
+            // Select the appropriate dataset based on timeframe
+            let activeDataset;
+            if (config.dataset === 'sentimentDataset2d') {
+                activeDataset = sentimentDataset2d;
+                console.log('Using 2-day dataset');
+            } else if (config.dataset === 'sentimentDataset3d') {
+                activeDataset = sentimentDataset3d;
+                console.log('Using 3-day dataset');
+            } else {
+                activeDataset = sentimentDataset;
+                console.log('Using 24-hour dataset');
+            }
+
+            console.log('Total dataset length:', activeDataset.length);
+
+            if (!activeDataset || activeDataset.length === 0) {
+                console.log('❌ No sentiment data available for this timeframe');
                 return { labels: [], path: '', dataPoints: [], count: 0 };
             }
 
@@ -2252,14 +2335,14 @@
             // When market is open, use current time
             const now = isMarketOpen
                 ? new Date()
-                : (sentimentDataset.length > 0 ? new Date(sentimentDataset[sentimentDataset.length - 1].timestamp) : new Date());
+                : (activeDataset.length > 0 ? new Date(activeDataset[activeDataset.length - 1].timestamp) : new Date());
             const cutoffTime = new Date(now.getTime() - (config.minutes * 60 * 1000));
             console.log('Cutoff time:', cutoffTime.toISOString());
             console.log('Reference time (now):', now.toISOString());
             console.log('Market status:', isMarketOpen ? 'OPEN' : 'CLOSED');
 
             // Filter data points within the timeframe using actual timestamps
-            const filteredData = sentimentDataset.filter(d => d.timestamp >= cutoffTime);
+            const filteredData = activeDataset.filter(d => d.timestamp >= cutoffTime);
             console.log('✓ Filtered data points:', filteredData.length);
 
             // Check if we have enough data
