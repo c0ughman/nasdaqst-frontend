@@ -1438,6 +1438,7 @@
                 <div class="chart-header">
                     <span class="chart-title" data-i18n="dashboard.chart.title">Historical Sentiment Trend</span>
                     <div class="chart-controls">
+                        <span class="chart-data-info" id="chart-data-info" style="color: #888; font-size: 11px; margin-right: 16px;"></span>
                         <div class="timeframe-selector">
                             <button class="timeframe-btn" data-timeframe="5m" data-i18n="dashboard.chart.timeframe.5m">5 min</button>
                             <button class="timeframe-btn" data-timeframe="15m" data-i18n="dashboard.chart.timeframe.15m">15 min</button>
@@ -2478,18 +2479,25 @@
                     return;
                 }
 
-                // Update X-axis labels with data count
+                // Update X-axis labels (without data count - moved to header)
                 if (data.labels && data.labels.length > 0) {
                     const labelsHtml = data.labels.map(label =>
                         `<span>${label}</span>`
                     ).join('');
 
-                    // Add data point count indicator
-                    const dataInfo = `<span style="color: #888; font-size: 11px; margin-left: 10px;">(${data.count} points over ${data.timeRange})</span>`;
+                    xAxisLabels.innerHTML = labelsHtml;
 
-                    xAxisLabels.innerHTML = labelsHtml + dataInfo;
+                    // Update data info in chart header
+                    const dataInfoElement = document.getElementById('chart-data-info');
+                    if (dataInfoElement) {
+                        dataInfoElement.textContent = `${data.count} points over ${data.timeRange}`;
+                    }
                 } else {
                     xAxisLabels.innerHTML = '<span>Loading...</span>';
+                    const dataInfoElement = document.getElementById('chart-data-info');
+                    if (dataInfoElement) {
+                        dataInfoElement.textContent = '';
+                    }
                 }
 
                 // Hide the original curved path (we're using the new smooth line with dots instead)
