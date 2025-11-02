@@ -773,6 +773,17 @@
             pointer-events: none;
         }
 
+        .market-gap-line {
+            position: absolute;
+            top: 0;
+            bottom: 20px;
+            width: 2px;
+            background: none;
+            border-left: 2px dashed rgba(255, 193, 7, 0.4);
+            pointer-events: none;
+            z-index: 5;
+        }
+
         @keyframes pulse {
             0%, 100% {
                 box-shadow: 0 0 20px rgba(255, 140, 66, 0.6);
@@ -2363,6 +2374,21 @@
             console.log('First point:', filteredData[0].timestamp.toISOString(), '=', filteredData[0].sentiment);
             console.log('Last point:', filteredData[filteredData.length - 1].timestamp.toISOString(), '=', filteredData[filteredData.length - 1].sentiment);
 
+            // Detect market gaps (periods longer than 1 hour between data points)
+            const gaps = [];
+            for (let i = 1; i < filteredData.length; i++) {
+                const timeDiff = (filteredData[i].timestamp - filteredData[i - 1].timestamp) / (1000 * 60); // minutes
+                if (timeDiff > 60) { // Gap longer than 1 hour indicates market close
+                    gaps.push({
+                        index: i,
+                        duration: timeDiff,
+                        start: filteredData[i - 1].timestamp,
+                        end: filteredData[i].timestamp
+                    });
+                    console.log(`📊 Detected market gap: ${Math.round(timeDiff / 60)}h between ${filteredData[i - 1].timestamp.toLocaleString()} and ${filteredData[i].timestamp.toLocaleString()}`);
+                }
+            }
+
             // Use ALL data points for the chart path (smooth line)
             const allPoints = filteredData.map((d, index) => ({
                 x: (index / (filteredData.length - 1)) * 100,
@@ -2384,15 +2410,29 @@
                 labelIndices.push(Math.min(index, filteredData.length - 1));
             }
 
+            // Helper function to format timestamp with timezone support
+            const formatTimestampLabel = (timestamp) => {
+                let displayTime = timestamp;
+
+                // Apply timezone offset if selected
+                if (currentTimezoneData) {
+                    const offsetHours = parseOffset(currentTimezoneData.offset);
+                    const utc = timestamp.getTime() + (timestamp.getTimezoneOffset() * 60000);
+                    displayTime = new Date(utc + (3600000 * offsetHours));
+                }
+
+                return displayTime.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+            };
+
             // Generate labels from selected indices
             const labels = [];
             labelIndices.forEach(index => {
                 const point = filteredData[index];
-                labels.push(point.timestamp.toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                }));
+                labels.push(formatTimestampLabel(point.timestamp));
             });
 
             console.log('✓ Generated', allPoints.length, 'data points for path,', labels.length, 'labels for X-axis');
@@ -2404,6 +2444,7 @@
                 labels,
                 path,
                 dataPoints: allPoints,
+                gaps: gaps,
                 count: allPoints.length,
                 timeRange: `${config.label} (${allPoints.length} points)`
             };
@@ -2466,6 +2507,9 @@
 
                 // Add data point dots for better visibility
                 drawDataPointDots(data.dataPoints);
+
+                // Draw market gap lines
+                drawMarketGapLines(data.gaps || [], data.dataPoints);
 
                 // Store current data points for hover functionality
                 window.currentChartData = data.dataPoints;
@@ -2543,6 +2587,35 @@
             });
 
             console.log(`Drew ${dataPoints.length} data point dots with connecting lines`);
+        }
+
+        // Draw vertical dotted lines for market gaps
+        function drawMarketGapLines(gaps, dataPoints) {
+            // Remove existing gap lines
+            const existingLines = document.querySelectorAll('.market-gap-line');
+            existingLines.forEach(line => line.remove());
+
+            if (!gaps || gaps.length === 0 || !dataPoints || dataPoints.length === 0) {
+                return;
+            }
+
+            const chartContainer = document.getElementById('chart-container');
+            if (!chartContainer) return;
+
+            // Draw a vertical line at each gap
+            gaps.forEach(gap => {
+                // Find the x position for this gap (at the start of the gap index)
+                const xPercent = (gap.index / (dataPoints.length - 1)) * 100;
+
+                // Create the gap line element
+                const gapLine = document.createElement('div');
+                gapLine.className = 'market-gap-line';
+                gapLine.style.left = `calc(50px + (100% - 70px) * ${xPercent / 100})`;
+
+                chartContainer.appendChild(gapLine);
+
+                console.log(`📊 Drew market gap line at ${xPercent.toFixed(1)}% (${Math.round(gap.duration / 60)}h gap)`);
+            });
         }
 
         // Update Y-axis labels with fixed scale (-100 to +100)
