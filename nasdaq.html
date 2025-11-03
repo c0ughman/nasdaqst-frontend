@@ -1893,15 +1893,6 @@
                 }
                 const data = await response.json();
                 console.log('✓ Dashboard data received:', data.composite_score);
-                
-                // DEBUG: Check if backend is sending price data
-                if (data.historical && data.historical.length > 0) {
-                    const samplePoint = data.historical[0];
-                    console.log('📊 Sample historical data point:', samplePoint);
-                    console.log('📊 Has price field?', 'price' in samplePoint, 'Value:', samplePoint.price);
-                    const priceCount = data.historical.filter(p => p.price != null).length;
-                    console.log(`📊 Points with price data: ${priceCount} / ${data.historical.length}`);
-                }
 
                 // Update current composite score
                 currentCompositeScore = data.composite_score;
@@ -1919,6 +1910,12 @@
                         price: point.price
                     }));
                     console.log(`✓ Loaded ${sentimentDataset.length} historical data points (24h)`);
+                    // Debug: Check price data
+                    const pricesWithData = sentimentDataset.filter(p => p.price != null && !isNaN(p.price));
+                    console.log(`📊 Price data check: ${pricesWithData.length}/${sentimentDataset.length} points have price data`);
+                    if (pricesWithData.length > 0) {
+                        console.log(`📊 Sample prices: ${pricesWithData.slice(0, 3).map(p => `$${p.price.toFixed(2)}`).join(', ')}`);
+                    }
                 } else {
                     console.warn('⚠️  No historical data in API response');
                     sentimentDataset = [];
@@ -2570,33 +2567,12 @@
                 // Draw market gap lines
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
 
-                // Check for real price data and add mock data only if needed
-                if (data.dataPoints && data.dataPoints.length > 0) {
-                    // Count how many points have real price data
-                    const pointsWithPrice = data.dataPoints.filter(p => p.price != null && !isNaN(p.price) && p.price > 0);
-                    const hasRealPriceData = pointsWithPrice.length > 0;
-                    
-                    console.log(`📊 Price data check: ${pointsWithPrice.length}/${data.dataPoints.length} points have real prices`);
-                    
-                    if (hasRealPriceData) {
-                        console.log('✅ Using REAL price data from backend');
-                        console.log('💰 Sample prices:', pointsWithPrice.slice(0, 3).map(p => `$${p.price?.toFixed(2)}`).join(', '));
-                    } else {
-                        console.warn('⚠️ No real price data from backend - generating mock data');
-                        const basePrice = 19250;
-                        data.dataPoints.forEach((point, idx) => {
-                            point.price = basePrice + Math.sin(idx / data.dataPoints.length * Math.PI * 2) * 250 + Math.random() * 50;
-                        });
-                        console.log('🎭 Mock price data generated (backend needs to populate stock_price in AnalysisRun)');
-                    }
-                }
-
                 // Draw Nasdaq price overlay if enabled
                 if (window.nasdaqPriceEnabled) {
                     drawNasdaqPriceLine(data.dataPoints);
                 }
 
-                // Store current data points for hover functionality (now includes price data)
+                // Store current data points for hover functionality
                 window.currentChartData = data.dataPoints;
 
                 console.log('=== UPDATE CHART COMPLETE ===');
@@ -2720,7 +2696,7 @@
 
         // Draw Nasdaq price line overlay
         function drawNasdaqPriceLine(dataPoints) {
-            console.log('🔵 drawNasdaqPriceLine called with', dataPoints?.length, 'points');
+            console.log('🎨 drawNasdaqPriceLine called, toggle enabled:', window.nasdaqPriceEnabled);
             const nasdaqContainer = document.getElementById('nasdaq-price-line');
             if (!nasdaqContainer) {
                 console.error('❌ nasdaq-price-line container not found');
@@ -2731,18 +2707,23 @@
             nasdaqContainer.innerHTML = '';
 
             if (!dataPoints || dataPoints.length === 0) {
-                console.warn('⚠️ No dataPoints provided to drawNasdaqPriceLine');
+                console.warn('⚠️ No dataPoints provided');
                 return;
             }
 
-            // Filter points with valid price data (mock data is added in updateChart now)
+            console.log(`📊 Checking ${dataPoints.length} data points for price data...`);
+            // Filter out points without price data
             const pricePoints = dataPoints.filter(p => p.price != null && !isNaN(p.price));
-            console.log('✅ Price points available:', pricePoints.length, 'of', dataPoints.length);
+            console.log(`📊 Found ${pricePoints.length} points with valid price data`);
             
             if (pricePoints.length === 0) {
                 console.warn('❌ No Nasdaq price data available after filtering');
+                console.log('Sample dataPoint:', dataPoints[0]);
                 return;
             }
+            
+            console.log('✅ Drawing price line with:', pricePoints.length, 'points');
+            console.log('Sample prices:', pricePoints.slice(0, 3).map(p => `$${p.price?.toFixed(2)}`).join(', '));
 
             // Find opening price (9:30 AM ET - market open)
             let openingPrice = pricePoints[0].price; // Fallback to first point
@@ -2810,21 +2791,24 @@
                 nasdaqContainer.appendChild(path);
 
                 console.log(`✅ Drew Nasdaq price line with ${pricePoints.length} points`);
-                console.log(`📊 Price range: $${Math.min(...pricePoints.map(p => p.price)).toFixed(2)} - $${Math.max(...pricePoints.map(p => p.price)).toFixed(2)}`);
-                console.log(`📍 Opening price: $${openingPrice.toFixed(2)}`);
+                console.log(`📍 Price range: $${Math.min(...pricePoints.map(p => p.price)).toFixed(2)} - $${Math.max(...pricePoints.map(p => p.price)).toFixed(2)}`);
+                console.log(`📍 Path created with d="${pathD.substring(0, 50)}..."`);
+                console.log(`📍 SVG path appended to container:`, nasdaqContainer.id);
             }
         }
 
-        // Nasdaq price overlay toggle state
-        window.nasdaqPriceEnabled = false;
+        // Nasdaq price overlay toggle state - DEFAULT TO TRUE so line shows immediately
+        window.nasdaqPriceEnabled = true;
 
         // Toggle button handler
         const priceToggleBtn = document.getElementById('price-toggle-btn');
         if (priceToggleBtn) {
-            console.log('✅ Price toggle button found and listener attached');
+            // Set initial state to active since nasdaqPriceEnabled is true by default
+            priceToggleBtn.classList.add('active');
+            
             priceToggleBtn.addEventListener('click', async () => {
                 window.nasdaqPriceEnabled = !window.nasdaqPriceEnabled;
-                console.log(`🔄 Toggle clicked! New state: ${window.nasdaqPriceEnabled ? 'ENABLED' : 'DISABLED'}`);
+                console.log(`🔘 Toggle clicked! New state: ${window.nasdaqPriceEnabled}`);
 
                 if (window.nasdaqPriceEnabled) {
                     priceToggleBtn.classList.add('active');
@@ -2833,13 +2817,10 @@
                 }
 
                 // Redraw chart
-                console.log('🔄 Redrawing chart with price overlay...');
                 await updateChart(currentTimeframe);
 
-                console.log(`✅ Nasdaq price overlay ${window.nasdaqPriceEnabled ? 'enabled' : 'disabled'}`);
+                console.log(`Nasdaq price overlay ${window.nasdaqPriceEnabled ? 'enabled' : 'disabled'}`);
             });
-        } else {
-            console.error('❌ Price toggle button not found!');
         }
 
         timeframeBtns.forEach(btn => {
@@ -2986,8 +2967,6 @@
                 } else {
                     tooltipPrice.style.display = 'none';
                 }
-            } else {
-                console.warn('⚠️ tooltip-price element not found');
             }
             
             // Position tooltip
