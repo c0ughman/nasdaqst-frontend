@@ -552,6 +552,36 @@
             color: #e0e0e0;
         }
 
+        .price-toggle-btn {
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            color: #666;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+        }
+
+        .price-toggle-btn:hover {
+            background: #1f1f1f;
+            border-color: #333;
+            color: #888;
+        }
+
+        .price-toggle-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
         .chart-controls {
             display: flex;
             gap: 8px;
@@ -1436,7 +1466,10 @@
             <!-- Bottom Row: Historical Sentiment Trend -->
             <div class="card bottom-row" style="position: relative;">
                 <div class="chart-header">
-                    <span class="chart-title" data-i18n="dashboard.chart.title">Historical Sentiment Trend</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="chart-title" data-i18n="dashboard.chart.title">Historical Sentiment Trend</span>
+                        <button class="price-toggle-btn" id="price-toggle-btn" title="Toggle NASDAQ price">$</button>
+                    </div>
                     <div class="chart-controls">
                         <span class="chart-data-info" id="chart-data-info" style="color: #888; font-size: 11px; margin-right: 16px;"></span>
                         <div class="timeframe-selector">
@@ -1478,12 +1511,14 @@
                         </div>
                         <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="chart-dots-svg" style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; width: 100%; height: 100%; pointer-events: none;">
                             <g id="chart-dots"></g>
+                            <g id="nasdaq-price-line"></g>
                         </svg>
                         <div class="chart-hover-line" id="hover-line"></div>
                         <div class="chart-time-label" id="time-label">00:00:00</div>
                         <div class="chart-tooltip" id="chart-tooltip">
                             <div class="tooltip-label">Sentiment Score</div>
                             <div class="tooltip-value">+56</div>
+                            <div class="tooltip-price" id="tooltip-price" style="display: none; color: #ffffff; font-size: 12px; font-weight: 500; margin-top: 4px;">$0.00</div>
                             <div class="tooltip-time">14:32:45</div>
                         </div>
                     </div>
@@ -1871,7 +1906,8 @@
                 if (data.historical && data.historical.length > 0) {
                     sentimentDataset = data.historical.map(point => ({
                         timestamp: new Date(point.timestamp),
-                        sentiment: point.composite_score
+                        sentiment: point.composite_score,
+                        price: point.price
                     }));
                     console.log(`✓ Loaded ${sentimentDataset.length} historical data points (24h)`);
                 } else {
@@ -1883,7 +1919,8 @@
                 if (data.historical_2d && data.historical_2d.length > 0) {
                     sentimentDataset2d = data.historical_2d.map(point => ({
                         timestamp: new Date(point.timestamp),
-                        sentiment: point.composite_score
+                        sentiment: point.composite_score,
+                        price: point.price
                     }));
                     console.log(`✓ Loaded ${sentimentDataset2d.length} historical data points (2d)`);
                 } else {
@@ -1895,7 +1932,8 @@
                 if (data.historical_3d && data.historical_3d.length > 0) {
                     sentimentDataset3d = data.historical_3d.map(point => ({
                         timestamp: new Date(point.timestamp),
-                        sentiment: point.composite_score
+                        sentiment: point.composite_score,
+                        price: point.price
                     }));
                     console.log(`✓ Loaded ${sentimentDataset3d.length} historical data points (3d)`);
                 } else {
@@ -1943,7 +1981,8 @@
                 } else {
                     sentimentDataset = data.historical.map(point => ({
                         timestamp: new Date(point.timestamp),
-                        sentiment: point.composite_score
+                        sentiment: point.composite_score,
+                        price: point.price
                     }));
                     console.log('Converted 24h dataset length:', sentimentDataset.length);
                 }
@@ -1952,7 +1991,8 @@
                 if (data.historical_2d && data.historical_2d.length > 0) {
                     sentimentDataset2d = data.historical_2d.map(point => ({
                         timestamp: new Date(point.timestamp),
-                        sentiment: point.composite_score
+                        sentiment: point.composite_score,
+                        price: point.price
                     }));
                     console.log('Converted 2d dataset length:', sentimentDataset2d.length);
                 } else {
@@ -1963,7 +2003,8 @@
                 if (data.historical_3d && data.historical_3d.length > 0) {
                     sentimentDataset3d = data.historical_3d.map(point => ({
                         timestamp: new Date(point.timestamp),
-                        sentiment: point.composite_score
+                        sentiment: point.composite_score,
+                        price: point.price
                     }));
                     console.log('Converted 3d dataset length:', sentimentDataset3d.length);
                 } else {
@@ -2394,6 +2435,7 @@
             const allPoints = filteredData.map((d, index) => ({
                 x: (index / (filteredData.length - 1)) * 100,
                 sentiment: d.sentiment,
+                price: d.price,
                 timestamp: d.timestamp,
                 timeLabel: d.timestamp.toLocaleTimeString('en-US', {
                     hour: '2-digit',
@@ -2519,6 +2561,11 @@
                 // Draw market gap lines
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
 
+                // Draw Nasdaq price overlay if enabled
+                if (window.nasdaqPriceEnabled) {
+                    drawNasdaqPriceLine(data.dataPoints);
+                }
+
                 // Store current data points for hover functionality
                 window.currentChartData = data.dataPoints;
 
@@ -2640,7 +2687,115 @@
                 `;
             }
         }
-        
+
+        // Draw Nasdaq price line overlay
+        function drawNasdaqPriceLine(dataPoints) {
+            const nasdaqContainer = document.getElementById('nasdaq-price-line');
+            if (!nasdaqContainer) return;
+
+            // Clear existing line
+            nasdaqContainer.innerHTML = '';
+
+            if (!dataPoints || dataPoints.length === 0) return;
+
+            // Filter out points without price data
+            const pricePoints = dataPoints.filter(p => p.price != null && !isNaN(p.price));
+            if (pricePoints.length === 0) {
+                console.warn('No Nasdaq price data available');
+                return;
+            }
+
+            // Find opening price (9:30 AM ET - market open)
+            let openingPrice = pricePoints[0].price; // Fallback to first point
+
+            // Try to find actual 9:30 AM opening price
+            const firstDay = new Date(pricePoints[0].timestamp);
+            firstDay.setHours(9, 30, 0, 0);
+
+            for (let i = 0; i < pricePoints.length; i++) {
+                const pointTime = new Date(pricePoints[i].timestamp);
+                if (pointTime >= firstDay) {
+                    openingPrice = pricePoints[i].price;
+                    break;
+                }
+            }
+
+            // Find min/max prices for scaling
+            const prices = pricePoints.map(p => p.price);
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+
+            // Store for tooltip
+            window.nasdaqPriceScale = { openingPrice, minPrice, maxPrice };
+
+            // Map price to Y coordinate (0-100)
+            // Opening price maps to Y=50 (center)
+            const priceToY = (price) => {
+                const maxOffset = Math.max(Math.abs(minPrice - openingPrice), Math.abs(maxPrice - openingPrice));
+                if (maxOffset === 0) return 50;
+
+                const priceOffset = price - openingPrice;
+                const normalizedOffset = priceOffset / maxOffset;
+                const y = 50 - (normalizedOffset * 40);
+
+                return Math.max(10, Math.min(90, y));
+            };
+
+            // Create smooth path connecting all price points
+            if (pricePoints.length > 1) {
+                let pathD = `M ${pricePoints[0].x},${priceToY(pricePoints[0].price)}`;
+
+                for (let i = 1; i < pricePoints.length; i++) {
+                    const x = pricePoints[i].x;
+                    const y = priceToY(pricePoints[i].price);
+
+                    if (i === 1 && pricePoints.length === 2) {
+                        pathD += ` L ${x},${y}`;
+                    } else {
+                        const prevX = pricePoints[i - 1].x;
+                        const prevY = priceToY(pricePoints[i - 1].price);
+                        const cpX = (prevX + x) / 2;
+                        const cpY = (prevY + y) / 2;
+                        pathD += ` Q ${cpX},${cpY} ${x},${y}`;
+                    }
+                }
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathD);
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', '#ffffff');
+                path.setAttribute('stroke-width', '0.5');  // Thinner line as requested
+                path.setAttribute('stroke-linecap', 'round');
+                path.setAttribute('stroke-linejoin', 'round');
+                path.setAttribute('opacity', '0.9');  // Increased opacity for better visibility
+                nasdaqContainer.appendChild(path);
+
+                console.log(`✓ Drew Nasdaq price line with ${pricePoints.length} points`);
+            }
+        }
+
+        // Nasdaq price overlay toggle state
+        window.nasdaqPriceEnabled = false;
+
+        // Toggle button handler
+        const priceToggleBtn = document.getElementById('price-toggle-btn');
+        if (priceToggleBtn) {
+            priceToggleBtn.addEventListener('click', async () => {
+                window.nasdaqPriceEnabled = !window.nasdaqPriceEnabled;
+
+                if (window.nasdaqPriceEnabled) {
+                    priceToggleBtn.classList.add('active');
+                } else {
+                    priceToggleBtn.classList.remove('active');
+                }
+
+                // Redraw chart
+                await updateChart(currentTimeframe);
+
+                console.log(`Nasdaq price overlay ${window.nasdaqPriceEnabled ? 'enabled' : 'disabled'}`);
+            });
+        }
+
         timeframeBtns.forEach(btn => {
             btn.addEventListener('click', async () => {
                 timeframeBtns.forEach(b => b.classList.remove('active'));
@@ -2706,7 +2861,7 @@
         const tooltipTime = tooltip.querySelector('.tooltip-time');
 
         function interpolateValue(x, dataPoints) {
-            if (!dataPoints || dataPoints.length === 0) return { value: 0, time: 'Now', timestamp: new Date() };
+            if (!dataPoints || dataPoints.length === 0) return { value: 0, time: 'Now', timestamp: new Date(), price: null };
             
             // Find the two closest data points
             let before = dataPoints[0];
@@ -2724,6 +2879,16 @@
             const ratio = (x - before.x) / (after.x - before.x);
             const value = before.sentiment + ratio * (after.sentiment - before.sentiment);
             
+            // Linear interpolation for price (if available)
+            let price = null;
+            if (before.price != null && after.price != null) {
+                price = before.price + ratio * (after.price - before.price);
+            } else if (before.price != null) {
+                price = before.price;
+            } else if (after.price != null) {
+                price = after.price;
+            }
+            
             // Use the closest data point's time
             const closestPoint = ratio < 0.5 ? before : after;
             const time = closestPoint.timeLabel || closestPoint.timestamp?.toLocaleTimeString('en-US', {
@@ -2733,7 +2898,7 @@
                 hour12: false
             }) || 'N/A';
             
-            return { value: Math.round(value), time: time, timestamp: closestPoint.timestamp };
+            return { value: Math.round(value), time: time, timestamp: closestPoint.timestamp, price: price };
         }
 
         chartCanvas.addEventListener('mousemove', (e) => {
@@ -2765,6 +2930,17 @@
             const sentimentDisplay = result.value > 0 ? `+${result.value}` : result.value;
             tooltipValue.textContent = sentimentDisplay;
             tooltipTime.textContent = result.time;
+            
+            // Show/hide Nasdaq price based on toggle state
+            const tooltipPrice = document.getElementById('tooltip-price');
+            if (tooltipPrice) {
+                if (window.nasdaqPriceEnabled && result.price != null) {
+                    tooltipPrice.style.display = 'block';
+                    tooltipPrice.textContent = `$${result.price.toFixed(2)}`;
+                } else {
+                    tooltipPrice.style.display = 'none';
+                }
+            }
             
             // Position tooltip
             const tooltipX = x + 15;
