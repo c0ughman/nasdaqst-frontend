@@ -1899,8 +1899,8 @@
                 if (data.historical && data.historical.length > 0) {
                     console.log('📦 Raw historical[0]:', JSON.stringify(data.historical[0], null, 2));
                     console.log('📦 Keys in historical[0]:', Object.keys(data.historical[0]));
-                    console.log('📦 Price field exists?', 'price' in data.historical[0]);
-                    console.log('📦 Price value:', data.historical[0].price);
+                    console.log('📦 stock_price field exists?', 'stock_price' in data.historical[0]);
+                    console.log('📦 stock_price value:', data.historical[0].stock_price);
                     console.log('📦 All fields:', data.historical[0]);
                 }
  
@@ -1917,7 +1917,7 @@
                     sentimentDataset = data.historical.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.price
+                        price: point.stock_price  // Backend uses 'stock_price' field
                     }));
                     console.log(`✓ Loaded ${sentimentDataset.length} historical data points (24h)`);
                     // Debug: Check price data
@@ -1936,7 +1936,7 @@
                     sentimentDataset2d = data.historical_2d.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.price
+                        price: point.stock_price  // Backend uses 'stock_price' field
                     }));
                     console.log(`✓ Loaded ${sentimentDataset2d.length} historical data points (2d)`);
                 } else {
@@ -1949,7 +1949,7 @@
                     sentimentDataset3d = data.historical_3d.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.price
+                        price: point.stock_price  // Backend uses 'stock_price' field
                     }));
                     console.log(`✓ Loaded ${sentimentDataset3d.length} historical data points (3d)`);
                 } else {
@@ -1998,7 +1998,7 @@
                     sentimentDataset = data.historical.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.price
+                        price: point.stock_price  // Backend uses 'stock_price' field
                     }));
                     console.log('Converted 24h dataset length:', sentimentDataset.length);
                 }
@@ -2008,7 +2008,7 @@
                     sentimentDataset2d = data.historical_2d.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.price
+                        price: point.stock_price  // Backend uses 'stock_price' field
                     }));
                     console.log('Converted 2d dataset length:', sentimentDataset2d.length);
                 } else {
@@ -2020,7 +2020,7 @@
                     sentimentDataset3d = data.historical_3d.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.price
+                        price: point.stock_price  // Backend uses 'stock_price' field
                     }));
                     console.log('Converted 3d dataset length:', sentimentDataset3d.length);
                 } else {
