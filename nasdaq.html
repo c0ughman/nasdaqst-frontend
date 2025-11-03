@@ -1893,7 +1893,17 @@
                 }
                 const data = await response.json();
                 console.log('✓ Dashboard data received:', data.composite_score);
-
+                
+                // DEBUG: Check what the backend is actually sending for price data
+                console.log('🔍 BACKEND RESPONSE DEBUG:');
+                if (data.historical && data.historical.length > 0) {
+                    console.log('📦 Raw historical[0]:', JSON.stringify(data.historical[0], null, 2));
+                    console.log('📦 Keys in historical[0]:', Object.keys(data.historical[0]));
+                    console.log('📦 Price field exists?', 'price' in data.historical[0]);
+                    console.log('📦 Price value:', data.historical[0].price);
+                    console.log('📦 All fields:', data.historical[0]);
+                }
+ 
                 // Update current composite score
                 currentCompositeScore = data.composite_score;
 
