@@ -1893,6 +1893,15 @@
                 }
                 const data = await response.json();
                 console.log('✓ Dashboard data received:', data.composite_score);
+                
+                // DEBUG: Check if backend is sending price data
+                if (data.historical && data.historical.length > 0) {
+                    const samplePoint = data.historical[0];
+                    console.log('📊 Sample historical data point:', samplePoint);
+                    console.log('📊 Has price field?', 'price' in samplePoint, 'Value:', samplePoint.price);
+                    const priceCount = data.historical.filter(p => p.price != null).length;
+                    console.log(`📊 Points with price data: ${priceCount} / ${data.historical.length}`);
+                }
 
                 // Update current composite score
                 currentCompositeScore = data.composite_score;
@@ -2561,15 +2570,24 @@
                 // Draw market gap lines
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
 
-                // Generate mock price data if needed (before storing for hover)
+                // Check for real price data and add mock data only if needed
                 if (data.dataPoints && data.dataPoints.length > 0) {
-                    const hasRealPriceData = data.dataPoints.some(p => p.price != null && !isNaN(p.price));
-                    if (!hasRealPriceData) {
-                        console.warn('⚠️ No real price data - adding mock data to data points');
+                    // Count how many points have real price data
+                    const pointsWithPrice = data.dataPoints.filter(p => p.price != null && !isNaN(p.price) && p.price > 0);
+                    const hasRealPriceData = pointsWithPrice.length > 0;
+                    
+                    console.log(`📊 Price data check: ${pointsWithPrice.length}/${data.dataPoints.length} points have real prices`);
+                    
+                    if (hasRealPriceData) {
+                        console.log('✅ Using REAL price data from backend');
+                        console.log('💰 Sample prices:', pointsWithPrice.slice(0, 3).map(p => `$${p.price?.toFixed(2)}`).join(', '));
+                    } else {
+                        console.warn('⚠️ No real price data from backend - generating mock data');
                         const basePrice = 19250;
                         data.dataPoints.forEach((point, idx) => {
                             point.price = basePrice + Math.sin(idx / data.dataPoints.length * Math.PI * 2) * 250 + Math.random() * 50;
                         });
+                        console.log('🎭 Mock price data generated (backend needs to populate stock_price in AnalysisRun)');
                     }
                 }
 
