@@ -2407,35 +2407,85 @@
                 : (activeDataset.length > 0 ? new Date(activeDataset[activeDataset.length - 1].timestamp) : new Date());
             
             let cutoffTime;
+            let endTime; // For Session timeframe
             
-            // Special handling for 'Session' (6h) - use start of current trading day (9:30 AM ET)
+            // Special handling for 'Session' (6h) - show all data from current trading day
             if (timeframe === '6h') {
-                // Get the start of the current trading day (9:30 AM ET)
-                // Market opens at 9:30 AM Eastern Time
-                // ET is UTC-5 (EST) or UTC-4 (EDT)
-                // For simplicity, we'll use 13:30 UTC (9:30 AM EST) as approximation
-                // More accurate would require checking DST, but this should work for most cases
-                const cutoffET = new Date(now);
-                cutoffET.setUTCHours(13, 30, 0, 0); // 9:30 AM EST = 13:30 UTC
+                // Market hours: 9:30 AM - 4:00 PM Eastern Time
+                // Get the current date in Eastern Time to determine the trading day
+                const etFormatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'America/New_York',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
                 
-                // If current time is before 9:30 AM ET today, use yesterday's 9:30 AM ET
-                // Otherwise use today's 9:30 AM ET
-                if (now < cutoffET) {
-                    cutoffET.setUTCDate(cutoffET.getUTCDate() - 1);
-                }
+                const parts = etFormatter.formatToParts(now);
+                const etYear = parseInt(parts.find(p => p.type === 'year').value);
+                const etMonth = parseInt(parts.find(p => p.type === 'month').value) - 1; // JS months are 0-indexed
+                const etDay = parseInt(parts.find(p => p.type === 'day').value);
                 
-                cutoffTime = cutoffET;
-                console.log('Session timeframe: Using start of current trading day (9:30 AM ET)');
+                // Helper function to convert ET time to UTC
+                // Uses timezone-aware date parsing
+                const etToUTC = (year, month, day, hour, minute) => {
+                    // Create ISO string for the ET time
+                    const isoStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+                    
+                    // Try EST (UTC-5) first
+                    let testUTC = new Date(isoStr + '-05:00');
+                    let etParts = new Intl.DateTimeFormat('en-US', {
+                        timeZone: 'America/New_York',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }).formatToParts(testUTC);
+                    
+                    // Check if this matches our target
+                    let matches = parseInt(etParts.find(p => p.type === 'year').value) === year &&
+                                 parseInt(etParts.find(p => p.type === 'month').value) === (month + 1) &&
+                                 parseInt(etParts.find(p => p.type === 'day').value) === day &&
+                                 parseInt(etParts.find(p => p.type === 'hour').value) === hour &&
+                                 parseInt(etParts.find(p => p.type === 'minute').value) === minute;
+                    
+                    // If not, try EDT (UTC-4)
+                    if (!matches) {
+                        testUTC = new Date(isoStr + '-04:00');
+                    }
+                    
+                    return testUTC;
+                };
+                
+                // Market open: 9:30 AM ET in UTC
+                cutoffTime = etToUTC(etYear, etMonth, etDay, 9, 30);
+                
+                // Market close: 4:00 PM ET in UTC
+                endTime = etToUTC(etYear, etMonth, etDay, 16, 0);
+                
+                console.log('Session timeframe: Current trading day in ET:', `${etYear}-${String(etMonth + 1).padStart(2, '0')}-${String(etDay).padStart(2, '0')}`);
+                console.log('Session timeframe: Market open (9:30 AM ET):', cutoffTime.toISOString());
+                console.log('Session timeframe: Market close (4:00 PM ET):', endTime.toISOString());
             } else {
                 cutoffTime = new Date(now.getTime() - (config.minutes * 60 * 1000));
+                endTime = null;
             }
             
             console.log('Cutoff time:', cutoffTime.toISOString());
+            if (endTime) console.log('End time:', endTime.toISOString());
             console.log('Reference time (now):', now.toISOString());
             console.log('Market status:', isMarketOpen ? 'OPEN' : 'CLOSED');
 
             // Filter data points within the timeframe using actual timestamps
-            const filteredData = activeDataset.filter(d => d.timestamp >= cutoffTime);
+            let filteredData;
+            if (timeframe === '6h' && endTime) {
+                // For Session, filter between market open and close (or current time if market is open)
+                const upperBound = isMarketOpen ? now : endTime;
+                filteredData = activeDataset.filter(d => d.timestamp >= cutoffTime && d.timestamp <= upperBound);
+            } else {
+                filteredData = activeDataset.filter(d => d.timestamp >= cutoffTime);
+            }
             console.log('✓ Filtered data points:', filteredData.length);
 
             // Check if we have enough data
