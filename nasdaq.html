@@ -2584,9 +2584,15 @@
                 // Draw market gap lines
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
 
-                // Draw Nasdaq price overlay if enabled
+                // Draw Nasdaq price overlay if enabled, otherwise clear it
                 if (window.nasdaqPriceEnabled) {
                     drawNasdaqPriceLine(data.dataPoints);
+                } else {
+                    // Clear the price line when toggle is off
+                    const nasdaqContainer = document.getElementById('nasdaq-price-line');
+                    if (nasdaqContainer) {
+                        nasdaqContainer.innerHTML = '';
+                    }
                 }
 
                 // Store current data points for hover functionality
