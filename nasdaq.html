@@ -2652,19 +2652,8 @@
                 dotsContainer.appendChild(path);
             }
 
-            // Draw a dot for each data point (no white border)
-            // Use ellipse instead of circle to account for aspect ratio stretching
-            dataPoints.forEach(point => {
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', point.x);
-                circle.setAttribute('cy', sentimentToY(point.sentiment));
-                circle.setAttribute('r', '0.5');  // Much smaller radius since viewBox is 100x100 but stretched wide
-                circle.setAttribute('fill', '#ff8c42');
-                circle.setAttribute('opacity', '1');
-                dotsContainer.appendChild(circle);
-            });
-
-            console.log(`Drew ${dataPoints.length} data point dots with connecting lines`);
+            // Dots removed per user preference - just showing smooth line
+            console.log(`Drew sentiment line with ${dataPoints.length} data points`);
         }
 
         // Draw vertical dotted lines for market gaps
