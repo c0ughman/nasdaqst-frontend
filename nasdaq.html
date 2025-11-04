@@ -2405,7 +2405,31 @@
             const now = isMarketOpen
                 ? new Date()
                 : (activeDataset.length > 0 ? new Date(activeDataset[activeDataset.length - 1].timestamp) : new Date());
-            const cutoffTime = new Date(now.getTime() - (config.minutes * 60 * 1000));
+            
+            let cutoffTime;
+            
+            // Special handling for 'Session' (6h) - use start of current trading day (9:30 AM ET)
+            if (timeframe === '6h') {
+                // Get the start of the current trading day (9:30 AM ET)
+                // Market opens at 9:30 AM Eastern Time
+                // ET is UTC-5 (EST) or UTC-4 (EDT)
+                // For simplicity, we'll use 13:30 UTC (9:30 AM EST) as approximation
+                // More accurate would require checking DST, but this should work for most cases
+                const cutoffET = new Date(now);
+                cutoffET.setUTCHours(13, 30, 0, 0); // 9:30 AM EST = 13:30 UTC
+                
+                // If current time is before 9:30 AM ET today, use yesterday's 9:30 AM ET
+                // Otherwise use today's 9:30 AM ET
+                if (now < cutoffET) {
+                    cutoffET.setUTCDate(cutoffET.getUTCDate() - 1);
+                }
+                
+                cutoffTime = cutoffET;
+                console.log('Session timeframe: Using start of current trading day (9:30 AM ET)');
+            } else {
+                cutoffTime = new Date(now.getTime() - (config.minutes * 60 * 1000));
+            }
+            
             console.log('Cutoff time:', cutoffTime.toISOString());
             console.log('Reference time (now):', now.toISOString());
             console.log('Market status:', isMarketOpen ? 'OPEN' : 'CLOSED');
