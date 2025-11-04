@@ -1899,9 +1899,9 @@
                 if (data.historical && data.historical.length > 0) {
                     console.log('📦 Raw historical[0]:', JSON.stringify(data.historical[0], null, 2));
                     console.log('📦 Keys in historical[0]:', Object.keys(data.historical[0]));
-                    console.log('📦 stock_price field exists?', 'stock_price' in data.historical[0]);
-                    console.log('📦 stock_price value:', data.historical[0].stock_price);
-                    console.log('📦 All fields:', data.historical[0]);
+                    console.log('📦 "price" field exists?', 'price' in data.historical[0]);
+                    console.log('📦 "price" value:', data.historical[0].price);
+                    console.log('📦 Type of price:', typeof data.historical[0].price);
                 }
  
                 // Update current composite score
@@ -1914,17 +1914,24 @@
 
                 // Populate sentimentDataset for chart (24 hours)
                 if (data.historical && data.historical.length > 0) {
-                    sentimentDataset = data.historical.map(point => ({
-                        timestamp: new Date(point.timestamp),
-                        sentiment: point.composite_score,
-                        price: point.stock_price  // Backend uses 'stock_price' field
-                    }));
+                    console.log('📊 Mapping historical data - first raw point:', data.historical[0]);
+                    sentimentDataset = data.historical.map(point => {
+                        const mapped = {
+                            timestamp: new Date(point.timestamp),
+                            sentiment: point.composite_score,
+                            price: point.price
+                        };
+                        return mapped;
+                    });
                     console.log(`✓ Loaded ${sentimentDataset.length} historical data points (24h)`);
+                    console.log('📊 First mapped point:', sentimentDataset[0]);
                     // Debug: Check price data
                     const pricesWithData = sentimentDataset.filter(p => p.price != null && !isNaN(p.price));
                     console.log(`📊 Price data check: ${pricesWithData.length}/${sentimentDataset.length} points have price data`);
                     if (pricesWithData.length > 0) {
                         console.log(`📊 Sample prices: ${pricesWithData.slice(0, 3).map(p => `$${p.price.toFixed(2)}`).join(', ')}`);
+                    } else {
+                        console.warn('⚠️ No prices found! Sample point:', sentimentDataset[0]);
                     }
                 } else {
                     console.warn('⚠️  No historical data in API response');
@@ -1936,7 +1943,7 @@
                     sentimentDataset2d = data.historical_2d.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.stock_price  // Backend uses 'stock_price' field
+                        price: point.price
                     }));
                     console.log(`✓ Loaded ${sentimentDataset2d.length} historical data points (2d)`);
                 } else {
@@ -1949,7 +1956,7 @@
                     sentimentDataset3d = data.historical_3d.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.stock_price  // Backend uses 'stock_price' field
+                        price: point.price
                     }));
                     console.log(`✓ Loaded ${sentimentDataset3d.length} historical data points (3d)`);
                 } else {
@@ -1998,7 +2005,7 @@
                     sentimentDataset = data.historical.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.stock_price  // Backend uses 'stock_price' field
+                        price: point.price
                     }));
                     console.log('Converted 24h dataset length:', sentimentDataset.length);
                 }
@@ -2008,7 +2015,7 @@
                     sentimentDataset2d = data.historical_2d.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.stock_price  // Backend uses 'stock_price' field
+                        price: point.price
                     }));
                     console.log('Converted 2d dataset length:', sentimentDataset2d.length);
                 } else {
@@ -2020,7 +2027,7 @@
                     sentimentDataset3d = data.historical_3d.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.stock_price  // Backend uses 'stock_price' field
+                        price: point.price
                     }));
                     console.log('Converted 3d dataset length:', sentimentDataset3d.length);
                 } else {
