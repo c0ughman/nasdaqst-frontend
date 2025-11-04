@@ -2742,36 +2742,28 @@
             console.log('✅ Drawing price line with:', pricePoints.length, 'points');
             console.log('Sample prices:', pricePoints.slice(0, 3).map(p => `$${p.price?.toFixed(2)}`).join(', '));
 
-            // Find opening price (9:30 AM ET - market open)
-            let openingPrice = pricePoints[0].price; // Fallback to first point
-
-            // Try to find actual 9:30 AM opening price
-            const firstDay = new Date(pricePoints[0].timestamp);
-            firstDay.setHours(9, 30, 0, 0);
-
-            for (let i = 0; i < pricePoints.length; i++) {
-                const pointTime = new Date(pricePoints[i].timestamp);
-                if (pointTime >= firstDay) {
-                    openingPrice = pricePoints[i].price;
-                    break;
-                }
-            }
+            // Calculate median price for current time window
+            const prices = pricePoints.map(p => p.price).sort((a, b) => a - b);
+            const medianPrice = prices.length % 2 === 0
+                ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2
+                : prices[Math.floor(prices.length / 2)];
 
             // Find min/max prices for scaling
-            const prices = pricePoints.map(p => p.price);
             const minPrice = Math.min(...prices);
             const maxPrice = Math.max(...prices);
 
+            console.log(`📊 Price range: $${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}, Median: $${medianPrice.toFixed(2)}`);
+
             // Store for tooltip
-            window.nasdaqPriceScale = { openingPrice, minPrice, maxPrice };
+            window.nasdaqPriceScale = { medianPrice, minPrice, maxPrice };
 
             // Map price to Y coordinate (0-100)
-            // Opening price maps to Y=50 (center)
+            // Median price maps to Y=50 (center line, same as sentiment 0)
             const priceToY = (price) => {
-                const maxOffset = Math.max(Math.abs(minPrice - openingPrice), Math.abs(maxPrice - openingPrice));
+                const maxOffset = Math.max(Math.abs(minPrice - medianPrice), Math.abs(maxPrice - medianPrice));
                 if (maxOffset === 0) return 50;
 
-                const priceOffset = price - openingPrice;
+                const priceOffset = price - medianPrice;
                 const normalizedOffset = priceOffset / maxOffset;
                 const y = 50 - (normalizedOffset * 40);
 
@@ -2808,9 +2800,8 @@
                 nasdaqContainer.appendChild(path);
 
                 console.log(`✅ Drew Nasdaq price line with ${pricePoints.length} points`);
-                console.log(`📍 Price range: $${Math.min(...pricePoints.map(p => p.price)).toFixed(2)} - $${Math.max(...pricePoints.map(p => p.price)).toFixed(2)}`);
-                console.log(`📍 Path created with d="${pathD.substring(0, 50)}..."`);
-                console.log(`📍 SVG path appended to container:`, nasdaqContainer.id);
+                console.log(`📍 Median price (center): $${medianPrice.toFixed(2)}`);
+                console.log(`📍 Price range: $${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`);
             }
         }
 
