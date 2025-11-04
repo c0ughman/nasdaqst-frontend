@@ -43,7 +43,7 @@
             display: grid;
             grid-template-columns: 1fr 3fr;
             grid-template-rows: minmax(0, 0.6fr) auto auto auto;
-            row-gap: 13px;
+            row-gap: 18px;
             column-gap: 15px;
             margin: 0 auto;
         }
@@ -57,7 +57,7 @@
         }
 
         .card.right-top {
-            padding: 0px 32px;
+            padding: 8px 32px;
         }
 
         .left-top {
@@ -88,7 +88,8 @@
             grid-template-columns: repeat(5, 1fr);
             gap: 8px;
             align-items: center;
-            margin-bottom: -18px;
+            margin-bottom: -12px;
+            margin-top: 0px;
         }
 
         .right-top-item {
@@ -111,7 +112,7 @@
         }
 
         .right-middle .chart-header {
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .right-middle .chart-container {
@@ -121,7 +122,7 @@
         .bottom-row {
             grid-column: 1 / -1;
             grid-row: 5;
-            padding: 19px;
+            padding: 12px 19px 19px 19px;
             margin-top: -10px;
         }
 
@@ -543,11 +544,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
         }
 
         .chart-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: #e0e0e0;
         }
@@ -584,7 +585,7 @@
 
         .chart-controls {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
         }
 
@@ -1471,7 +1472,7 @@
                         <button class="price-toggle-btn" id="price-toggle-btn" title="Toggle NASDAQ price">$</button>
                     </div>
                     <div class="chart-controls">
-                        <span class="chart-data-info" id="chart-data-info" style="color: #888; font-size: 11px; margin-right: 16px;"></span>
+                        <span class="chart-data-info" id="chart-data-info" style="color: #888; font-size: 11px; margin-right: 10px;"></span>
                         <div class="timeframe-selector">
                             <button class="timeframe-btn" data-timeframe="6h" data-i18n="dashboard.chart.timeframe.6h">Session</button>
                             <button class="timeframe-btn" data-timeframe="5m" data-i18n="dashboard.chart.timeframe.5m">5 min</button>
