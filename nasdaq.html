@@ -1479,8 +1479,7 @@
                             <button class="timeframe-btn active" data-timeframe="1h" data-i18n="dashboard.chart.timeframe.1h">1 hr</button>
                             <button class="timeframe-btn" data-timeframe="2h" data-i18n="dashboard.chart.timeframe.2h">2 hrs</button>
                             <button class="timeframe-btn" data-timeframe="4h" data-i18n="dashboard.chart.timeframe.4h">4 hrs</button>
-                            <button class="timeframe-btn" data-timeframe="8h" data-i18n="dashboard.chart.timeframe.8h">8 hrs</button>
-                            <button class="timeframe-btn" data-timeframe="1d" data-i18n="dashboard.chart.timeframe.1d">1 day</button>
+                            <button class="timeframe-btn" data-timeframe="6h" data-i18n="dashboard.chart.timeframe.6h">session</button>
                             <button class="timeframe-btn" data-timeframe="2d" data-i18n="dashboard.chart.timeframe.2d">2 days</button>
                             <button class="timeframe-btn" data-timeframe="3d" data-i18n="dashboard.chart.timeframe.3d">3 days</button>
                 </div>
@@ -2356,16 +2355,10 @@
                 label: '4hrs',
                 dataset: 'sentimentDataset'
             },
-            '8h': {
-                minutes: 480, // Show last 8 hours
+            '6h': {
+                minutes: 360, // Show last 6 hours (trading session)
                 labelCount: 6,
-                label: '8hrs',
-                dataset: 'sentimentDataset'
-            },
-            '1d': {
-                minutes: 1440, // Show last 24 hours (1 day)
-                labelCount: 8,
-                label: '1day',
+                label: 'session',
                 dataset: 'sentimentDataset'
             },
             '2d': {
