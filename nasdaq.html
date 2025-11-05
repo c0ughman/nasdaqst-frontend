@@ -2879,32 +2879,6 @@
                 path.setAttribute('opacity', '0.9');  // Increased opacity for better visibility
                 nasdaqContainer.appendChild(path);
 
-                // Add inline label at the end of the line inside the chart (right side)
-                const lastPoint = pricePoints[pricePoints.length - 1];
-                const lastX = Math.min(98, lastPoint.x + 2); // Position near right edge, offset slightly from line end
-                const lastY = priceToY(lastPoint.price);
-                
-                // Create background rectangle for better visibility
-                const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                bgRect.setAttribute('x', String(lastX - 1));
-                bgRect.setAttribute('y', String(lastY - 6));
-                bgRect.setAttribute('width', '58');
-                bgRect.setAttribute('height', '12');
-                bgRect.setAttribute('fill', '#0f0f0f');
-                bgRect.setAttribute('opacity', '0.8');
-                nasdaqContainer.appendChild(bgRect);
-                
-                // Create text label
-                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.textContent = 'NASDAQ price';
-                label.setAttribute('x', String(lastX));
-                label.setAttribute('y', String(lastY));
-                label.setAttribute('fill', '#ffffff');
-                label.setAttribute('font-size', '9');
-                label.setAttribute('font-weight', '600');
-                label.setAttribute('dominant-baseline', 'middle');
-                nasdaqContainer.appendChild(label);
-
                 console.log(`✅ Drew Nasdaq price line with ${pricePoints.length} points`);
                 console.log(`📍 Median price (center): $${medianPrice.toFixed(2)}`);
                 console.log(`📍 Price range: $${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`);
