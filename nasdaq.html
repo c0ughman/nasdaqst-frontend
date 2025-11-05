@@ -559,34 +559,21 @@
             color: #e0e0e0;
         }
 
-        .price-toggle-btn {
-            width: 20px;
-            height: 20px;
-            padding: 0;
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
-            border-radius: 4px;
-            color: #666;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            transition: all 0.2s;
+        /* Nasdaq price toggle as checkbox */
+        .price-toggle {
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-family: inherit;
-        }
-
-        .price-toggle-btn:hover {
-            background: #1f1f1f;
-            border-color: #333;
-            color: #888;
-        }
-
-        .price-toggle-btn.active {
-            background: rgba(255, 255, 255, 0.1);
+            gap: 6px;
             color: #fff;
-            border-color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            user-select: none;
+        }
+
+        .price-toggle input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+            accent-color: #ffffff; /* modern browsers */
         }
 
         .chart-controls {
@@ -1475,7 +1462,10 @@
                 <div class="chart-header">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="chart-title" data-i18n="dashboard.chart.title">Historical Sentiment Trend</span>
-                        <button class="price-toggle-btn" id="price-toggle-btn" title="Toggle NASDAQ price">$</button>
+                        <label class="price-toggle" for="price-toggle" title="Toggle NASDAQ price">
+                            <input type="checkbox" id="price-toggle" checked>
+                            <span>Show Nasdaq</span>
+                        </label>
                     </div>
                     <div class="chart-controls">
                         <span class="chart-data-info" id="chart-data-info" style="color: #888; font-size: 11px; margin-right: 10px;"></span>
@@ -2868,6 +2858,20 @@
                 path.setAttribute('opacity', '0.9');  // Increased opacity for better visibility
                 nasdaqContainer.appendChild(path);
 
+                // Add inline label at the end of the line inside the chart
+                const lastPoint = pricePoints[pricePoints.length - 1];
+                const lastX = lastPoint.x + 3; // offset a bit to the right of the end
+                const lastY = priceToY(lastPoint.price);
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.textContent = 'Nasdaq price';
+                label.setAttribute('x', String(lastX));
+                label.setAttribute('y', String(lastY));
+                label.setAttribute('fill', '#ffffff');
+                label.setAttribute('font-size', '10');
+                label.setAttribute('font-weight', '600');
+                label.setAttribute('dominant-baseline', 'middle');
+                nasdaqContainer.appendChild(label);
+
                 console.log(`✅ Drew Nasdaq price line with ${pricePoints.length} points`);
                 console.log(`📍 Median price (center): $${medianPrice.toFixed(2)}`);
                 console.log(`📍 Price range: $${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`);
@@ -2877,26 +2881,14 @@
         // Nasdaq price overlay toggle state - DEFAULT TO TRUE so line shows immediately
         window.nasdaqPriceEnabled = true;
 
-        // Toggle button handler
-        const priceToggleBtn = document.getElementById('price-toggle-btn');
-        if (priceToggleBtn) {
-            // Set initial state to active since nasdaqPriceEnabled is true by default
-            priceToggleBtn.classList.add('active');
-            
-            priceToggleBtn.addEventListener('click', async () => {
-                window.nasdaqPriceEnabled = !window.nasdaqPriceEnabled;
-                console.log(`🔘 Toggle clicked! New state: ${window.nasdaqPriceEnabled}`);
-
-                if (window.nasdaqPriceEnabled) {
-                    priceToggleBtn.classList.add('active');
-                } else {
-                    priceToggleBtn.classList.remove('active');
-                }
-
-                // Redraw chart
+        // Checkbox toggle handler
+        const priceToggleCheckbox = document.getElementById('price-toggle');
+        if (priceToggleCheckbox) {
+            priceToggleCheckbox.checked = true;
+            priceToggleCheckbox.addEventListener('change', async () => {
+                window.nasdaqPriceEnabled = !!priceToggleCheckbox.checked;
+                console.log(`☑️ Show Nasdaq: ${window.nasdaqPriceEnabled}`);
                 await updateChart(currentTimeframe);
-
-                console.log(`Nasdaq price overlay ${window.nasdaqPriceEnabled ? 'enabled' : 'disabled'}`);
             });
         }
 
