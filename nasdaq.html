@@ -573,7 +573,28 @@
             width: 14px;
             height: 14px;
             cursor: pointer;
-            accent-color: #ffffff; /* modern browsers */
+            appearance: none;
+            -webkit-appearance: none;
+            border: 1px solid #666;
+            border-radius: 3px;
+            background-color: #999;
+            position: relative;
+        }
+
+        .price-toggle input[type="checkbox"]:checked {
+            background-color: #ffffff;
+            border-color: #ffffff;
+        }
+
+        .price-toggle input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000;
+            font-size: 10px;
+            font-weight: bold;
         }
 
         .chart-controls {
@@ -1464,7 +1485,7 @@
                         <span class="chart-title" data-i18n="dashboard.chart.title">Historical Sentiment Trend</span>
                         <label class="price-toggle" for="price-toggle" title="Toggle NASDAQ price">
                             <input type="checkbox" id="price-toggle" checked>
-                            <span>Show Nasdaq</span>
+                            <span>Show NASDAQ</span>
                         </label>
                     </div>
                     <div class="chart-controls">
@@ -2858,16 +2879,28 @@
                 path.setAttribute('opacity', '0.9');  // Increased opacity for better visibility
                 nasdaqContainer.appendChild(path);
 
-                // Add inline label at the end of the line inside the chart
+                // Add inline label at the end of the line inside the chart (right side)
                 const lastPoint = pricePoints[pricePoints.length - 1];
-                const lastX = lastPoint.x + 3; // offset a bit to the right of the end
+                const lastX = Math.min(98, lastPoint.x + 2); // Position near right edge, offset slightly from line end
                 const lastY = priceToY(lastPoint.price);
+                
+                // Create background rectangle for better visibility
+                const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                bgRect.setAttribute('x', String(lastX - 1));
+                bgRect.setAttribute('y', String(lastY - 6));
+                bgRect.setAttribute('width', '58');
+                bgRect.setAttribute('height', '12');
+                bgRect.setAttribute('fill', '#0f0f0f');
+                bgRect.setAttribute('opacity', '0.8');
+                nasdaqContainer.appendChild(bgRect);
+                
+                // Create text label
                 const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.textContent = 'Nasdaq price';
+                label.textContent = 'NASDAQ price';
                 label.setAttribute('x', String(lastX));
                 label.setAttribute('y', String(lastY));
                 label.setAttribute('fill', '#ffffff');
-                label.setAttribute('font-size', '10');
+                label.setAttribute('font-size', '9');
                 label.setAttribute('font-weight', '600');
                 label.setAttribute('dominant-baseline', 'middle');
                 nasdaqContainer.appendChild(label);
