@@ -694,14 +694,14 @@
             left: 50px;
             right: 20px;
             top: 0;
-            bottom: 20px;
+            bottom: 45px;
             cursor: crosshair;
         }
 
         .chart-hover-line {
             position: absolute;
             top: 0;
-            bottom: 20px;
+            bottom: 45px;
             width: 1px;
             background: transparent;
             border-left: 2px dashed rgba(255, 140, 66, 0.5);
@@ -711,7 +711,7 @@
 
         .chart-time-label {
             position: absolute;
-            bottom: 18px;
+            bottom: 43px;
             left: 0;
             background: #ff8c42;
             color: #000;
@@ -842,12 +842,46 @@
             position: absolute;
             left: 50px;
             right: 20px;
-            bottom: 0;
+            bottom: 25px;
             height: 20px;
             display: flex;
             justify-content: space-between;
             font-size: 11px;
             color: #fff;
+        }
+
+        .chart-legend {
+            position: absolute;
+            left: 50px;
+            right: 20px;
+            bottom: 0;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            font-size: 11px;
+            color: #fff;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 2px;
+            border-radius: 1px;
+        }
+
+        .legend-color.orange {
+            background-color: #ff8c42;
+        }
+
+        .legend-color.white {
+            background-color: #ffffff;
         }
 
         /* News Feed */
@@ -1545,6 +1579,16 @@
                         <span>-30m</span>
                         <span>-15m</span>
                         <span>Now</span>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <div class="legend-color orange"></div>
+                            <span>Sentiment Composite Score</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color white"></div>
+                            <span>NASDAQ Stock Price</span>
+                        </div>
                     </div>
                 </div>
 
