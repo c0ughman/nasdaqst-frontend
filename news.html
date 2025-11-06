@@ -844,7 +844,7 @@
         // Create HTML for a single article
         function createArticleHTML(article) {
             const publishedDate = new Date(article.published_at);
-            const timeAgo = getTimeAgo(publishedDate);
+            const formattedTimestamp = formatTimestamp(publishedDate);
             const sentimentClass = article.sentiment || 'neutral';
             const sentimentKey = `news.sentiment.${sentimentClass}`;
             const sentimentLabel = t(sentimentKey);
@@ -854,7 +854,7 @@
                     <div class="article-header">
                         <div class="article-meta">
                             <span class="article-source">${article.source || 'Unknown Source'}</span>
-                            <span class="article-time">${timeAgo}</span>
+                            <span class="article-time">${formattedTimestamp}</span>
                         </div>
                         <span class="sentiment-badge ${sentimentClass}">${sentimentLabel}</span>
                     </div>
@@ -872,17 +872,16 @@
             `;
         }
 
-        // Calculate time ago
-        function getTimeAgo(date) {
-            const now = new Date();
-            const diff = Math.floor((now - date) / 1000); // difference in seconds
-
-            if (diff < 60) return 'Just now';
-            if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
-            if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
-            if (diff < 604800) return `${Math.floor(diff / 86400)} days ago`;
-
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        // Format timestamp as actual date and time
+        function formatTimestamp(date) {
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
         }
 
         // Display error

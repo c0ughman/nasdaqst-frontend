@@ -22,9 +22,13 @@ const translations = {
         'onboarding.subtitle.language': 'Choose your preferred language for the dashboard',
         'onboarding.button.continue': 'Continue',
         'onboarding.title.disclaimer': 'Important Disclaimer',
-        'onboarding.disclaimer.heading': 'Important Information',
-        'onboarding.disclaimer.text1': 'This tool provides market sentiment analysis for informational purposes only. It is <strong>not</strong> financial advice, and should not be your only source of information when making investment decisions.',
-        'onboarding.disclaimer.text2': 'Market sentiment can change rapidly, and past sentiment does not predict future market movements. Always do your own research, consult with financial professionals, and consider your personal financial situation before making any investment decisions.',
+        'onboarding.disclaimer.heading': 'Risk Warning',
+        'onboarding.disclaimer.text': 'Trading Futures, Forex, CFDs and Stocks involves a risk of loss. Please consider carefully if such trading is appropriate for you. Past performance is not indicative of future results. Any and all signals or educational advice provided by PhoenixBinary and/or Phoenix Algo, LLC and/or any indicators provided by aforementioned are for educational purposes only and do not constitute investment recommendations or advice.',
+        'onboarding.disclaimer.checkbox': 'I understand and acknowledge the risks associated with trading',
+
+        // Legal Notice
+        'legal.title': 'Risk Warning',
+        'legal.text': 'Trading Futures, Forex, CFDs and Stocks involves a risk of loss. Please consider carefully if such trading is appropriate for you. Past performance is not indicative of future results. Any and all signals or educational advice provided by PhoenixBinary and/or Phoenix Algo, LLC and/or any indicators provided by aforementioned are for educational purposes only and do not constitute investment recommendations or advice.',
 
         // About Page
         'about.page.title': 'About the NASDAQ Sentiment Tracker',
@@ -121,9 +125,13 @@ const translations = {
         'onboarding.subtitle.language': 'Elige tu idioma preferido para el panel',
         'onboarding.button.continue': 'Continuar',
         'onboarding.title.disclaimer': 'Aviso importante',
-        'onboarding.disclaimer.heading': 'Información importante',
-        'onboarding.disclaimer.text1': 'Esta herramienta proporciona análisis de sentimiento del mercado solo con fines informativos. <strong>No</strong> es asesoramiento financiero y no debe ser su única fuente de información al tomar decisiones de inversión.',
-        'onboarding.disclaimer.text2': 'El sentimiento del mercado puede cambiar rápidamente, y el sentimiento pasado no predice movimientos futuros del mercado. Siempre haga su propia investigación, consulte con profesionales financieros y considere su situación financiera personal antes de tomar decisiones de inversión.',
+        'onboarding.disclaimer.heading': 'Advertencia de riesgo',
+        'onboarding.disclaimer.text': 'El comercio de futuros, Forex, CFDs y acciones implica un riesgo de pérdida. Considere cuidadosamente si dicho comercio es apropiado para usted. El rendimiento pasado no es indicativo de resultados futuros. Todas las señales o consejos educativos proporcionados por PhoenixBinary y/o Phoenix Algo, LLC y/o cualquier indicador proporcionado por los mencionados son solo para fines educativos y no constituyen recomendaciones o consejos de inversión.',
+        'onboarding.disclaimer.checkbox': 'Entiendo y reconozco los riesgos asociados con el comercio',
+
+        // Legal Notice
+        'legal.title': 'Advertencia de riesgo',
+        'legal.text': 'El comercio de futuros, Forex, CFDs y acciones implica un riesgo de pérdida. Considere cuidadosamente si dicho comercio es apropiado para usted. El rendimiento pasado no es indicativo de resultados futuros. Todas las señales o consejos educativos proporcionados por PhoenixBinary y/o Phoenix Algo, LLC y/o cualquier indicador proporcionado por los mencionados son solo para fines educativos y no constituyen recomendaciones o consejos de inversión.',
 
         // About Page
         'about.page.title': 'Acerca del Rastreador de Sentimiento NASDAQ',
@@ -220,9 +228,13 @@ const translations = {
         'onboarding.subtitle.language': 'Choisissez votre langue préférée pour le tableau de bord',
         'onboarding.button.continue': 'Continuer',
         'onboarding.title.disclaimer': 'Avis important',
-        'onboarding.disclaimer.heading': 'Information importante',
-        'onboarding.disclaimer.text1': 'Cet outil fournit une analyse du sentiment du marché à des fins d\'information uniquement. Ce <strong>n\'est pas</strong> un conseil financier et ne doit pas être votre seule source d\'information lors de la prise de décisions d\'investissement.',
-        'onboarding.disclaimer.text2': 'Le sentiment du marché peut changer rapidement, et le sentiment passé ne prédit pas les mouvements futurs du marché. Faites toujours vos propres recherches, consultez des professionnels de la finance et tenez compte de votre situation financière personnelle avant de prendre des décisions d\'investissement.',
+        'onboarding.disclaimer.heading': 'Avertissement sur les risques',
+        'onboarding.disclaimer.text': 'Le trading de contrats à terme, Forex, CFD et actions comporte un risque de perte. Veuillez examiner attentivement si ce type de trading vous convient. Les performances passées ne sont pas indicatives des résultats futurs. Tous les signaux ou conseils éducatifs fournis par PhoenixBinary et/ou Phoenix Algo, LLC et/ou tous les indicateurs fournis par ces derniers sont à des fins éducatives uniquement et ne constituent pas des recommandations ou des conseils d\'investissement.',
+        'onboarding.disclaimer.checkbox': 'Je comprends et reconnais les risques associés au trading',
+
+        // Legal Notice
+        'legal.title': 'Avertissement sur les risques',
+        'legal.text': 'Le trading de contrats à terme, Forex, CFD et actions comporte un risque de perte. Veuillez examiner attentivement si ce type de trading vous convient. Les performances passées ne sont pas indicatives des résultats futurs. Tous les signaux ou conseils éducatifs fournis par PhoenixBinary et/ou Phoenix Algo, LLC et/ou tous les indicateurs fournis par ces derniers sont à des fins éducatives uniquement et ne constituent pas des recommandations ou des conseils d\'investissement.',
 
         // About Page
         'about.page.title': 'À propos du Tracker de Sentiment NASDAQ',
@@ -319,9 +331,13 @@ const translations = {
         'onboarding.subtitle.language': 'Wählen Sie Ihre bevorzugte Sprache für das Dashboard',
         'onboarding.button.continue': 'Weiter',
         'onboarding.title.disclaimer': 'Wichtiger Hinweis',
-        'onboarding.disclaimer.heading': 'Wichtige Information',
-        'onboarding.disclaimer.text1': 'Dieses Tool bietet Marktstimmungsanalysen nur zu Informationszwecken. Es ist <strong>keine</strong> Finanzberatung und sollte nicht Ihre einzige Informationsquelle bei Investitionsentscheidungen sein.',
-        'onboarding.disclaimer.text2': 'Die Marktstimmung kann sich schnell ändern, und vergangene Stimmungen sagen keine zukünftigen Marktbewegungen voraus. Führen Sie immer Ihre eigene Recherche durch, konsultieren Sie Finanzexperten und berücksichtigen Sie Ihre persönliche finanzielle Situation, bevor Sie Investitionsentscheidungen treffen.',
+        'onboarding.disclaimer.heading': 'Risikowarnung',
+        'onboarding.disclaimer.text': 'Der Handel mit Futures, Forex, CFDs und Aktien birgt ein Verlustrisiko. Bitte überlegen Sie sorgfältig, ob dieser Handel für Sie geeignet ist. Die Wertentwicklung in der Vergangenheit ist kein Indikator für zukünftige Ergebnisse. Alle Signale oder Bildungsratschläge von PhoenixBinary und/oder Phoenix Algo, LLC und/oder alle von den genannten bereitgestellten Indikatoren dienen nur Bildungszwecken und stellen keine Anlageempfehlungen oder -beratung dar.',
+        'onboarding.disclaimer.checkbox': 'Ich verstehe und erkenne die mit dem Handel verbundenen Risiken an',
+
+        // Legal Notice
+        'legal.title': 'Risikowarnung',
+        'legal.text': 'Der Handel mit Futures, Forex, CFDs und Aktien birgt ein Verlustrisiko. Bitte überlegen Sie sorgfältig, ob dieser Handel für Sie geeignet ist. Die Wertentwicklung in der Vergangenheit ist kein Indikator für zukünftige Ergebnisse. Alle Signale oder Bildungsratschläge von PhoenixBinary und/oder Phoenix Algo, LLC und/oder alle von den genannten bereitgestellten Indikatoren dienen nur Bildungszwecken und stellen keine Anlageempfehlungen oder -beratung dar.',
 
         // About Page
         'about.page.title': 'Über den NASDAQ Stimmungs-Tracker',
@@ -418,9 +434,13 @@ const translations = {
         'onboarding.subtitle.language': '为仪表板选择您喜欢的语言',
         'onboarding.button.continue': '继续',
         'onboarding.title.disclaimer': '重要免责声明',
-        'onboarding.disclaimer.heading': '重要信息',
-        'onboarding.disclaimer.text1': '此工具仅提供市场情绪分析，仅供参考。这<strong>不是</strong>财务建议，在做出投资决策时不应作为您唯一的信息来源。',
-        'onboarding.disclaimer.text2': '市场情绪可能会迅速变化，过去的情绪并不能预测未来的市场走势。在做出任何投资决策之前，请始终进行自己的研究，咨询财务专业人士，并考虑您的个人财务状况。',
+        'onboarding.disclaimer.heading': '风险警告',
+        'onboarding.disclaimer.text': '交易期货、外汇、差价合约和股票涉及亏损风险。请仔细考虑此类交易是否适合您。过去的表现并不代表未来的结果。PhoenixBinary 和/或 Phoenix Algo, LLC 提供的任何及所有信号或教育建议，以及上述提供的任何指标，仅用于教育目的，不构成投资建议或推荐。',
+        'onboarding.disclaimer.checkbox': '我理解并承认与交易相关的风险',
+
+        // Legal Notice
+        'legal.title': '风险警告',
+        'legal.text': '交易期货、外汇、差价合约和股票涉及亏损风险。请仔细考虑此类交易是否适合您。过去的表现并不代表未来的结果。PhoenixBinary 和/或 Phoenix Algo, LLC 提供的任何及所有信号或教育建议，以及上述提供的任何指标，仅用于教育目的，不构成投资建议或推荐。',
 
         // About Page
         'about.page.title': '关于NASDAQ情绪跟踪器',
@@ -517,9 +537,13 @@ const translations = {
         'onboarding.subtitle.language': 'ダッシュボードの言語を選択してください',
         'onboarding.button.continue': '続ける',
         'onboarding.title.disclaimer': '重要な免責事項',
-        'onboarding.disclaimer.heading': '重要な情報',
-        'onboarding.disclaimer.text1': 'このツールは情報提供のみを目的とした市場センチメント分析を提供します。これは<strong>金融アドバイスではなく</strong>、投資決定を行う際の唯一の情報源とすべきではありません。',
-        'onboarding.disclaimer.text2': '市場センチメントは急速に変化する可能性があり、過去のセンチメントは将来の市場動向を予測しません。投資決定を行う前に、常に独自の調査を行い、金融専門家に相談し、個人的な財務状況を考慮してください。',
+        'onboarding.disclaimer.heading': 'リスク警告',
+        'onboarding.disclaimer.text': '先物、外国為替、CFD、株式の取引には損失のリスクが伴います。このような取引があなたに適しているかどうか慎重に検討してください。過去のパフォーマンスは将来の結果を示すものではありません。PhoenixBinary および/または Phoenix Algo, LLC によって提供されるすべてのシグナルまたは教育的アドバイス、および前述によって提供されるすべてのインジケーターは、教育目的のみであり、投資の推奨やアドバイスを構成するものではありません。',
+        'onboarding.disclaimer.checkbox': '取引に関連するリスクを理解し、認識します',
+
+        // Legal Notice
+        'legal.title': 'リスク警告',
+        'legal.text': '先物、外国為替、CFD、株式の取引には損失のリスクが伴います。このような取引があなたに適しているかどうか慎重に検討してください。過去のパフォーマンスは将来の結果を示すものではありません。PhoenixBinary および/または Phoenix Algo, LLC によって提供されるすべてのシグナルまたは教育的アドバイス、および前述によって提供されるすべてのインジケーターは、教育目的のみであり、投資の推奨やアドバイスを構成するものではありません。',
 
         // About Page
         'about.page.title': 'NASDAQセンチメントトラッカーについて',

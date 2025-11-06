@@ -128,7 +128,7 @@
         .bottom-row {
             grid-column: 1 / -1;
             grid-row: 5;
-            padding: 12px 19px 29px 19px;
+            padding: 12px 19px 10px 19px;
             margin-top: -10px;
         }
 
@@ -1164,6 +1164,30 @@
             margin-bottom: 0;
         }
 
+        .disclaimer-checkbox-container {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        .disclaimer-checkbox-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .disclaimer-checkbox {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
         .onboarding-button {
             width: 100%;
             padding: 14px 32px;
@@ -1314,15 +1338,20 @@
                         <div class="disclaimer-section">
                             <h3 class="disclaimer-heading">
                                 <span>⚠️</span>
-                                <span data-i18n="onboarding.disclaimer.heading">Important Information</span>
+                                <span data-i18n="onboarding.disclaimer.heading">Risk Warning</span>
                             </h3>
                             <div class="disclaimer-text">
-                                <p data-i18n="onboarding.disclaimer.text1" data-i18n-html>This tool provides market sentiment analysis for informational purposes only. It is <strong>not</strong> financial advice, and should not be your only source of information when making investment decisions.</p>
-                                <p data-i18n="onboarding.disclaimer.text2">Market sentiment can change rapidly, and past sentiment does not predict future market movements. Always do your own research, consult with financial professionals, and consider your personal financial situation before making any investment decisions.</p>
+                                <p data-i18n="onboarding.disclaimer.text">Trading Futures, Forex, CFDs and Stocks involves a risk of loss. Please consider carefully if such trading is appropriate for you. Past performance is not indicative of future results. Any and all signals or educational advice provided by PhoenixBinary and/or Phoenix Algo, LLC and/or any indicators provided by aforementioned are for educational purposes only and do not constitute investment recommendations or advice.</p>
                             </div>
                         </div>
+                        <div class="disclaimer-checkbox-container">
+                            <label class="disclaimer-checkbox-label">
+                                <input type="checkbox" id="disclaimer-checkbox" class="disclaimer-checkbox">
+                                <span data-i18n="onboarding.disclaimer.checkbox">I understand and acknowledge the risks associated with trading</span>
+                            </label>
+                        </div>
                     </div>
-                    <button class="onboarding-button" id="disclaimer-continue-btn" data-i18n="onboarding.button.continue">Continue</button>
+                    <button class="onboarding-button" id="disclaimer-continue-btn" data-i18n="onboarding.button.continue" disabled>Continue</button>
                 </div>
             </div>
         </div>
@@ -1515,15 +1544,24 @@
             <!-- Bottom Row: Historical Sentiment Trend -->
             <div class="card bottom-row" style="position: relative;">
                 <div class="chart-header">
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 24px;">
                         <span class="chart-title" data-i18n="dashboard.chart.title">Historical Sentiment Trend</span>
                         <label class="price-toggle" for="price-toggle" title="Toggle NASDAQ price">
                             <input type="checkbox" id="price-toggle" checked>
                             <span>Show NASDAQ</span>
                         </label>
                     </div>
+                    <div class="chart-legend" style="position: static; left: auto; right: auto; bottom: auto; height: auto; display: flex; align-items: center; gap: 20px; font-size: 11px; margin-left: 9px;">
+                        <div class="legend-item">
+                            <div class="legend-color orange"></div>
+                            <span>Sentiment Score</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color white"></div>
+                            <span>NASDAQ</span>
+                        </div>
+                    </div>
                     <div class="chart-controls">
-                        <span class="chart-data-info" id="chart-data-info" style="color: #888; font-size: 11px; margin-right: 10px;"></span>
                         <div class="timeframe-selector">
                             <button class="timeframe-btn" data-timeframe="6h" data-i18n="dashboard.chart.timeframe.6h">Session</button>
                             <button class="timeframe-btn" data-timeframe="5m" data-i18n="dashboard.chart.timeframe.5m">5 min</button>
@@ -1579,16 +1617,6 @@
                         <span>-30m</span>
                         <span>-15m</span>
                         <span>Now</span>
-                    </div>
-                    <div class="chart-legend">
-                        <div class="legend-item">
-                            <div class="legend-color orange"></div>
-                            <span>Sentiment Composite Score</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-color white"></div>
-                            <span>NASDAQ Stock Price</span>
-                        </div>
                     </div>
                 </div>
 
@@ -2680,18 +2708,8 @@
                     ).join('');
 
                     xAxisLabels.innerHTML = labelsHtml;
-
-                    // Update data info in chart header
-                    const dataInfoElement = document.getElementById('chart-data-info');
-                    if (dataInfoElement) {
-                        dataInfoElement.textContent = `${data.count} points over ${data.timeRange}`;
-                    }
                 } else {
                     xAxisLabels.innerHTML = '<span>Loading...</span>';
-                    const dataInfoElement = document.getElementById('chart-data-info');
-                    if (dataInfoElement) {
-                        dataInfoElement.textContent = '';
-                    }
                 }
 
                 // Hide the original curved path (we're using the new smooth line with dots instead)
@@ -3275,6 +3293,15 @@
                 progressDot1.classList.remove('active');
                 progressDot2.classList.add('active');
             });
+
+            // Disclaimer checkbox handling
+            const disclaimerCheckbox = document.getElementById('disclaimer-checkbox');
+            if (disclaimerCheckbox) {
+                disclaimerCheckbox.addEventListener('change', () => {
+                    // Enable/disable continue button based on checkbox state
+                    disclaimerContinueBtn.disabled = !disclaimerCheckbox.checked;
+                });
+            }
 
             // Continue from disclaimer step (complete onboarding)
             disclaimerContinueBtn.addEventListener('click', () => {
