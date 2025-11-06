@@ -2772,13 +2772,24 @@
             // Generate smooth path using ALL data points
             const path = createSmoothPath(allPoints);
 
+            // Calculate min/max sentiment for dynamic scaling on short timeframes
+            const sentiments = filteredData.map(d => d.sentiment);
+            const minSentiment = Math.min(...sentiments);
+            const maxSentiment = Math.max(...sentiments);
+
+            // Determine if we should use dynamic scaling (for short timeframes)
+            const useDynamicScaling = ['5m', '15m', '30m'].includes(timeframe);
+
             return {
                 labels,
                 path,
                 dataPoints: allPoints,
                 gaps: gaps,
                 count: allPoints.length,
-                timeRange: `${config.label} (${allPoints.length} points)`
+                timeRange: `${config.label} (${allPoints.length} points)`,
+                minSentiment,
+                maxSentiment,
+                useDynamicScaling
             };
         }
         
@@ -2831,11 +2842,11 @@
 
                 // Update Y-axis labels based on actual data range
                 if (data.dataPoints && data.dataPoints.length > 0) {
-                    updateYAxisLabels(data.dataPoints);
+                    updateYAxisLabels(data.dataPoints, data.minSentiment, data.maxSentiment, data.useDynamicScaling);
                 }
 
                 // Add data point dots for better visibility
-                drawDataPointDots(data.dataPoints);
+                drawDataPointDots(data.dataPoints, data.minSentiment, data.maxSentiment, data.useDynamicScaling);
 
                 // Draw market gap lines
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
@@ -2862,7 +2873,7 @@
         }
         
         // Draw data point dots and connecting lines for better visibility
-        function drawDataPointDots(dataPoints) {
+        function drawDataPointDots(dataPoints, minSentiment, maxSentiment, useDynamicScaling) {
             const dotsContainer = document.getElementById('chart-dots');
             if (!dotsContainer) return;
 
@@ -2871,16 +2882,31 @@
 
             if (!dataPoints || dataPoints.length === 0) return;
 
-            // FIXED SCALE: Always use -100 to +100 range (same as createSmoothPath)
-            // This ensures 0 is always at the center (Y=50)
-            const sentimentToY = (sentiment) => {
-                // Map sentiment from [-100, 100] to [100, 0] (inverted Y axis)
-                // +100 sentiment = Y=0 (top of chart)
-                // 0 sentiment = Y=50 (center line)
-                // -100 sentiment = Y=100 (bottom of chart)
-                const y = 50 - (sentiment / 2);
-                return Math.max(0, Math.min(100, y)); // Clamp between 0-100
-            };
+            // Determine scaling method based on timeframe
+            const sentimentToY = useDynamicScaling
+                ? (sentiment) => {
+                    // DYNAMIC SCALE: Use actual data range for short timeframes
+                    const range = maxSentiment - minSentiment;
+                    if (range === 0) return 50;
+
+                    // Add 10% padding on top and bottom
+                    const padding = range * 0.1;
+                    const paddedMin = minSentiment - padding;
+                    const paddedMax = maxSentiment + padding;
+                    const paddedRange = paddedMax - paddedMin;
+
+                    // Map to 0-100 (inverted Y axis)
+                    const y = ((paddedMax - sentiment) / paddedRange) * 100;
+                    return Math.max(0, Math.min(100, y));
+                }
+                : (sentiment) => {
+                    // FIXED SCALE: Always use -100 to +100 range for longer timeframes
+                    // +100 sentiment = Y=0 (top of chart)
+                    // 0 sentiment = Y=50 (center line)
+                    // -100 sentiment = Y=100 (bottom of chart)
+                    const y = 50 - (sentiment / 2);
+                    return Math.max(0, Math.min(100, y));
+                };
 
             // Create smooth path connecting all dots
             if (dataPoints.length > 1) {
@@ -2947,10 +2973,28 @@
             });
         }
 
-        // Update Y-axis labels with fixed scale (-100 to +100)
-        function updateYAxisLabels(dataPoints) {
+        // Update Y-axis labels with fixed or dynamic scale
+        function updateYAxisLabels(dataPoints, minSentiment, maxSentiment, useDynamicScaling) {
             const yAxis = document.querySelector('.y-axis');
-            if (yAxis) {
+            if (!yAxis) return;
+
+            if (useDynamicScaling) {
+                // DYNAMIC SCALE: Show actual data range with padding
+                const range = maxSentiment - minSentiment;
+                const padding = range * 0.1;
+                const paddedMin = minSentiment - padding;
+                const paddedMax = maxSentiment + padding;
+
+                // Calculate 5 evenly spaced labels
+                const step = (paddedMax - paddedMin) / 4;
+                const labels = [];
+                for (let i = 4; i >= 0; i--) {
+                    const value = paddedMin + (step * i);
+                    labels.push(`<span class="y-axis-label">${value >= 0 ? '+' : ''}${value.toFixed(0)}</span>`);
+                }
+
+                yAxis.innerHTML = labels.join('');
+            } else {
                 // FIXED SCALE: Always show -100 to +100 with 0 at center
                 yAxis.innerHTML = `
                     <span class="y-axis-label">+100</span>
