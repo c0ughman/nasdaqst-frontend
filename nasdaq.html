@@ -2553,105 +2553,84 @@
 
             let cutoffTime;
             let endTime; // For Session timeframe or scroll window end time
-            
-            // Special handling for 'Session' (6h) - show all data from current trading day
+
+            // Helper function to convert ET time to UTC
+            const etToUTC = (year, month, day, hour, minute) => {
+                const isoStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+                let testUTC = new Date(isoStr + '-05:00');
+                let etParts = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'America/New_York',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).formatToParts(testUTC);
+
+                let matches = parseInt(etParts.find(p => p.type === 'year').value) === year &&
+                             parseInt(etParts.find(p => p.type === 'month').value) === (month + 1) &&
+                             parseInt(etParts.find(p => p.type === 'day').value) === day &&
+                             parseInt(etParts.find(p => p.type === 'hour').value) === hour &&
+                             parseInt(etParts.find(p => p.type === 'minute').value) === minute;
+
+                if (!matches) {
+                    testUTC = new Date(isoStr + '-04:00');
+                }
+
+                return testUTC;
+            };
+
+            // Get current date in Eastern Time
+            const etFormatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/New_York',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+
+            const parts = etFormatter.formatToParts(now);
+            const etYear = parseInt(parts.find(p => p.type === 'year').value);
+            const etMonth = parseInt(parts.find(p => p.type === 'month').value) - 1;
+            const etDay = parseInt(parts.find(p => p.type === 'day').value);
+
+            // Special handling for Session (6h), 2-day, and 3-day timeframes
             if (timeframe === '6h') {
-                // Market hours: 9:30 AM - 4:00 PM Eastern Time
-                // Get the current date in Eastern Time to determine the trading day
-                const etFormatter = new Intl.DateTimeFormat('en-US', {
-                    timeZone: 'America/New_York',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                });
-                
-                const parts = etFormatter.formatToParts(now);
-                const etYear = parseInt(parts.find(p => p.type === 'year').value);
-                const etMonth = parseInt(parts.find(p => p.type === 'month').value) - 1; // JS months are 0-indexed
-                const etDay = parseInt(parts.find(p => p.type === 'day').value);
-                
-                // Helper function to convert ET time to UTC
-                // Uses timezone-aware date parsing
-                const etToUTC = (year, month, day, hour, minute) => {
-                    // Create ISO string for the ET time
-                    const isoStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
-                    
-                    // Try EST (UTC-5) first
-                    let testUTC = new Date(isoStr + '-05:00');
-                    let etParts = new Intl.DateTimeFormat('en-US', {
-                        timeZone: 'America/New_York',
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                    }).formatToParts(testUTC);
-                    
-                    // Check if this matches our target
-                    let matches = parseInt(etParts.find(p => p.type === 'year').value) === year &&
-                                 parseInt(etParts.find(p => p.type === 'month').value) === (month + 1) &&
-                                 parseInt(etParts.find(p => p.type === 'day').value) === day &&
-                                 parseInt(etParts.find(p => p.type === 'hour').value) === hour &&
-                                 parseInt(etParts.find(p => p.type === 'minute').value) === minute;
-                    
-                    // If not, try EDT (UTC-4)
-                    if (!matches) {
-                        testUTC = new Date(isoStr + '-04:00');
-                    }
-                    
-                    return testUTC;
-                };
-                
-                // Market open: 9:30 AM ET in UTC
+                // Session: Show current trading day only
                 cutoffTime = etToUTC(etYear, etMonth, etDay, 9, 30);
-                
-                // Market close: 4:00 PM ET in UTC
                 endTime = etToUTC(etYear, etMonth, etDay, 16, 0);
-                
-                console.log('Session timeframe: Current trading day in ET:', `${etYear}-${String(etMonth + 1).padStart(2, '0')}-${String(etDay).padStart(2, '0')}`);
-                console.log('Session timeframe: Market open (9:30 AM ET):', cutoffTime.toISOString());
-                console.log('Session timeframe: Market close (4:00 PM ET):', endTime.toISOString());
+
+                console.log('Session timeframe: Current trading day');
+                console.log('Market open (9:30 AM ET):', cutoffTime.toISOString());
+                console.log('Market close (4:00 PM ET):', endTime.toISOString());
+            } else if (timeframe === '2d') {
+                // 2-day: Show last 2 complete trading days (yesterday + today)
+                const yesterday = new Date(etYear, etMonth, etDay);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yParts = etFormatter.formatToParts(yesterday);
+                const yYear = parseInt(yParts.find(p => p.type === 'year').value);
+                const yMonth = parseInt(yParts.find(p => p.type === 'month').value) - 1;
+                const yDay = parseInt(yParts.find(p => p.type === 'day').value);
+
+                cutoffTime = etToUTC(yYear, yMonth, yDay, 9, 30);
+                endTime = isMarketOpen ? now : etToUTC(etYear, etMonth, etDay, 16, 0);
+
+                console.log('2-day timeframe: From', cutoffTime.toISOString(), 'to', endTime.toISOString());
+            } else if (timeframe === '3d') {
+                // 3-day: Show last 3 complete trading days
+                const twoDaysAgo = new Date(etYear, etMonth, etDay);
+                twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+                const tParts = etFormatter.formatToParts(twoDaysAgo);
+                const tYear = parseInt(tParts.find(p => p.type === 'year').value);
+                const tMonth = parseInt(tParts.find(p => p.type === 'month').value) - 1;
+                const tDay = parseInt(tParts.find(p => p.type === 'day').value);
+
+                cutoffTime = etToUTC(tYear, tMonth, tDay, 9, 30);
+                endTime = isMarketOpen ? now : etToUTC(etYear, etMonth, etDay, 16, 0);
+
+                console.log('3-day timeframe: From', cutoffTime.toISOString(), 'to', endTime.toISOString());
             } else {
-                // Get market open time for today (9:30 AM ET)
-                const etFormatter = new Intl.DateTimeFormat('en-US', {
-                    timeZone: 'America/New_York',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                });
-
-                const parts = etFormatter.formatToParts(now);
-                const etYear = parseInt(parts.find(p => p.type === 'year').value);
-                const etMonth = parseInt(parts.find(p => p.type === 'month').value) - 1;
-                const etDay = parseInt(parts.find(p => p.type === 'day').value);
-
-                const etToUTC = (year, month, day, hour, minute) => {
-                    const isoStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
-                    let testUTC = new Date(isoStr + '-05:00');
-                    let etParts = new Intl.DateTimeFormat('en-US', {
-                        timeZone: 'America/New_York',
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                    }).formatToParts(testUTC);
-
-                    let matches = parseInt(etParts.find(p => p.type === 'year').value) === year &&
-                                 parseInt(etParts.find(p => p.type === 'month').value) === (month + 1) &&
-                                 parseInt(etParts.find(p => p.type === 'day').value) === day &&
-                                 parseInt(etParts.find(p => p.type === 'hour').value) === hour &&
-                                 parseInt(etParts.find(p => p.type === 'minute').value) === minute;
-
-                    if (!matches) {
-                        testUTC = new Date(isoStr + '-04:00');
-                    }
-
-                    return testUTC;
-                };
-
+                // Regular timeframes: scrollable window within today's data
                 const marketOpenTime = etToUTC(etYear, etMonth, etDay, 9, 30);
 
                 // Calculate the window end time based on scroll position
