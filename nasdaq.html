@@ -2780,6 +2780,23 @@
             // Determine if we should use dynamic scaling (for short timeframes)
             const useDynamicScaling = ['5m', '15m', '30m'].includes(timeframe);
 
+            // Calculate NASDAQ price range from entire filtered dataset (not just scroll window)
+            // This ensures stable scaling across all scroll positions
+            const pricesInTimeframe = filteredData.filter(d => d.price != null && !isNaN(d.price)).map(d => d.price);
+            let priceRange = null;
+            if (pricesInTimeframe.length > 0) {
+                const sortedPrices = [...pricesInTimeframe].sort((a, b) => a - b);
+                const medianPrice = sortedPrices.length % 2 === 0
+                    ? (sortedPrices[sortedPrices.length / 2 - 1] + sortedPrices[sortedPrices.length / 2]) / 2
+                    : sortedPrices[Math.floor(sortedPrices.length / 2)];
+                priceRange = {
+                    median: medianPrice,
+                    min: Math.min(...pricesInTimeframe),
+                    max: Math.max(...pricesInTimeframe)
+                };
+                console.log(`📊 Timeframe price range - Median: $${medianPrice.toFixed(2)}, Range: $${priceRange.min.toFixed(2)} - $${priceRange.max.toFixed(2)}`);
+            }
+
             return {
                 labels,
                 path,
@@ -2789,7 +2806,8 @@
                 timeRange: `${config.label} (${allPoints.length} points)`,
                 minSentiment,
                 maxSentiment,
-                useDynamicScaling
+                useDynamicScaling,
+                priceRange
             };
         }
         
@@ -2853,7 +2871,7 @@
 
                 // Draw Nasdaq price overlay if enabled, otherwise clear it
                 if (window.nasdaqPriceEnabled) {
-                    drawNasdaqPriceLine(data.dataPoints);
+                    drawNasdaqPriceLine(data.dataPoints, data.priceRange);
                 } else {
                     // Clear the price line when toggle is off
                     const nasdaqContainer = document.getElementById('nasdaq-price-line');
@@ -3007,7 +3025,7 @@
         }
 
         // Draw Nasdaq price line overlay
-        function drawNasdaqPriceLine(dataPoints) {
+        function drawNasdaqPriceLine(dataPoints, priceRange) {
             console.log('🎨 drawNasdaqPriceLine called, toggle enabled:', window.nasdaqPriceEnabled);
             const nasdaqContainer = document.getElementById('nasdaq-price-line');
             if (!nasdaqContainer) {
@@ -3027,27 +3045,33 @@
             // Filter out points without price data
             const pricePoints = dataPoints.filter(p => p.price != null && !isNaN(p.price));
             console.log(`📊 Found ${pricePoints.length} points with valid price data`);
-            
+
             if (pricePoints.length === 0) {
                 console.warn('❌ No Nasdaq price data available after filtering');
                 console.log('Sample dataPoint:', dataPoints[0]);
                 return;
             }
-            
+
             console.log('✅ Drawing price line with:', pricePoints.length, 'points');
             console.log('Sample prices:', pricePoints.slice(0, 3).map(p => `$${p.price?.toFixed(2)}`).join(', '));
 
-            // Calculate median price for current time window
-            const prices = pricePoints.map(p => p.price).sort((a, b) => a - b);
-            const medianPrice = prices.length % 2 === 0
-                ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2
-                : prices[Math.floor(prices.length / 2)];
+            // Use the provided priceRange from the entire timeframe for stable scaling
+            // This prevents the line from jumping as you scroll
+            if (!priceRange) {
+                console.warn('⚠️ No priceRange provided, calculating from current window');
+                const prices = pricePoints.map(p => p.price).sort((a, b) => a - b);
+                const medianPrice = prices.length % 2 === 0
+                    ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2
+                    : prices[Math.floor(prices.length / 2)];
+                priceRange = {
+                    median: medianPrice,
+                    min: Math.min(...prices),
+                    max: Math.max(...prices)
+                };
+            }
 
-            // Find min/max prices for scaling
-            const minPrice = Math.min(...prices);
-            const maxPrice = Math.max(...prices);
-
-            console.log(`📊 Price range: $${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}, Median: $${medianPrice.toFixed(2)}`);
+            const { median: medianPrice, min: minPrice, max: maxPrice } = priceRange;
+            console.log(`📊 Using fixed price range - Median: $${medianPrice.toFixed(2)}, Range: $${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`);
 
             // Store for tooltip
             window.nasdaqPriceScale = { medianPrice, minPrice, maxPrice };
