@@ -2656,6 +2656,52 @@
             console.log('Reference time (now):', now.toISOString());
             console.log('Market status:', isMarketOpen ? 'OPEN' : 'CLOSED');
 
+            // For stable NASDAQ scaling, first get ALL data for the entire timeframe (before scroll window)
+            // This prevents the price line from jumping as you scroll
+            let fullTimeframeData;
+            if (timeframe === '6h' || timeframe === '2d' || timeframe === '3d') {
+                // For fixed timeframes, use the full range
+                const fullCutoffTime = timeframe === '6h' ? etToUTC(etYear, etMonth, etDay, 9, 30)
+                    : timeframe === '2d' ? (() => {
+                        const yesterday = new Date(etYear, etMonth, etDay);
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        const yParts = etFormatter.formatToParts(yesterday);
+                        return etToUTC(parseInt(yParts.find(p => p.type === 'year').value),
+                                      parseInt(yParts.find(p => p.type === 'month').value) - 1,
+                                      parseInt(yParts.find(p => p.type === 'day').value), 9, 30);
+                    })()
+                    : (() => {
+                        const twoDaysAgo = new Date(etYear, etMonth, etDay);
+                        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+                        const tParts = etFormatter.formatToParts(twoDaysAgo);
+                        return etToUTC(parseInt(tParts.find(p => p.type === 'year').value),
+                                      parseInt(tParts.find(p => p.type === 'month').value) - 1,
+                                      parseInt(tParts.find(p => p.type === 'day').value), 9, 30);
+                    })();
+                const fullEndTime = isMarketOpen ? now : etToUTC(etYear, etMonth, etDay, 16, 0);
+                fullTimeframeData = activeDataset.filter(d => d.timestamp >= fullCutoffTime && d.timestamp <= fullEndTime);
+            } else {
+                // For scrollable timeframes, get all data from market open today
+                const marketOpenTime = etToUTC(etYear, etMonth, etDay, 9, 30);
+                fullTimeframeData = activeDataset.filter(d => d.timestamp >= marketOpenTime && d.timestamp <= now);
+            }
+
+            // Calculate price range from FULL timeframe data (not scroll window)
+            const pricesInFullTimeframe = fullTimeframeData.filter(d => d.price != null && !isNaN(d.price)).map(d => d.price);
+            let priceRange = null;
+            if (pricesInFullTimeframe.length > 0) {
+                const sortedPrices = [...pricesInFullTimeframe].sort((a, b) => a - b);
+                const medianPrice = sortedPrices.length % 2 === 0
+                    ? (sortedPrices[sortedPrices.length / 2 - 1] + sortedPrices[sortedPrices.length / 2]) / 2
+                    : sortedPrices[Math.floor(sortedPrices.length / 2)];
+                priceRange = {
+                    median: medianPrice,
+                    min: Math.min(...pricesInFullTimeframe),
+                    max: Math.max(...pricesInFullTimeframe)
+                };
+                console.log(`📊 Full timeframe price range - Median: $${medianPrice.toFixed(2)}, Range: $${priceRange.min.toFixed(2)} - $${priceRange.max.toFixed(2)}`);
+            }
+
             // Filter data points within the timeframe using actual timestamps
             let filteredData;
             if (endTime) {
@@ -2759,22 +2805,7 @@
             // Determine if we should use dynamic scaling (for short timeframes)
             const useDynamicScaling = ['5m', '15m', '30m'].includes(timeframe);
 
-            // Calculate NASDAQ price range from entire filtered dataset (not just scroll window)
-            // This ensures stable scaling across all scroll positions
-            const pricesInTimeframe = filteredData.filter(d => d.price != null && !isNaN(d.price)).map(d => d.price);
-            let priceRange = null;
-            if (pricesInTimeframe.length > 0) {
-                const sortedPrices = [...pricesInTimeframe].sort((a, b) => a - b);
-                const medianPrice = sortedPrices.length % 2 === 0
-                    ? (sortedPrices[sortedPrices.length / 2 - 1] + sortedPrices[sortedPrices.length / 2]) / 2
-                    : sortedPrices[Math.floor(sortedPrices.length / 2)];
-                priceRange = {
-                    median: medianPrice,
-                    min: Math.min(...pricesInTimeframe),
-                    max: Math.max(...pricesInTimeframe)
-                };
-                console.log(`📊 Timeframe price range - Median: $${medianPrice.toFixed(2)}, Range: $${priceRange.min.toFixed(2)} - $${priceRange.max.toFixed(2)}`);
-            }
+            // priceRange was already calculated above from fullTimeframeData
 
             return {
                 labels,
