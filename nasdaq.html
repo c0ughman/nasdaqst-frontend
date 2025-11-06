@@ -2721,13 +2721,8 @@
             }
 
             // Use ALL data points for the chart path (smooth line)
-            // Calculate X positions based on actual timestamps, not indices
-            const windowStart = cutoffTime.getTime();
-            const windowEnd = endTime ? endTime.getTime() : now.getTime();
-            const windowDuration = windowEnd - windowStart;
-
             const allPoints = filteredData.map((d, index) => ({
-                x: ((d.timestamp.getTime() - windowStart) / windowDuration) * 100,
+                x: (index / (filteredData.length - 1)) * 100,
                 sentiment: d.sentiment,
                 price: d.price,
                 timestamp: d.timestamp,
@@ -2988,43 +2983,27 @@
             // Filter out points without price data
             const pricePoints = dataPoints.filter(p => p.price != null && !isNaN(p.price));
             console.log(`📊 Found ${pricePoints.length} points with valid price data`);
-
+            
             if (pricePoints.length === 0) {
                 console.warn('❌ No Nasdaq price data available after filtering');
                 console.log('Sample dataPoint:', dataPoints[0]);
                 return;
             }
-
+            
             console.log('✅ Drawing price line with:', pricePoints.length, 'points');
             console.log('Sample prices:', pricePoints.slice(0, 3).map(p => `$${p.price?.toFixed(2)}`).join(', '));
 
-            // Calculate reference price from ENTIRE dataset, not just current window
-            // This ensures the price line doesn't jump vertically when scrolling
-            if (!window.nasdaqDayReference) {
-                // Get all prices from the full day's dataset
-                const fullDataset = sentimentDataset.filter(d => d.price != null && !isNaN(d.price));
-                if (fullDataset.length > 0) {
-                    const allPrices = fullDataset.map(d => d.price);
-                    const sortedPrices = [...allPrices].sort((a, b) => a - b);
-                    const medianPrice = sortedPrices.length % 2 === 0
-                        ? (sortedPrices[sortedPrices.length / 2 - 1] + sortedPrices[sortedPrices.length / 2]) / 2
-                        : sortedPrices[Math.floor(sortedPrices.length / 2)];
-                    const minPrice = Math.min(...allPrices);
-                    const maxPrice = Math.max(...allPrices);
+            // Calculate median price for current time window
+            const prices = pricePoints.map(p => p.price).sort((a, b) => a - b);
+            const medianPrice = prices.length % 2 === 0
+                ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2
+                : prices[Math.floor(prices.length / 2)];
 
-                    window.nasdaqDayReference = { medianPrice, minPrice, maxPrice };
-                    console.log(`📊 Calculated day reference - Median: $${medianPrice.toFixed(2)}, Range: $${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`);
-                }
-            }
+            // Find min/max prices for scaling
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
 
-            // Use the fixed day reference for consistent scaling
-            const { medianPrice, minPrice, maxPrice } = window.nasdaqDayReference || {
-                medianPrice: pricePoints[0].price,
-                minPrice: Math.min(...pricePoints.map(p => p.price)),
-                maxPrice: Math.max(...pricePoints.map(p => p.price))
-            };
-
-            console.log(`📊 Using fixed reference - Median: $${medianPrice.toFixed(2)}, Range: $${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`);
+            console.log(`📊 Price range: $${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}, Median: $${medianPrice.toFixed(2)}`);
 
             // Store for tooltip
             window.nasdaqPriceScale = { medianPrice, minPrice, maxPrice };
