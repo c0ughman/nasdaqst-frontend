@@ -309,18 +309,7 @@
             font-size: 24px;
             font-weight: 700;
             margin-bottom: 4px;
-        }
-
-        .stat-value.positive {
-            color: #10b981;
-        }
-
-        .stat-value.negative {
-            color: #ef4444;
-        }
-
-        .stat-value.neutral {
-            color: #888;
+            color: #fff;
         }
 
         .stat-label {
@@ -379,31 +368,6 @@
             color: #666;
         }
 
-        .sentiment-badge {
-            padding: 4px 12px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .sentiment-badge.positive {
-            background: rgba(16, 185, 129, 0.15);
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        .sentiment-badge.negative {
-            background: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .sentiment-badge.neutral {
-            background: rgba(136, 136, 136, 0.15);
-            color: #888;
-            border: 1px solid rgba(136, 136, 136, 0.3);
-        }
 
         .article-title {
             font-size: 18px;
@@ -539,9 +503,7 @@
                         <h1 class="news-title" data-i18n="news.title">Latest News Feed</h1>
                         <div class="news-filters">
                             <button class="filter-btn active" data-filter="all" data-i18n="news.filter.all">All</button>
-                            <button class="filter-btn" data-filter="positive" data-i18n="news.filter.positive">Positive</button>
-                            <button class="filter-btn" data-filter="negative" data-i18n="news.filter.negative">Negative</button>
-                            <button class="filter-btn" data-filter="neutral" data-i18n="news.filter.neutral">Neutral</button>
+                            <button class="filter-btn" data-filter="most-impactful" data-i18n="news.filter.most-impactful">Most Impactful</button>
                         </div>
                     </div>
 
@@ -550,18 +512,6 @@
                         <div class="stat-item">
                             <div class="stat-value" id="total-articles">0</div>
                             <div class="stat-label" data-i18n="news.stat.total">Total Articles</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value positive" id="positive-count">0</div>
-                            <div class="stat-label" data-i18n="news.stat.positive">Positive</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value neutral" id="neutral-count">0</div>
-                            <div class="stat-label" data-i18n="news.stat.neutral">Neutral</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value negative" id="negative-count">0</div>
-                            <div class="stat-label" data-i18n="news.stat.negative">Negative</div>
                         </div>
                     </div>
 
@@ -811,14 +761,7 @@
 
         // Update statistics
         function updateStats() {
-            const positive = allArticles.filter(a => a.sentiment === 'positive').length;
-            const negative = allArticles.filter(a => a.sentiment === 'negative').length;
-            const neutral = allArticles.filter(a => a.sentiment === 'neutral').length;
-
             document.getElementById('total-articles').textContent = allArticles.length;
-            document.getElementById('positive-count').textContent = positive;
-            document.getElementById('negative-count').textContent = negative;
-            document.getElementById('neutral-count').textContent = neutral;
         }
 
         // Display articles
@@ -839,15 +782,16 @@
             }
 
             newsList.innerHTML = articles.map(article => createArticleHTML(article)).join('');
+            // Re-apply translations to newly added elements
+            if (typeof initTranslations === 'function') {
+                initTranslations();
+            }
         }
 
         // Create HTML for a single article
         function createArticleHTML(article) {
             const publishedDate = new Date(article.published_at);
             const formattedTimestamp = formatTimestamp(publishedDate);
-            const sentimentClass = article.sentiment || 'neutral';
-            const sentimentKey = `news.sentiment.${sentimentClass}`;
-            const sentimentLabel = t(sentimentKey);
 
             return `
                 <div class="news-article" onclick="window.open('${article.url}', '_blank')">
@@ -856,7 +800,6 @@
                             <span class="article-source">${article.source || 'Unknown Source'}</span>
                             <span class="article-time">${formattedTimestamp}</span>
                         </div>
-                        <span class="sentiment-badge ${sentimentClass}">${sentimentLabel}</span>
                     </div>
                     <h2 class="article-title">${article.title}</h2>
                     ${article.summary ? `<p class="article-summary">${article.summary}</p>` : ''}
@@ -897,22 +840,29 @@
         }
 
         // Filter articles
-        function filterArticles(sentiment) {
-            currentFilter = sentiment;
+        function filterArticles(filter) {
+            currentFilter = filter;
 
             // Update active filter button
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
-                if (btn.dataset.filter === sentiment) {
+                if (btn.dataset.filter === filter) {
                     btn.classList.add('active');
                 }
             });
 
             // Filter and display
-            if (sentiment === 'all') {
+            if (filter === 'all') {
                 displayArticles(allArticles);
-            } else {
-                const filtered = allArticles.filter(a => a.sentiment === sentiment);
+            } else if (filter === 'most-impactful') {
+                // Sort by absolute sentiment score (highest impact first)
+                const filtered = [...allArticles].filter(a => 
+                    a.sentiment_score !== null && a.sentiment_score !== undefined
+                ).sort((a, b) => {
+                    const absA = Math.abs(a.sentiment_score);
+                    const absB = Math.abs(b.sentiment_score);
+                    return absB - absA; // Descending order
+                });
                 displayArticles(filtered);
             }
         }

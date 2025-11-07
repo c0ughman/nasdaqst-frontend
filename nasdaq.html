@@ -1335,9 +1335,126 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Legal Disclaimer Modal - Shows on every page load */
+        .disclaimer-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .disclaimer-modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .disclaimer-modal {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 0;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+            position: relative;
+        }
+
+        .disclaimer-modal-content {
+            padding: 40px 48px;
+        }
+
+        .disclaimer-modal-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .disclaimer-modal-button {
+            width: 100%;
+            padding: 14px 32px;
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .disclaimer-modal-button:hover {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        .disclaimer-modal-button:disabled {
+            background: #2a2a2a;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .disclaimer-modal-button:disabled:hover {
+            background: #2a2a2a;
+        }
+
+        @media (max-width: 768px) {
+            .disclaimer-modal-content {
+                padding: 32px 24px;
+            }
+
+            .disclaimer-modal-title {
+                font-size: 24px;
+            }
+        }
     </style>
+    <!-- Disclaimer Modal Script -->
+    <script src="js/disclaimer-modal.js"></script>
 </head>
 <body>
+    <!-- Legal Disclaimer Modal - Shows on every page load -->
+    <div class="disclaimer-modal-overlay" id="disclaimer-modal-overlay">
+        <div class="disclaimer-modal">
+            <div class="disclaimer-modal-content">
+                <h2 class="disclaimer-modal-title" data-i18n="onboarding.title.disclaimer">Important Disclaimer</h2>
+                <div class="disclaimer-content">
+                    <div class="disclaimer-section">
+                        <h3 class="disclaimer-heading">
+                            <span>⚠️</span>
+                            <span data-i18n="onboarding.disclaimer.heading">Risk Warning</span>
+                        </h3>
+                        <div class="disclaimer-text">
+                            <p data-i18n="onboarding.disclaimer.text">Trading Futures, Forex, CFDs and Stocks involves a risk of loss. Please consider carefully if such trading is appropriate for you. Past performance is not indicative of future results. Any and all signals or educational advice provided by PhoenixBinary and/or Phoenix Algo, LLC and/or any indicators provided by aforementioned are for educational purposes only and do not constitute investment recommendations or advice.</p>
+                        </div>
+                    </div>
+                    <div class="disclaimer-checkbox-container">
+                        <label class="disclaimer-checkbox-label">
+                            <input type="checkbox" id="disclaimer-modal-checkbox" class="disclaimer-checkbox">
+                            <span data-i18n="onboarding.disclaimer.checkbox">I understand and acknowledge the risks associated with trading</span>
+                        </label>
+                    </div>
+                </div>
+                <button class="disclaimer-modal-button" id="disclaimer-modal-continue-btn" data-i18n="onboarding.button.continue" disabled>Continue</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Onboarding Modal -->
     <div class="onboarding-modal-overlay" id="onboarding-modal-overlay">
         <div class="onboarding-modal">
@@ -1711,8 +1828,9 @@
                     return;
                 }
 
-                // Check if onboarding is needed (initial sign-up)
-                await checkAndShowOnboarding();
+                // Note: Onboarding check is now handled by the disclaimer modal
+                // The disclaimer modal will call checkAndShowOnboarding() after user acknowledges
+                // This ensures disclaimer shows first, then onboarding if needed
                 
                 // Setup logout functionality
                 const logoutLink = document.getElementById('logout-link');
