@@ -667,7 +667,7 @@
             position: relative;
             background: #0f0f0f;
             border-radius: 12px;
-            padding: 12px;
+            padding: 12px 12px 8px 12px;
             min-height: 70px;
             max-height: 400px;
         }
@@ -851,10 +851,10 @@
         }
 
         .chart-scrollbar-container {
-            position: absolute;
-            bottom: 20px;
-            left: 50px;
-            right: 20px;
+            position: relative;
+            margin-top: 5px;
+            margin-left: 50px;
+            margin-right: 20px;
             height: 16px;
             display: flex;
             align-items: center;
@@ -1785,10 +1785,11 @@
                         <span>-15m</span>
                         <span>Now</span>
                     </div>
-                    <!-- Horizontal Scrollbar for Historical Data -->
-                    <div class="chart-scrollbar-container" id="chart-scrollbar-container">
-                        <input type="range" class="chart-scrollbar" id="chart-scrollbar" min="0" max="100" value="100" step="1">
-                    </div>
+                </div>
+
+                <!-- Horizontal Scrollbar for Historical Data -->
+                <div class="chart-scrollbar-container" id="chart-scrollbar-container">
+                    <input type="range" class="chart-scrollbar" id="chart-scrollbar" min="0" max="100" value="100" step="1">
                 </div>
 
                 <!-- Market Status Indicator (bottom-left) -->
