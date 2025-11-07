@@ -255,10 +255,23 @@
             border-bottom: 1px solid #1a1a1a;
         }
 
+        .news-title-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
         .news-title {
             font-size: 32px;
             font-weight: 700;
             color: #fff;
+        }
+
+        .news-total-count {
+            font-size: 11px;
+            color: #666;
+            font-weight: 400;
+            letter-spacing: 0.3px;
         }
 
         .news-filters {
@@ -291,33 +304,6 @@
             border-color: rgba(16, 185, 129, 0.3);
         }
 
-        .news-stats {
-            display: flex;
-            gap: 24px;
-            margin-bottom: 24px;
-            padding: 16px;
-            background: #1a1a1a;
-            border-radius: 12px;
-        }
-
-        .stat-item {
-            flex: 1;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 4px;
-            color: #fff;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
 
         .news-list {
             display: flex;
@@ -407,11 +393,6 @@
             color: #34d399;
         }
 
-        .article-score {
-            font-size: 13px;
-            color: #666;
-        }
-
         .loading-spinner {
             text-align: center;
             padding: 40px;
@@ -444,11 +425,6 @@
             .news-header {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 16px;
-            }
-
-            .news-stats {
-                flex-direction: column;
                 gap: 16px;
             }
 
@@ -500,18 +476,15 @@
             <div class="content-area">
                 <div class="news-container">
                     <div class="news-header">
-                        <h1 class="news-title" data-i18n="news.title">Latest News Feed</h1>
+                        <div class="news-title-wrapper">
+                            <h1 class="news-title" data-i18n="news.title">Latest News Feed</h1>
+                            <div class="news-total-count">
+                                <span data-i18n="news.stat.total">Total Articles</span>: <span id="total-articles">0</span>
+                            </div>
+                        </div>
                         <div class="news-filters">
                             <button class="filter-btn active" data-filter="all" data-i18n="news.filter.all">All</button>
                             <button class="filter-btn" data-filter="most-impactful" data-i18n="news.filter.most-impactful">Most Impactful</button>
-                        </div>
-                    </div>
-
-                    <!-- News Statistics -->
-                    <div class="news-stats" id="news-stats">
-                        <div class="stat-item">
-                            <div class="stat-value" id="total-articles">0</div>
-                            <div class="stat-label" data-i18n="news.stat.total">Total Articles</div>
                         </div>
                     </div>
 
@@ -807,9 +780,6 @@
                         <a href="${article.url}" class="article-link" onclick="event.stopPropagation()" data-i18n="news.article.read-more">
                             Read full article →
                         </a>
-                        ${article.sentiment_score !== null && article.sentiment_score !== undefined ?
-                            `<span class="article-score">Score: ${article.sentiment_score > 0 ? '+' : ''}${article.sentiment_score.toFixed(1)}</span>`
-                            : ''}
                     </div>
                 </div>
             `;
