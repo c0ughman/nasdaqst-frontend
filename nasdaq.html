@@ -2915,13 +2915,16 @@
             // Generate smooth path using ALL data points
             const path = createSmoothPath(allPoints);
 
-            // Calculate min/max sentiment for dynamic scaling on short timeframes
-            const sentiments = filteredData.map(d => d.sentiment);
-            const minSentiment = Math.min(...sentiments);
-            const maxSentiment = Math.max(...sentiments);
+            // Calculate min/max sentiment from FULL day's data for consistent scaling
+            // This prevents Y-axis from changing as you scroll
+            const fullDaySentiments = fullTimeframeData.map(d => d.sentiment);
+            const minSentiment = Math.min(...fullDaySentiments);
+            const maxSentiment = Math.max(...fullDaySentiments);
 
             // Determine if we should use dynamic scaling (for short timeframes)
             const useDynamicScaling = ['5m', '15m', '30m'].includes(timeframe);
+
+            console.log(`📊 Full day sentiment range: ${minSentiment.toFixed(1)} to ${maxSentiment.toFixed(1)}, useDynamicScaling: ${useDynamicScaling}`);
 
             // priceRange was already calculated above from fullTimeframeData
 
