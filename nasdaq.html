@@ -536,6 +536,13 @@
             user-select: none;
         }
 
+        /* Hide checkboxes for drivers without historical data */
+        #checkbox-social,
+        #checkbox-recommendations,
+        #checkbox-vix {
+            display: none;
+        }
+
         .driver-name {
             font-size: 14px;
             font-weight: 500;
@@ -2238,12 +2245,9 @@
                             timestamp: new Date(point.timestamp),
                             sentiment: point.composite_score,
                             price: point.price,
-                            // Include individual driver scores
-                            news: point.news_sentiment || null,
-                            indicators: point.indicators || null,
-                            social: point.social_media || null,
-                            recommendations: point.recommendations || null,
-                            vix: point.vix || null
+                            // Include individual driver scores (using actual API field names)
+                            news: point.news_composite || null,
+                            indicators: point.technical_composite || null
                         };
                         return mapped;
                     });
@@ -2268,11 +2272,8 @@
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
                         price: point.price,
-                        news: point.news_sentiment || null,
-                        indicators: point.indicators || null,
-                        social: point.social_media || null,
-                        recommendations: point.recommendations || null,
-                        vix: point.vix || null
+                        news: point.news_composite || null,
+                        indicators: point.technical_composite || null
                     }));
                     console.log(`✓ Loaded ${sentimentDataset2d.length} historical data points (2d)`);
                 } else {
@@ -2286,11 +2287,8 @@
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
                         price: point.price,
-                        news: point.news_sentiment || null,
-                        indicators: point.indicators || null,
-                        social: point.social_media || null,
-                        recommendations: point.recommendations || null,
-                        vix: point.vix || null
+                        news: point.news_composite || null,
+                        indicators: point.technical_composite || null
                     }));
                     console.log(`✓ Loaded ${sentimentDataset3d.length} historical data points (3d)`);
                 } else {
@@ -3253,13 +3251,11 @@
             svg.appendChild(centerLine);
 
             // Define which drivers to plot and their colors
+            // Only include drivers that have historical data from the API
             const driverConfig = [
                 { key: 'sentiment', color: '#ff8c42', label: 'Composite', checkbox: null }, // Always show
                 { key: 'news', color: '#3b82f6', label: 'News', checkbox: document.getElementById('checkbox-news') }, // Blue
-                { key: 'indicators', color: '#ec4899', label: 'Indicators', checkbox: document.getElementById('checkbox-indicators') }, // Pink
-                { key: 'social', color: '#10b981', label: 'Social', checkbox: document.getElementById('checkbox-social') }, // Green
-                { key: 'recommendations', color: '#8b5cf6', label: 'Recommendations', checkbox: document.getElementById('checkbox-recommendations') }, // Purple
-                { key: 'vix', color: '#f59e0b', label: 'VIX', checkbox: document.getElementById('checkbox-vix') } // Amber
+                { key: 'indicators', color: '#ec4899', label: 'Indicators', checkbox: document.getElementById('checkbox-indicators') } // Pink
             ];
 
             // Draw each enabled driver
