@@ -498,6 +498,44 @@
             margin-bottom: 8px;
         }
 
+        /* Driver Checkboxes */
+        .driver-checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #555;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .driver-checkbox:hover {
+            border-color: #ff8c42;
+        }
+
+        .driver-checkbox:checked {
+            background: #ff8c42;
+            border-color: #ff8c42;
+        }
+
+        .driver-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .driver-name {
+            cursor: pointer;
+            user-select: none;
+        }
+
         .driver-name {
             font-size: 14px;
             font-weight: 500;
@@ -1572,7 +1610,10 @@
                     <div class="drivers-grid-single">
                         <div class="driver-item">
                             <div class="driver-header">
-                                <span class="driver-name" data-i18n="dashboard.driver.indicators">Indicators</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" class="driver-checkbox" data-driver="indicators" id="checkbox-indicators">
+                                    <label for="checkbox-indicators" class="driver-name" data-i18n="dashboard.driver.indicators">Indicators</label>
+                                </div>
                                 <span class="driver-value negative">-1.2</span>
                             </div>
                             <div class="progress-bar">
@@ -1582,7 +1623,10 @@
 
                         <div class="driver-item">
                             <div class="driver-header">
-                                <span class="driver-name" data-i18n="dashboard.driver.social">Social Media</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" class="driver-checkbox" data-driver="social" id="checkbox-social">
+                                    <label for="checkbox-social" class="driver-name" data-i18n="dashboard.driver.social">Social Media</label>
+                                </div>
                                 <span class="driver-value positive">+0.5</span>
                             </div>
                             <div class="progress-bar">
@@ -1592,7 +1636,10 @@
 
                         <div class="driver-item">
                             <div class="driver-header">
-                                <span class="driver-name" data-i18n="dashboard.driver.news">News Sentiment</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" class="driver-checkbox" data-driver="news" id="checkbox-news">
+                                    <label for="checkbox-news" class="driver-name" data-i18n="dashboard.driver.news">News Sentiment</label>
+                                </div>
                                 <span class="driver-value positive">+0.1</span>
                             </div>
                             <div class="progress-bar">
@@ -1603,7 +1650,10 @@
                         <!-- New Driver 1 -->
                         <div class="driver-item">
                             <div class="driver-header">
-                                <span class="driver-name" data-i18n="dashboard.driver.recommendations">Recommendations</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" class="driver-checkbox" data-driver="recommendations" id="checkbox-recommendations">
+                                    <label for="checkbox-recommendations" class="driver-name" data-i18n="dashboard.driver.recommendations">Recommendations</label>
+                                </div>
                                 <span class="driver-value positive">+0.3</span>
                             </div>
                             <div class="progress-bar">
@@ -1614,7 +1664,10 @@
                         <!-- VIX Driver -->
                         <div class="driver-item">
                             <div class="driver-header">
-                                <span class="driver-name" data-i18n="dashboard.driver.vix">VIX</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" class="driver-checkbox" data-driver="vix" id="checkbox-vix">
+                                    <label for="checkbox-vix" class="driver-name" data-i18n="dashboard.driver.vix">VIX</label>
+                                </div>
                                 <span class="driver-value neutral">0.0</span>
                             </div>
                             <div class="progress-bar">
@@ -2184,7 +2237,13 @@
                         const mapped = {
                             timestamp: new Date(point.timestamp),
                             sentiment: point.composite_score,
-                            price: point.price
+                            price: point.price,
+                            // Include individual driver scores
+                            news: point.news_sentiment || null,
+                            indicators: point.indicators || null,
+                            social: point.social_media || null,
+                            recommendations: point.recommendations || null,
+                            vix: point.vix || null
                         };
                         return mapped;
                     });
@@ -2208,7 +2267,12 @@
                     sentimentDataset2d = data.historical_2d.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.price
+                        price: point.price,
+                        news: point.news_sentiment || null,
+                        indicators: point.indicators || null,
+                        social: point.social_media || null,
+                        recommendations: point.recommendations || null,
+                        vix: point.vix || null
                     }));
                     console.log(`✓ Loaded ${sentimentDataset2d.length} historical data points (2d)`);
                 } else {
@@ -2221,7 +2285,12 @@
                     sentimentDataset3d = data.historical_3d.map(point => ({
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
-                        price: point.price
+                        price: point.price,
+                        news: point.news_sentiment || null,
+                        indicators: point.indicators || null,
+                        social: point.social_media || null,
+                        recommendations: point.recommendations || null,
+                        vix: point.vix || null
                     }));
                     console.log(`✓ Loaded ${sentimentDataset3d.length} historical data points (3d)`);
                 } else {
@@ -3139,7 +3208,7 @@
             yAxis.innerHTML = labels.join('');
         }
 
-        // Draw sentiment line in oscillator chart
+        // Draw sentiment line in oscillator chart with optional driver overlays
         function drawSentimentOscillator(dataPoints) {
             const oscillatorDiv = document.getElementById('chart-oscillator');
             if (!oscillatorDiv) {
@@ -3155,14 +3224,6 @@
                 return;
             }
 
-            // Filter out points without sentiment data
-            const sentimentPoints = dataPoints.filter(p => p.sentiment != null && !isNaN(p.sentiment));
-
-            if (sentimentPoints.length === 0) {
-                console.warn('❌ No sentiment data available');
-                return;
-            }
-
             // Create SVG container for oscillator
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('viewBox', '0 0 100 100');
@@ -3170,17 +3231,17 @@
             svg.style.width = '100%';
             svg.style.height = '100%';
 
-            // Map sentiment to Y coordinate (0-100)
+            // Map value to Y coordinate (0-100)
             // FIXED SCALE: -100 to +100 range
-            // +100 sentiment = Y=0 (top of chart)
-            // 0 sentiment = Y=50 (center line)
-            // -100 sentiment = Y=100 (bottom of chart)
-            const sentimentToY = (sentiment) => {
-                const y = 50 - (sentiment / 2);
+            // +100 = Y=0 (top of chart)
+            // 0 = Y=50 (center line)
+            // -100 = Y=100 (bottom of chart)
+            const valueToY = (value) => {
+                const y = 50 - (value / 2);
                 return Math.max(0, Math.min(100, y));
             };
 
-            // Draw center line at Y=50 (sentiment = 0)
+            // Draw center line at Y=50 (value = 0)
             const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             centerLine.setAttribute('x1', '0');
             centerLine.setAttribute('y1', '50');
@@ -3191,37 +3252,63 @@
             centerLine.setAttribute('stroke-dasharray', '1,1');
             svg.appendChild(centerLine);
 
-            // Create smooth path connecting all sentiment points
-            if (sentimentPoints.length > 1) {
-                let pathD = `M ${sentimentPoints[0].x},${sentimentToY(sentimentPoints[0].sentiment)}`;
+            // Define which drivers to plot and their colors
+            const driverConfig = [
+                { key: 'sentiment', color: '#ff8c42', label: 'Composite', checkbox: null }, // Always show
+                { key: 'news', color: '#3b82f6', label: 'News', checkbox: document.getElementById('checkbox-news') }, // Blue
+                { key: 'indicators', color: '#ec4899', label: 'Indicators', checkbox: document.getElementById('checkbox-indicators') }, // Pink
+                { key: 'social', color: '#10b981', label: 'Social', checkbox: document.getElementById('checkbox-social') }, // Green
+                { key: 'recommendations', color: '#8b5cf6', label: 'Recommendations', checkbox: document.getElementById('checkbox-recommendations') }, // Purple
+                { key: 'vix', color: '#f59e0b', label: 'VIX', checkbox: document.getElementById('checkbox-vix') } // Amber
+            ];
 
-                for (let i = 1; i < sentimentPoints.length; i++) {
-                    const x = sentimentPoints[i].x;
-                    const y = sentimentToY(sentimentPoints[i].sentiment);
+            // Draw each enabled driver
+            driverConfig.forEach(driver => {
+                // Check if this driver should be displayed (always show composite, check checkbox for others)
+                const shouldDisplay = !driver.checkbox || driver.checkbox.checked;
+                if (!shouldDisplay) return;
 
-                    if (i === 1 && sentimentPoints.length === 2) {
-                        pathD += ` L ${x},${y}`;
-                    } else {
-                        const prevX = sentimentPoints[i - 1].x;
-                        const prevY = sentimentToY(sentimentPoints[i - 1].sentiment);
-                        const cpX = (prevX + x) / 2;
-                        const cpY = (prevY + y) / 2;
-                        pathD += ` Q ${cpX},${cpY} ${x},${y}`;
-                    }
+                // Filter points that have this driver data
+                const points = dataPoints.filter(p => p[driver.key] != null && !isNaN(p[driver.key]));
+
+                if (points.length === 0) {
+                    console.warn(`❌ No ${driver.label} data available`);
+                    return;
                 }
 
-                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                path.setAttribute('d', pathD);
-                path.setAttribute('fill', 'none');
-                path.setAttribute('stroke', '#ff8c42');  // Orange
-                path.setAttribute('stroke-width', '0.5');
-                path.setAttribute('stroke-linecap', 'round');
-                path.setAttribute('stroke-linejoin', 'round');
-                path.setAttribute('opacity', '0.9');
-                svg.appendChild(path);
+                // Create smooth path
+                if (points.length > 1) {
+                    let pathD = `M ${points[0].x},${valueToY(points[0][driver.key])}`;
 
-                console.log(`✅ Drew sentiment oscillator with ${sentimentPoints.length} points`);
-            }
+                    for (let i = 1; i < points.length; i++) {
+                        const x = points[i].x;
+                        const y = valueToY(points[i][driver.key]);
+
+                        if (i === 1 && points.length === 2) {
+                            pathD += ` L ${x},${y}`;
+                        } else {
+                            const prevX = points[i - 1].x;
+                            const prevY = valueToY(points[i - 1][driver.key]);
+                            const cpX = (prevX + x) / 2;
+                            const cpY = (prevY + y) / 2;
+                            pathD += ` Q ${cpX},${cpY} ${x},${y}`;
+                        }
+                    }
+
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', pathD);
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('stroke', driver.color);
+                    path.setAttribute('stroke-width', '0.5');
+                    path.setAttribute('stroke-linecap', 'round');
+                    path.setAttribute('stroke-linejoin', 'round');
+                    path.setAttribute('opacity', '0.9');
+                    path.classList.add(`oscillator-line-${driver.key}`);
+                    svg.appendChild(path);
+
+                    console.log(`✅ Drew ${driver.label} line with ${points.length} points`);
+                }
+            });
 
             oscillatorDiv.appendChild(svg);
         }
@@ -3283,6 +3370,18 @@
                 // Initialize chart with default timeframe (1h = last 3 hours)
                 currentTimeframe = '1h';
                 await updateChart(currentTimeframe);
+
+                // Add event listeners to driver checkboxes to redraw oscillator when toggled
+                const driverCheckboxes = document.querySelectorAll('.driver-checkbox');
+                driverCheckboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', () => {
+                        console.log(`Driver ${checkbox.dataset.driver} toggled: ${checkbox.checked}`);
+                        // Redraw oscillator with current data
+                        if (window.currentChartData) {
+                            drawSentimentOscillator(window.currentChartData);
+                        }
+                    });
+                });
 
                 console.log('Dashboard initialized successfully');
             } catch (error) {
