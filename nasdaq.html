@@ -1834,11 +1834,6 @@
                         </div>
                     </div>
 
-                    <!-- Horizontal Scrollbar for Historical Data -->
-                    <div class="chart-scrollbar-container" id="chart-scrollbar-container">
-                        <input type="range" class="chart-scrollbar" id="chart-scrollbar" min="0" max="100" value="100" step="1">
-                    </div>
-
                     <!-- Oscillator -->
                     <div class="chart-oscillator-container">
                         <div class="chart-oscillator" id="chart-oscillator"></div>
@@ -1847,6 +1842,11 @@
                             <div class="tooltip-value" style="color: #ff8c42;">+0</div>
                             <div class="tooltip-time">14:32:45</div>
                         </div>
+                    </div>
+
+                    <!-- Horizontal Scrollbar for Historical Data -->
+                    <div class="chart-scrollbar-container" id="chart-scrollbar-container">
+                        <input type="range" class="chart-scrollbar" id="chart-scrollbar" min="0" max="100" value="100" step="1">
                     </div>
 
                     <!-- Unified Hover Elements (span both charts) -->
@@ -3256,8 +3256,8 @@
             // Only include drivers that have historical data from the API
             const driverConfig = [
                 { key: 'sentiment', color: '#ff8c42', label: 'Composite', checkbox: null }, // Always show
-                { key: 'news', color: '#3b82f6', label: 'News', checkbox: document.getElementById('checkbox-news') }, // Blue
-                { key: 'indicators', color: '#ec4899', label: 'Indicators', checkbox: document.getElementById('checkbox-indicators') } // Pink
+                { key: 'news', color: '#ec4899', label: 'News', checkbox: document.getElementById('checkbox-news') }, // Pink
+                { key: 'indicators', color: '#3b82f6', label: 'Indicators', checkbox: document.getElementById('checkbox-indicators') } // Blue
             ];
 
             // Draw each enabled driver
