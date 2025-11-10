@@ -691,6 +691,10 @@
             font-weight: 500;
         }
 
+        .charts-wrapper {
+            position: relative;
+        }
+
         .chart-canvas {
             position: absolute;
             left: 0;
@@ -700,15 +704,16 @@
             cursor: crosshair;
         }
 
-        .chart-hover-line {
+        .unified-hover-line {
             position: absolute;
             top: 0;
-            bottom: 45px;
+            bottom: 0;
             width: 1px;
             background: transparent;
             border-left: 2px dashed rgba(255, 140, 66, 0.5);
             pointer-events: none;
             display: none;
+            z-index: 10;
         }
 
         .chart-time-label {
@@ -1719,58 +1724,63 @@
                         </div>
                     </div>
                 </div>
-                <div class="chart-container" id="chart-container" style="flex: 1; min-height: 442px;">
-                    <div class="chart-canvas" id="chart-canvas">
-                        <div class="chart-line">
-                            <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="sentiment-chart">
-                                <defs>
-                                    <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" style="stop-color:#ff8c42;stop-opacity:1" />
-                                        <stop offset="30%" style="stop-color:#ff7b52;stop-opacity:1" />
-                                        <stop offset="60%" style="stop-color:#ff6b6b;stop-opacity:1" />
-                                        <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
-                                    </linearGradient>
-                                </defs>
-                                <path class="chart-path" d="" />
+
+                <!-- Unified Charts Wrapper -->
+                <div class="charts-wrapper" id="charts-wrapper">
+                    <!-- Main Chart Container -->
+                    <div class="chart-container" id="chart-container" style="flex: 1; min-height: 442px;">
+                        <div class="chart-canvas" id="chart-canvas">
+                            <div class="chart-line">
+                                <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="sentiment-chart">
+                                    <defs>
+                                        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" style="stop-color:#ff8c42;stop-opacity:1" />
+                                            <stop offset="30%" style="stop-color:#ff7b52;stop-opacity:1" />
+                                            <stop offset="60%" style="stop-color:#ff6b6b;stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path class="chart-path" d="" />
+                                </svg>
+                            </div>
+                            <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="chart-dots-svg" style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; width: 100%; height: 100%; pointer-events: none;">
+                                <g id="chart-dots"></g>
+                                <g id="nasdaq-price-line"></g>
                             </svg>
+                            <div class="chart-tooltip" id="chart-tooltip">
+                                <div class="tooltip-label">Nasdaq Price</div>
+                                <div class="tooltip-value">$0.00</div>
+                                <div class="tooltip-sentiment" id="tooltip-sentiment" style="color: #ff8c42; font-size: 12px; font-weight: 500; margin-top: 4px;">Score: +0</div>
+                                <div class="tooltip-time">14:32:45</div>
+                            </div>
                         </div>
-                        <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="chart-dots-svg" style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; width: 100%; height: 100%; pointer-events: none;">
-                            <g id="chart-dots"></g>
-                            <g id="nasdaq-price-line"></g>
-                        </svg>
-                        <div class="chart-hover-line" id="hover-line"></div>
-                        <div class="chart-time-label" id="time-label">00:00:00</div>
-                        <div class="chart-tooltip" id="chart-tooltip">
-                            <div class="tooltip-label">Nasdaq Price</div>
-                            <div class="tooltip-value">$0.00</div>
-                            <div class="tooltip-sentiment" id="tooltip-sentiment" style="color: #ff8c42; font-size: 12px; font-weight: 500; margin-top: 4px;">Score: +0</div>
+                        <div class="x-axis" id="x-axis-labels">
+                            <span>-60m</span>
+                            <span>-45m</span>
+                            <span>-30m</span>
+                            <span>-15m</span>
+                            <span>Now</span>
+                        </div>
+                    </div>
+
+                    <!-- Horizontal Scrollbar for Historical Data -->
+                    <div class="chart-scrollbar-container" id="chart-scrollbar-container">
+                        <input type="range" class="chart-scrollbar" id="chart-scrollbar" min="0" max="100" value="100" step="1">
+                    </div>
+
+                    <!-- Oscillator -->
+                    <div class="chart-oscillator-container">
+                        <div class="chart-oscillator" id="chart-oscillator"></div>
+                        <div class="chart-tooltip" id="oscillator-tooltip">
+                            <div class="tooltip-label">Sentiment Score</div>
+                            <div class="tooltip-value" style="color: #ff8c42;">+0</div>
                             <div class="tooltip-time">14:32:45</div>
                         </div>
                     </div>
-                    <div class="x-axis" id="x-axis-labels">
-                        <span>-60m</span>
-                        <span>-45m</span>
-                        <span>-30m</span>
-                        <span>-15m</span>
-                        <span>Now</span>
-                    </div>
-                </div>
 
-                <!-- Horizontal Scrollbar for Historical Data -->
-                <div class="chart-scrollbar-container" id="chart-scrollbar-container">
-                    <input type="range" class="chart-scrollbar" id="chart-scrollbar" min="0" max="100" value="100" step="1">
-                </div>
-
-                <!-- Oscillator -->
-                <div class="chart-oscillator-container">
-                    <div class="chart-oscillator" id="chart-oscillator"></div>
-                    <div class="chart-hover-line" id="oscillator-hover-line"></div>
-                    <div class="chart-time-label" id="oscillator-time-label">00:00:00</div>
-                    <div class="chart-tooltip" id="oscillator-tooltip">
-                        <div class="tooltip-label">Sentiment Score</div>
-                        <div class="tooltip-value" style="color: #ff8c42;">+0</div>
-                        <div class="tooltip-time">14:32:45</div>
-                    </div>
+                    <!-- Unified Hover Elements (span both charts) -->
+                    <div class="unified-hover-line" id="unified-hover-line"></div>
+                    <div class="chart-time-label" id="time-label">00:00:00</div>
                 </div>
 
                 <!-- Market Status Indicator (bottom-left) -->
@@ -3304,13 +3314,18 @@
             }
         }, 60000); // Check every 60 seconds
 
-        // Chart hover functionality
+        // Unified chart hover functionality
+        const chartsWrapper = document.getElementById('charts-wrapper');
         const chartCanvas = document.getElementById('chart-canvas');
-        const hoverLine = document.getElementById('hover-line');
+        const oscillatorDiv = document.getElementById('chart-oscillator');
+        const unifiedHoverLine = document.getElementById('unified-hover-line');
         const timeLabel = document.getElementById('time-label');
-        const tooltip = document.getElementById('chart-tooltip');
-        const tooltipValue = tooltip.querySelector('.tooltip-value');
-        const tooltipTime = tooltip.querySelector('.tooltip-time');
+        const mainTooltip = document.getElementById('chart-tooltip');
+        const oscillatorTooltip = document.getElementById('oscillator-tooltip');
+        const mainTooltipValue = mainTooltip.querySelector('.tooltip-value');
+        const mainTooltipTime = mainTooltip.querySelector('.tooltip-time');
+        const oscillatorTooltipValue = oscillatorTooltip.querySelector('.tooltip-value');
+        const oscillatorTooltipTime = oscillatorTooltip.querySelector('.tooltip-time');
 
         function interpolateValue(x, dataPoints) {
             if (!dataPoints || dataPoints.length === 0) return { price: null, sentiment: null, time: 'Now', timestamp: new Date() };
@@ -3360,142 +3375,117 @@
             return { price: price, sentiment: sentiment, time: time, timestamp: closestPoint.timestamp };
         }
 
-        chartCanvas.addEventListener('mousemove', (e) => {
-            const rect = chartCanvas.getBoundingClientRect();
+        // Unified hover handler for both charts
+        function handleChartHover(e, isMainChart) {
+            const rect = isMainChart ? chartCanvas.getBoundingClientRect() : oscillatorDiv.getBoundingClientRect();
             const x = e.clientX - rect.left;
-            
+
             // Calculate position as percentage (0-100)
             const percentX = (x / rect.width) * 100;
-            
+
             // Use the globally stored current chart data
             if (!window.currentChartData) return;
-            
+
             // Interpolate the value based on X position
             const result = interpolateValue(percentX, window.currentChartData);
-            
-            // Show hover line
-            hoverLine.style.display = 'block';
-            hoverLine.style.left = x + 'px';
-            
-            // Show time label at bottom of hover line
+
+            // Show unified hover line (spans both charts)
+            unifiedHoverLine.style.display = 'block';
+            unifiedHoverLine.style.left = x + 'px';
+
+            // Show time label at bottom of main chart (only once, not duplicated)
             timeLabel.classList.add('show');
-            const labelWidth = 90; // Approximate width of the time label
+            const labelWidth = 90;
             const labelX = Math.max(0, Math.min(x - (labelWidth / 2), rect.width - labelWidth));
             timeLabel.style.left = labelX + 'px';
             timeLabel.innerHTML = `<strong>${result.time}</strong>`;
-            
-            // Show tooltip with price as main value and sentiment as secondary
-            tooltip.style.display = 'block';
 
-            // Display price as main value
-            if (result.price != null) {
-                tooltipValue.textContent = `$${result.price.toFixed(2)}`;
+            if (isMainChart) {
+                // Show main chart tooltip
+                mainTooltip.style.display = 'block';
+                oscillatorTooltip.style.display = 'none';
+
+                // Display price as main value
+                if (result.price != null) {
+                    mainTooltipValue.textContent = `$${result.price.toFixed(2)}`;
+                } else {
+                    mainTooltipValue.textContent = 'N/A';
+                }
+
+                mainTooltipTime.textContent = result.time;
+
+                // Show sentiment score as secondary info
+                const tooltipSentiment = document.getElementById('tooltip-sentiment');
+                if (tooltipSentiment) {
+                    if (result.sentiment != null) {
+                        const sentimentDisplay = result.sentiment > 0 ? `+${Math.round(result.sentiment)}` : Math.round(result.sentiment);
+                        tooltipSentiment.textContent = `Score: ${sentimentDisplay}`;
+                        tooltipSentiment.style.display = 'block';
+                    } else {
+                        tooltipSentiment.style.display = 'none';
+                    }
+                }
+
+                // Position tooltip
+                const tooltipX = x + 15;
+                const tooltipY = e.clientY - rect.top - 60;
+
+                mainTooltip.style.left = tooltipX + 'px';
+                mainTooltip.style.top = tooltipY + 'px';
+
+                // Adjust tooltip position if it goes off screen
+                if (tooltipX + mainTooltip.offsetWidth > rect.width) {
+                    mainTooltip.style.left = (x - mainTooltip.offsetWidth - 15) + 'px';
+                }
+                if (tooltipY < 0) {
+                    mainTooltip.style.top = '10px';
+                }
             } else {
-                tooltipValue.textContent = 'N/A';
-            }
+                // Show oscillator tooltip
+                oscillatorTooltip.style.display = 'block';
+                mainTooltip.style.display = 'none';
 
-            tooltipTime.textContent = result.time;
-
-            // Show sentiment score as secondary info
-            const tooltipSentiment = document.getElementById('tooltip-sentiment');
-            if (tooltipSentiment) {
+                // Display sentiment as main value
                 if (result.sentiment != null) {
                     const sentimentDisplay = result.sentiment > 0 ? `+${Math.round(result.sentiment)}` : Math.round(result.sentiment);
-                    tooltipSentiment.textContent = `Score: ${sentimentDisplay}`;
-                    tooltipSentiment.style.display = 'block';
+                    oscillatorTooltipValue.textContent = sentimentDisplay;
                 } else {
-                    tooltipSentiment.style.display = 'none';
+                    oscillatorTooltipValue.textContent = 'N/A';
+                }
+
+                oscillatorTooltipTime.textContent = result.time;
+
+                // Position tooltip
+                const tooltipX = x + 15;
+                const tooltipY = e.clientY - rect.top - 60;
+
+                oscillatorTooltip.style.left = tooltipX + 'px';
+                oscillatorTooltip.style.top = tooltipY + 'px';
+
+                // Adjust tooltip position if it goes off screen
+                if (tooltipX + oscillatorTooltip.offsetWidth > rect.width) {
+                    oscillatorTooltip.style.left = (x - oscillatorTooltip.offsetWidth - 15) + 'px';
+                }
+                if (tooltipY < 0) {
+                    oscillatorTooltip.style.top = '10px';
                 }
             }
-            
-            // Position tooltip
-            const tooltipX = x + 15;
-            const tooltipY = e.clientY - rect.top - 60;
-            
-            tooltip.style.left = tooltipX + 'px';
-            tooltip.style.top = tooltipY + 'px';
-            
-            // Adjust tooltip position if it goes off screen
-            if (tooltipX + tooltip.offsetWidth > rect.width) {
-                tooltip.style.left = (x - tooltip.offsetWidth - 15) + 'px';
-            }
-            if (tooltipY < 0) {
-                tooltip.style.top = '10px';
-            }
-        });
+        }
 
-        chartCanvas.addEventListener('mouseleave', () => {
-            hoverLine.style.display = 'none';
+        function hideAllHoverElements() {
+            unifiedHoverLine.style.display = 'none';
             timeLabel.classList.remove('show');
-            tooltip.style.display = 'none';
-        });
-
-        // Oscillator hover functionality
-        const oscillatorDiv = document.getElementById('chart-oscillator');
-        const oscillatorHoverLine = document.getElementById('oscillator-hover-line');
-        const oscillatorTimeLabel = document.getElementById('oscillator-time-label');
-        const oscillatorTooltip = document.getElementById('oscillator-tooltip');
-        const oscillatorTooltipValue = oscillatorTooltip.querySelector('.tooltip-value');
-        const oscillatorTooltipTime = oscillatorTooltip.querySelector('.tooltip-time');
-
-        oscillatorDiv.addEventListener('mousemove', (e) => {
-            const rect = oscillatorDiv.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-
-            // Calculate position as percentage (0-100)
-            const percentX = (x / rect.width) * 100;
-
-            // Use the globally stored current chart data
-            if (!window.currentChartData) return;
-
-            // Interpolate the value based on X position
-            const result = interpolateValue(percentX, window.currentChartData);
-
-            // Show hover line
-            oscillatorHoverLine.style.display = 'block';
-            oscillatorHoverLine.style.left = x + 'px';
-
-            // Show time label at bottom of hover line
-            oscillatorTimeLabel.classList.add('show');
-            const labelWidth = 90;
-            const labelX = Math.max(0, Math.min(x - (labelWidth / 2), rect.width - labelWidth));
-            oscillatorTimeLabel.style.left = labelX + 'px';
-            oscillatorTimeLabel.innerHTML = `<strong>${result.time}</strong>`;
-
-            // Show tooltip with sentiment score
-            oscillatorTooltip.style.display = 'block';
-
-            // Display sentiment as main value
-            if (result.sentiment != null) {
-                const sentimentDisplay = result.sentiment > 0 ? `+${Math.round(result.sentiment)}` : Math.round(result.sentiment);
-                oscillatorTooltipValue.textContent = sentimentDisplay;
-            } else {
-                oscillatorTooltipValue.textContent = 'N/A';
-            }
-
-            oscillatorTooltipTime.textContent = result.time;
-
-            // Position tooltip
-            const tooltipX = x + 15;
-            const tooltipY = e.clientY - rect.top - 60;
-
-            oscillatorTooltip.style.left = tooltipX + 'px';
-            oscillatorTooltip.style.top = tooltipY + 'px';
-
-            // Adjust tooltip position if it goes off screen
-            if (tooltipX + oscillatorTooltip.offsetWidth > rect.width) {
-                oscillatorTooltip.style.left = (x - oscillatorTooltip.offsetWidth - 15) + 'px';
-            }
-            if (tooltipY < 0) {
-                oscillatorTooltip.style.top = '10px';
-            }
-        });
-
-        oscillatorDiv.addEventListener('mouseleave', () => {
-            oscillatorHoverLine.style.display = 'none';
-            oscillatorTimeLabel.classList.remove('show');
+            mainTooltip.style.display = 'none';
             oscillatorTooltip.style.display = 'none';
-        });
+        }
+
+        // Main chart hover events
+        chartCanvas.addEventListener('mousemove', (e) => handleChartHover(e, true));
+        chartCanvas.addEventListener('mouseleave', hideAllHoverElements);
+
+        // Oscillator hover events
+        oscillatorDiv.addEventListener('mousemove', (e) => handleChartHover(e, false));
+        oscillatorDiv.addEventListener('mouseleave', hideAllHoverElements);
 
         // Hover tooltip functionality
         const hoverTooltip = document.getElementById('hover-tooltip');
