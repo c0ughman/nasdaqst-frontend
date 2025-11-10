@@ -756,7 +756,7 @@
         }
 
         .chart-tooltip .tooltip-value {
-            color: #ff8c42;
+            color: #ffffff;
             font-size: 16px;
             font-weight: 600;
             margin-bottom: 4px;
@@ -1693,7 +1693,7 @@
             <!-- Bottom Row: Historical Sentiment Trend -->
             <div class="card bottom-row" style="position: relative;">
                 <div class="chart-header">
-                    <span class="chart-title" data-i18n="dashboard.chart.title">Historical Sentiment Trend</span>
+                    <span class="chart-title" data-i18n="dashboard.chart.title">Nasdaq Price & Sentiment</span>
                     <div class="chart-controls">
                         <div class="timeframe-selector">
                             <button class="timeframe-btn" data-timeframe="6h" data-i18n="dashboard.chart.timeframe.6h">Session</button>
@@ -1717,7 +1717,6 @@
                         <span class="y-axis-label">-100</span>
                     </div>
                     <div class="chart-canvas" id="chart-canvas">
-                        <div class="zero-line"></div>
                         <div class="chart-line">
                             <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="sentiment-chart">
                                 <defs>
@@ -1738,9 +1737,9 @@
                         <div class="chart-hover-line" id="hover-line"></div>
                         <div class="chart-time-label" id="time-label">00:00:00</div>
                         <div class="chart-tooltip" id="chart-tooltip">
-                            <div class="tooltip-label">Sentiment Score</div>
-                            <div class="tooltip-value">+56</div>
-                            <div class="tooltip-price" id="tooltip-price" style="display: none; color: #ffffff; font-size: 12px; font-weight: 500; margin-top: 4px;">$0.00</div>
+                            <div class="tooltip-label">Nasdaq Price</div>
+                            <div class="tooltip-value">$0.00</div>
+                            <div class="tooltip-sentiment" id="tooltip-sentiment" style="color: #ff8c42; font-size: 12px; font-weight: 500; margin-top: 4px;">Score: +0</div>
                             <div class="tooltip-time">14:32:45</div>
                         </div>
                     </div>
@@ -2885,16 +2884,13 @@
             // Generate smooth path using ALL data points
             const path = createSmoothPath(allPoints);
 
-            // Calculate min/max sentiment from FULL day's data for consistent scaling
+            // Calculate min/max price from FULL day's data for consistent scaling
             // This prevents Y-axis from changing as you scroll
-            const fullDaySentiments = fullTimeframeData.map(d => d.sentiment);
-            const minSentiment = Math.min(...fullDaySentiments);
-            const maxSentiment = Math.max(...fullDaySentiments);
+            const fullDayPrices = fullTimeframeData.filter(d => d.price != null && !isNaN(d.price)).map(d => d.price);
+            const minPrice = fullDayPrices.length > 0 ? Math.min(...fullDayPrices) : 0;
+            const maxPrice = fullDayPrices.length > 0 ? Math.max(...fullDayPrices) : 0;
 
-            // Determine if we should use dynamic scaling (for short timeframes)
-            const useDynamicScaling = ['5m', '15m', '30m'].includes(timeframe);
-
-            console.log(`📊 Full day sentiment range: ${minSentiment.toFixed(1)} to ${maxSentiment.toFixed(1)}, useDynamicScaling: ${useDynamicScaling}`);
+            console.log(`📊 Full day price range: $${minPrice.toFixed(2)} to $${maxPrice.toFixed(2)}`);
 
             // priceRange was already calculated above from fullTimeframeData
 
@@ -2905,9 +2901,8 @@
                 gaps: gaps,
                 count: allPoints.length,
                 timeRange: `${config.label} (${allPoints.length} points)`,
-                minSentiment,
-                maxSentiment,
-                useDynamicScaling,
+                minPrice,
+                maxPrice,
                 priceRange
             };
         }
@@ -2959,27 +2954,19 @@
                 // const verifyPath = chartPath.getAttribute('d');
                 // console.log('Path verification:', verifyPath);
 
-                // Update Y-axis labels based on actual data range
+                // Update Y-axis labels for price range
                 if (data.dataPoints && data.dataPoints.length > 0) {
-                    updateYAxisLabels(data.dataPoints, data.minSentiment, data.maxSentiment, data.useDynamicScaling);
+                    updateYAxisLabels(data.dataPoints, data.minPrice, data.maxPrice, data.priceRange);
                 }
 
-                // Add data point dots for better visibility
-                drawDataPointDots(data.dataPoints, data.minSentiment, data.maxSentiment, data.useDynamicScaling);
+                // Draw Nasdaq price line in main chart
+                drawDataPointDots(data.dataPoints, data.minPrice, data.maxPrice, data.priceRange);
 
                 // Draw market gap lines
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
 
-                // Draw Nasdaq price overlay if enabled, otherwise clear it
-                if (window.nasdaqPriceEnabled) {
-                    drawNasdaqPriceLine(data.dataPoints, data.priceRange);
-                } else {
-                    // Clear the price line when toggle is off
-                    const nasdaqContainer = document.getElementById('nasdaq-price-line');
-                    if (nasdaqContainer) {
-                        nasdaqContainer.innerHTML = '';
-                    }
-                }
+                // Draw sentiment line in oscillator chart
+                drawSentimentOscillator(data.dataPoints);
 
                 // Store current data points for hover functionality
                 window.currentChartData = data.dataPoints;
@@ -2992,7 +2979,7 @@
         }
         
         // Draw data point dots and connecting lines for better visibility
-        function drawDataPointDots(dataPoints, minSentiment, maxSentiment, useDynamicScaling) {
+        function drawDataPointDots(dataPoints, minPrice, maxPrice, priceRange) {
             const dotsContainer = document.getElementById('chart-dots');
             if (!dotsContainer) return;
 
@@ -3001,47 +2988,58 @@
 
             if (!dataPoints || dataPoints.length === 0) return;
 
-            // Determine scaling method based on timeframe
-            const sentimentToY = useDynamicScaling
-                ? (sentiment) => {
-                    // DYNAMIC SCALE: Use actual data range for short timeframes
-                    const range = maxSentiment - minSentiment;
-                    if (range === 0) return 50;
+            // Filter out points without price data
+            const pricePoints = dataPoints.filter(p => p.price != null && !isNaN(p.price));
 
-                    // Add 10% padding on top and bottom
-                    const padding = range * 0.1;
-                    const paddedMin = minSentiment - padding;
-                    const paddedMax = maxSentiment + padding;
-                    const paddedRange = paddedMax - paddedMin;
+            if (pricePoints.length === 0) {
+                console.warn('No Nasdaq price data available');
+                return;
+            }
 
-                    // Map to 0-100 (inverted Y axis)
-                    const y = ((paddedMax - sentiment) / paddedRange) * 100;
-                    return Math.max(0, Math.min(100, y));
-                }
-                : (sentiment) => {
-                    // FIXED SCALE: Always use -100 to +100 range for longer timeframes
-                    // +100 sentiment = Y=0 (top of chart)
-                    // 0 sentiment = Y=50 (center line)
-                    // -100 sentiment = Y=100 (bottom of chart)
-                    const y = 50 - (sentiment / 2);
-                    return Math.max(0, Math.min(100, y));
+            // Use priceRange if provided, otherwise calculate from current window
+            let actualPriceRange = priceRange;
+            if (!actualPriceRange) {
+                const prices = pricePoints.map(p => p.price);
+                actualPriceRange = {
+                    min: Math.min(...prices),
+                    max: Math.max(...prices)
                 };
+            }
 
-            // Create smooth path connecting all dots
-            if (dataPoints.length > 1) {
-                let pathD = `M ${dataPoints[0].x},${sentimentToY(dataPoints[0].sentiment)}`;
+            // DYNAMIC SCALE: Map price to Y coordinate with padding
+            const priceToY = (price) => {
+                const range = actualPriceRange.max - actualPriceRange.min;
+                if (range === 0) return 50;
 
-                for (let i = 1; i < dataPoints.length; i++) {
-                    const x = dataPoints[i].x;
-                    const y = sentimentToY(dataPoints[i].sentiment);
+                // Add 10% padding on top and bottom
+                const padding = range * 0.1;
+                const paddedMin = actualPriceRange.min - padding;
+                const paddedMax = actualPriceRange.max + padding;
+                const paddedRange = paddedMax - paddedMin;
 
-                    if (i === 1 && dataPoints.length === 2) {
+                // Map to 0-100 (inverted Y axis)
+                const y = ((paddedMax - price) / paddedRange) * 100;
+                return Math.max(0, Math.min(100, y));
+            };
+
+            // Store for tooltip
+            window.nasdaqPriceScale = actualPriceRange;
+
+            // Create smooth path connecting all price points
+            if (pricePoints.length > 1) {
+                let pathD = `M ${pricePoints[0].x},${priceToY(pricePoints[0].price)}`;
+
+                for (let i = 1; i < pricePoints.length; i++) {
+                    const x = pricePoints[i].x;
+                    const y = priceToY(pricePoints[i].price);
+
+                    if (i === 1 && pricePoints.length === 2) {
                         // For just 2 points, draw a straight line
                         pathD += ` L ${x},${y}`;
                     } else {
                         // Use quadratic bezier for smooth curves
-                        const prevX = dataPoints[i - 1].x;
-                        const prevY = sentimentToY(dataPoints[i - 1].sentiment);
+                        const prevX = pricePoints[i - 1].x;
+                        const prevY = priceToY(pricePoints[i - 1].price);
                         const cpX = (prevX + x) / 2;
                         const cpY = (prevY + y) / 2;
                         pathD += ` Q ${cpX},${cpY} ${x},${y}`;
@@ -3051,7 +3049,7 @@
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 path.setAttribute('d', pathD);
                 path.setAttribute('fill', 'none');
-                path.setAttribute('stroke', '#ff8c42');
+                path.setAttribute('stroke', '#ffffff');
                 path.setAttribute('stroke-width', '0.25');
                 path.setAttribute('stroke-linecap', 'round');
                 path.setAttribute('stroke-linejoin', 'round');
@@ -3059,8 +3057,7 @@
                 dotsContainer.appendChild(path);
             }
 
-            // Dots removed per user preference - just showing smooth line
-            console.log(`Drew sentiment line with ${dataPoints.length} data points`);
+            console.log(`Drew Nasdaq price line with ${pricePoints.length} data points`);
         }
 
         // Draw vertical dotted lines for market gaps
@@ -3092,117 +3089,104 @@
             });
         }
 
-        // Update Y-axis labels with fixed or dynamic scale
-        function updateYAxisLabels(dataPoints, minSentiment, maxSentiment, useDynamicScaling) {
+        // Update Y-axis labels for price range
+        function updateYAxisLabels(dataPoints, minPrice, maxPrice, priceRange) {
             const yAxis = document.querySelector('.y-axis');
             if (!yAxis) return;
 
-            if (useDynamicScaling) {
-                // DYNAMIC SCALE: Show actual data range with padding
-                const range = maxSentiment - minSentiment;
-                const padding = range * 0.1;
-                const paddedMin = minSentiment - padding;
-                const paddedMax = maxSentiment + padding;
-
-                // Calculate 5 evenly spaced labels
-                const step = (paddedMax - paddedMin) / 4;
-                const labels = [];
-                for (let i = 4; i >= 0; i--) {
-                    const value = paddedMin + (step * i);
-                    labels.push(`<span class="y-axis-label">${value >= 0 ? '+' : ''}${value.toFixed(0)}</span>`);
-                }
-
-                yAxis.innerHTML = labels.join('');
-            } else {
-                // FIXED SCALE: Always show -100 to +100 with 0 at center
-                yAxis.innerHTML = `
-                    <span class="y-axis-label">+100</span>
-                    <span class="y-axis-label">+50</span>
-                    <span class="y-axis-label">0</span>
-                    <span class="y-axis-label">-50</span>
-                    <span class="y-axis-label">-100</span>
-                `;
-            }
-        }
-
-        // Draw Nasdaq price line overlay
-        function drawNasdaqPriceLine(dataPoints, priceRange) {
-            console.log('🎨 drawNasdaqPriceLine called, toggle enabled:', window.nasdaqPriceEnabled);
-            const nasdaqContainer = document.getElementById('nasdaq-price-line');
-            if (!nasdaqContainer) {
-                console.error('❌ nasdaq-price-line container not found');
-                return;
-            }
-
-            // Clear existing line
-            nasdaqContainer.innerHTML = '';
-
-            if (!dataPoints || dataPoints.length === 0) {
-                console.warn('⚠️ No dataPoints provided');
-                return;
-            }
-
-            console.log(`📊 Checking ${dataPoints.length} data points for price data...`);
-            // Filter out points without price data
-            const pricePoints = dataPoints.filter(p => p.price != null && !isNaN(p.price));
-            console.log(`📊 Found ${pricePoints.length} points with valid price data`);
-
-            if (pricePoints.length === 0) {
-                console.warn('❌ No Nasdaq price data available after filtering');
-                console.log('Sample dataPoint:', dataPoints[0]);
-                return;
-            }
-
-            console.log('✅ Drawing price line with:', pricePoints.length, 'points');
-            console.log('Sample prices:', pricePoints.slice(0, 3).map(p => `$${p.price?.toFixed(2)}`).join(', '));
-
-            // Use the provided priceRange from the entire timeframe for stable scaling
-            // This prevents the line from jumping as you scroll
-            if (!priceRange) {
-                console.warn('⚠️ No priceRange provided, calculating from current window');
-                const prices = pricePoints.map(p => p.price).sort((a, b) => a - b);
-                const medianPrice = prices.length % 2 === 0
-                    ? (prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2
-                    : prices[Math.floor(prices.length / 2)];
-                priceRange = {
-                    median: medianPrice,
+            // Use priceRange if provided
+            let actualPriceRange = priceRange;
+            if (!actualPriceRange) {
+                const prices = dataPoints.filter(p => p.price != null).map(p => p.price);
+                if (prices.length === 0) return;
+                actualPriceRange = {
                     min: Math.min(...prices),
                     max: Math.max(...prices)
                 };
             }
 
-            const { median: medianPrice, min: minPrice, max: maxPrice } = priceRange;
-            console.log(`📊 Using fixed price range - Median: $${medianPrice.toFixed(2)}, Range: $${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`);
+            // DYNAMIC SCALE: Show actual price range with padding
+            const range = actualPriceRange.max - actualPriceRange.min;
+            const padding = range * 0.1;
+            const paddedMin = actualPriceRange.min - padding;
+            const paddedMax = actualPriceRange.max + padding;
 
-            // Store for tooltip
-            window.nasdaqPriceScale = { medianPrice, minPrice, maxPrice };
+            // Calculate 5 evenly spaced labels
+            const step = (paddedMax - paddedMin) / 4;
+            const labels = [];
+            for (let i = 4; i >= 0; i--) {
+                const value = paddedMin + (step * i);
+                labels.push(`<span class="y-axis-label">$${value.toFixed(0)}</span>`);
+            }
 
-            // Map price to Y coordinate (0-100)
-            // Median price maps to Y=50 (center line, same as sentiment 0)
-            const priceToY = (price) => {
-                const maxOffset = Math.max(Math.abs(minPrice - medianPrice), Math.abs(maxPrice - medianPrice));
-                if (maxOffset === 0) return 50;
+            yAxis.innerHTML = labels.join('');
+        }
 
-                const priceOffset = price - medianPrice;
-                const normalizedOffset = priceOffset / maxOffset;
-                const y = 50 - (normalizedOffset * 40);
+        // Draw sentiment line in oscillator chart
+        function drawSentimentOscillator(dataPoints) {
+            const oscillatorDiv = document.getElementById('chart-oscillator');
+            if (!oscillatorDiv) {
+                console.error('❌ chart-oscillator container not found');
+                return;
+            }
 
-                return Math.max(10, Math.min(90, y));
+            // Clear existing content
+            oscillatorDiv.innerHTML = '';
+
+            if (!dataPoints || dataPoints.length === 0) {
+                console.warn('⚠️ No dataPoints provided for oscillator');
+                return;
+            }
+
+            // Filter out points without sentiment data
+            const sentimentPoints = dataPoints.filter(p => p.sentiment != null && !isNaN(p.sentiment));
+
+            if (sentimentPoints.length === 0) {
+                console.warn('❌ No sentiment data available');
+                return;
+            }
+
+            // Create SVG container for oscillator
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', '0 0 100 100');
+            svg.setAttribute('preserveAspectRatio', 'none');
+            svg.style.width = '100%';
+            svg.style.height = '100%';
+
+            // Map sentiment to Y coordinate (0-100)
+            // FIXED SCALE: -100 to +100 range
+            // +100 sentiment = Y=0 (top of chart)
+            // 0 sentiment = Y=50 (center line)
+            // -100 sentiment = Y=100 (bottom of chart)
+            const sentimentToY = (sentiment) => {
+                const y = 50 - (sentiment / 2);
+                return Math.max(0, Math.min(100, y));
             };
 
-            // Create smooth path connecting all price points
-            if (pricePoints.length > 1) {
-                let pathD = `M ${pricePoints[0].x},${priceToY(pricePoints[0].price)}`;
+            // Draw center line at Y=50 (sentiment = 0)
+            const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            centerLine.setAttribute('x1', '0');
+            centerLine.setAttribute('y1', '50');
+            centerLine.setAttribute('x2', '100');
+            centerLine.setAttribute('y2', '50');
+            centerLine.setAttribute('stroke', 'rgba(136, 136, 136, 0.3)');
+            centerLine.setAttribute('stroke-width', '0.5');
+            centerLine.setAttribute('stroke-dasharray', '1,1');
+            svg.appendChild(centerLine);
 
-                for (let i = 1; i < pricePoints.length; i++) {
-                    const x = pricePoints[i].x;
-                    const y = priceToY(pricePoints[i].price);
+            // Create smooth path connecting all sentiment points
+            if (sentimentPoints.length > 1) {
+                let pathD = `M ${sentimentPoints[0].x},${sentimentToY(sentimentPoints[0].sentiment)}`;
 
-                    if (i === 1 && pricePoints.length === 2) {
+                for (let i = 1; i < sentimentPoints.length; i++) {
+                    const x = sentimentPoints[i].x;
+                    const y = sentimentToY(sentimentPoints[i].sentiment);
+
+                    if (i === 1 && sentimentPoints.length === 2) {
                         pathD += ` L ${x},${y}`;
                     } else {
-                        const prevX = pricePoints[i - 1].x;
-                        const prevY = priceToY(pricePoints[i - 1].price);
+                        const prevX = sentimentPoints[i - 1].x;
+                        const prevY = sentimentToY(sentimentPoints[i - 1].sentiment);
                         const cpX = (prevX + x) / 2;
                         const cpY = (prevY + y) / 2;
                         pathD += ` Q ${cpX},${cpY} ${x},${y}`;
@@ -3212,17 +3196,17 @@
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 path.setAttribute('d', pathD);
                 path.setAttribute('fill', 'none');
-                path.setAttribute('stroke', '#ffffff');
-                path.setAttribute('stroke-width', '0.1');  // Very thin line
+                path.setAttribute('stroke', '#ff8c42');  // Orange
+                path.setAttribute('stroke-width', '0.5');
                 path.setAttribute('stroke-linecap', 'round');
                 path.setAttribute('stroke-linejoin', 'round');
-                path.setAttribute('opacity', '0.9');  // Increased opacity for better visibility
-                nasdaqContainer.appendChild(path);
+                path.setAttribute('opacity', '0.9');
+                svg.appendChild(path);
 
-                console.log(`✅ Drew Nasdaq price line with ${pricePoints.length} points`);
-                console.log(`📍 Median price (center): $${medianPrice.toFixed(2)}`);
-                console.log(`📍 Price range: $${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`);
+                console.log(`✅ Drew sentiment oscillator with ${sentimentPoints.length} points`);
             }
+
+            oscillatorDiv.appendChild(svg);
         }
 
         // Nasdaq price overlay toggle state - DEFAULT TO TRUE so line shows immediately
@@ -3327,7 +3311,7 @@
         const tooltipTime = tooltip.querySelector('.tooltip-time');
 
         function interpolateValue(x, dataPoints) {
-            if (!dataPoints || dataPoints.length === 0) return { value: 0, time: 'Now', timestamp: new Date(), price: null };
+            if (!dataPoints || dataPoints.length === 0) return { price: null, sentiment: null, time: 'Now', timestamp: new Date() };
             
             // Find the two closest data points
             let before = dataPoints[0];
@@ -3341,11 +3325,8 @@
                 }
             }
             
-            // Linear interpolation for sentiment value
+            // Linear interpolation for price value
             const ratio = (x - before.x) / (after.x - before.x);
-            const value = before.sentiment + ratio * (after.sentiment - before.sentiment);
-            
-            // Linear interpolation for price (if available)
             let price = null;
             if (before.price != null && after.price != null) {
                 price = before.price + ratio * (after.price - before.price);
@@ -3354,7 +3335,17 @@
             } else if (after.price != null) {
                 price = after.price;
             }
-            
+
+            // Linear interpolation for sentiment (if available)
+            let sentiment = null;
+            if (before.sentiment != null && after.sentiment != null) {
+                sentiment = before.sentiment + ratio * (after.sentiment - before.sentiment);
+            } else if (before.sentiment != null) {
+                sentiment = before.sentiment;
+            } else if (after.sentiment != null) {
+                sentiment = after.sentiment;
+            }
+
             // Use the closest data point's time
             const closestPoint = ratio < 0.5 ? before : after;
             const time = closestPoint.timeLabel || closestPoint.timestamp?.toLocaleTimeString('en-US', {
@@ -3363,8 +3354,8 @@
                 second: '2-digit',
                 hour12: false
             }) || 'N/A';
-            
-            return { value: Math.round(value), time: time, timestamp: closestPoint.timestamp, price: price };
+
+            return { price: price, sentiment: sentiment, time: time, timestamp: closestPoint.timestamp };
         }
 
         chartCanvas.addEventListener('mousemove', (e) => {
@@ -3391,20 +3382,27 @@
             timeLabel.style.left = labelX + 'px';
             timeLabel.innerHTML = `<strong>${result.time}</strong>`;
             
-            // Show tooltip with actual data (add +/- sign for sentiment)
+            // Show tooltip with price as main value and sentiment as secondary
             tooltip.style.display = 'block';
-            const sentimentDisplay = result.value > 0 ? `+${result.value}` : result.value;
-            tooltipValue.textContent = sentimentDisplay;
+
+            // Display price as main value
+            if (result.price != null) {
+                tooltipValue.textContent = `$${result.price.toFixed(2)}`;
+            } else {
+                tooltipValue.textContent = 'N/A';
+            }
+
             tooltipTime.textContent = result.time;
-            
-            // Show/hide Nasdaq price based on toggle state
-            const tooltipPrice = document.getElementById('tooltip-price');
-            if (tooltipPrice) {
-                if (window.nasdaqPriceEnabled && result.price != null) {
-                    tooltipPrice.style.display = 'block';
-                    tooltipPrice.textContent = `$${result.price.toFixed(2)}`;
+
+            // Show sentiment score as secondary info
+            const tooltipSentiment = document.getElementById('tooltip-sentiment');
+            if (tooltipSentiment) {
+                if (result.sentiment != null) {
+                    const sentimentDisplay = result.sentiment > 0 ? `+${Math.round(result.sentiment)}` : Math.round(result.sentiment);
+                    tooltipSentiment.textContent = `Score: ${sentimentDisplay}`;
+                    tooltipSentiment.style.display = 'block';
                 } else {
-                    tooltipPrice.style.display = 'none';
+                    tooltipSentiment.style.display = 'none';
                 }
             }
             
