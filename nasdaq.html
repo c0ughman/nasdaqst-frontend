@@ -1849,6 +1849,10 @@
                             <div class="tooltip-value" style="color: #ff8c42;">+0</div>
                             <div class="tooltip-time">14:32:45</div>
                         </div>
+                        <!-- Market Status Indicator (inside oscillator) -->
+                        <div class="market-status-indicator" id="market-status-indicator" style="display: none;">
+                            Market is currently closed. Latest data from <span id="market-close-time"></span>
+                        </div>
                     </div>
 
                     <!-- Horizontal Scrollbar for Historical Data -->
@@ -1859,11 +1863,6 @@
                     <!-- Unified Hover Elements (span both charts) -->
                     <div class="unified-hover-line" id="unified-hover-line"></div>
                     <div class="chart-time-label" id="time-label">00:00:00</div>
-                </div>
-
-                <!-- Market Status Indicator (bottom-left) -->
-                <div class="market-status-indicator" id="market-status-indicator" style="display: none;">
-                    Market is currently closed. Latest data from <span id="market-close-time"></span>
                 </div>
             </div>
         </div>
