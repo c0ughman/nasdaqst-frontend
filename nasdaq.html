@@ -501,8 +501,8 @@
         /* Driver Checkboxes */
         .driver-checkbox {
             appearance: none;
-            width: 18px;
-            height: 18px;
+            width: 14px;
+            height: 14px;
             border: 2px solid #555;
             border-radius: 50%;
             cursor: pointer;
@@ -515,9 +515,16 @@
             border-color: #ff8c42;
         }
 
-        .driver-checkbox:checked {
-            background: #ff8c42;
-            border-color: #ff8c42;
+        /* News checkbox - Pink when checked */
+        #checkbox-news:checked {
+            background: #ec4899;
+            border-color: #ec4899;
+        }
+
+        /* Indicators checkbox - Blue when checked */
+        #checkbox-indicators:checked {
+            background: #3b82f6;
+            border-color: #3b82f6;
         }
 
         .driver-checkbox:checked::after {
@@ -526,8 +533,8 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #000;
-            font-size: 12px;
+            color: #fff;
+            font-size: 9px;
             font-weight: bold;
         }
 
@@ -1618,8 +1625,8 @@
                         <div class="driver-item">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="checkbox" class="driver-checkbox" data-driver="indicators" id="checkbox-indicators">
-                                    <label for="checkbox-indicators" class="driver-name" data-i18n="dashboard.driver.indicators">Indicators</label>
+                                    <input type="checkbox" class="driver-checkbox" data-driver="news" id="checkbox-news">
+                                    <label for="checkbox-news" class="driver-name" data-i18n="dashboard.driver.news">News Sentiment</label>
                                 </div>
                                 <span class="driver-value negative">-1.2</span>
                             </div>
@@ -1644,8 +1651,8 @@
                         <div class="driver-item">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="checkbox" class="driver-checkbox" data-driver="news" id="checkbox-news">
-                                    <label for="checkbox-news" class="driver-name" data-i18n="dashboard.driver.news">News Sentiment</label>
+                                    <input type="checkbox" class="driver-checkbox" data-driver="indicators" id="checkbox-indicators">
+                                    <label for="checkbox-indicators" class="driver-name" data-i18n="dashboard.driver.indicators">Indicators</label>
                                 </div>
                                 <span class="driver-value positive">+0.1</span>
                             </div>
