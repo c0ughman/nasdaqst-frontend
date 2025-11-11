@@ -3737,7 +3737,8 @@
             // Account for 20px left offset (Y-axis labels) and 90% chart width (10% right reserved for score panel)
             const chartLeftOffset = 20; // pixels
             const chartWidthPercent = 0.9; // 90% of container
-            const effectiveChartWidth = hoverRect.width * chartWidthPercent;
+            // Always use chartCanvasRect width as reference (both main and oscillator use same container width)
+            const effectiveChartWidth = chartCanvasRect.width * chartWidthPercent;
 
             // Adjust X to account for left offset
             const adjustedX = mouseX - chartLeftOffset;
@@ -3768,7 +3769,9 @@
             // Show time label at bottom of main chart (only once, not duplicated)
             timeLabel.classList.add('show');
             const labelWidth = 90;
-            const labelX = Math.max(chartLeftOffset, Math.min(unifiedX - (labelWidth / 2), chartLeftOffset + effectiveChartWidth - labelWidth));
+            // Calculate right bound: left offset + effective chart width
+            const chartRightBound = chartLeftOffset + effectiveChartWidth;
+            const labelX = Math.max(chartLeftOffset, Math.min(unifiedX - (labelWidth / 2), chartRightBound - labelWidth));
             timeLabel.style.left = labelX + 'px';
             timeLabel.innerHTML = `<strong>${result.time}</strong>`;
 
