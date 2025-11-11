@@ -84,7 +84,7 @@ const translations = {
         'dashboard.driver.recommendations': 'Recommendations',
         'dashboard.driver.breadth': 'Market Breadth',
         'dashboard.driver.vix': 'VIX',
-        'dashboard.chart.title': 'Historical Sentiment Trend',
+        'dashboard.chart.title': 'NASDAQ',
         'dashboard.chart.timeframe.5m': '5 min',
         'dashboard.chart.timeframe.15m': '15 min',
         'dashboard.chart.timeframe.30m': '30 min',
@@ -179,7 +179,7 @@ const translations = {
         'dashboard.driver.recommendations': 'Recomendaciones',
         'dashboard.driver.breadth': 'Amplitud del Mercado',
         'dashboard.driver.vix': 'VIX',
-        'dashboard.chart.title': 'Tendencia Histórica de Sentimiento',
+        'dashboard.chart.title': 'NASDAQ',
         'dashboard.chart.timeframe.5m': '5 min',
         'dashboard.chart.timeframe.15m': '15 min',
         'dashboard.chart.timeframe.30m': '30 min',
@@ -196,7 +196,7 @@ const translations = {
         // Common
         'common.app-name': 'Rastreador de Sentimiento NASDAQ',
         'common.app-name-short': 'NASDAQ',
-        'common.app-name-subtitle': 'Rastreador de Sentimiento',
+        'common.app-name-subtitle': 'Sentiment Tracker',
     },
 
     fr: {
@@ -274,7 +274,7 @@ const translations = {
         'dashboard.driver.recommendations': 'Recommandations',
         'dashboard.driver.breadth': 'Largeur du Marché',
         'dashboard.driver.vix': 'VIX',
-        'dashboard.chart.title': 'Tendance Historique du Sentiment',
+        'dashboard.chart.title': 'NASDAQ',
         'dashboard.chart.timeframe.5m': '5 min',
         'dashboard.chart.timeframe.15m': '15 min',
         'dashboard.chart.timeframe.30m': '30 min',
@@ -291,7 +291,7 @@ const translations = {
         // Common
         'common.app-name': 'Tracker de Sentiment NASDAQ',
         'common.app-name-short': 'NASDAQ',
-        'common.app-name-subtitle': 'Tracker de Sentiment',
+        'common.app-name-subtitle': 'Sentiment Tracker',
     },
 
     de: {
@@ -369,7 +369,7 @@ const translations = {
         'dashboard.driver.recommendations': 'Empfehlungen',
         'dashboard.driver.breadth': 'Marktbreite',
         'dashboard.driver.vix': 'VIX',
-        'dashboard.chart.title': 'Historischer Stimmungstrend',
+        'dashboard.chart.title': 'NASDAQ',
         'dashboard.chart.timeframe.5m': '5 Min',
         'dashboard.chart.timeframe.15m': '15 Min',
         'dashboard.chart.timeframe.30m': '30 Min',
@@ -386,7 +386,7 @@ const translations = {
         // Common
         'common.app-name': 'NASDAQ Stimmungs-Tracker',
         'common.app-name-short': 'NASDAQ',
-        'common.app-name-subtitle': 'Stimmungs-Tracker',
+        'common.app-name-subtitle': 'Sentiment Tracker',
     },
 
     zh: {
@@ -464,7 +464,7 @@ const translations = {
         'dashboard.driver.recommendations': '推荐',
         'dashboard.driver.breadth': '市场广度',
         'dashboard.driver.vix': 'VIX',
-        'dashboard.chart.title': '历史情绪趋势',
+        'dashboard.chart.title': 'NASDAQ',
         'dashboard.chart.timeframe.5m': '5分钟',
         'dashboard.chart.timeframe.15m': '15分钟',
         'dashboard.chart.timeframe.30m': '30分钟',
@@ -481,7 +481,7 @@ const translations = {
         // Common
         'common.app-name': 'NASDAQ情绪跟踪器',
         'common.app-name-short': 'NASDAQ',
-        'common.app-name-subtitle': '情绪跟踪器',
+        'common.app-name-subtitle': 'Sentiment Tracker',
     },
 
     ja: {
@@ -559,7 +559,7 @@ const translations = {
         'dashboard.driver.recommendations': '推奨',
         'dashboard.driver.breadth': '市場の広がり',
         'dashboard.driver.vix': 'VIX',
-        'dashboard.chart.title': '履歴センチメントトレンド',
+        'dashboard.chart.title': 'NASDAQ',
         'dashboard.chart.timeframe.5m': '5分',
         'dashboard.chart.timeframe.15m': '15分',
         'dashboard.chart.timeframe.30m': '30分',
@@ -576,7 +576,7 @@ const translations = {
         // Common
         'common.app-name': 'NASDAQセンチメントトラッカー',
         'common.app-name-short': 'NASDAQ',
-        'common.app-name-subtitle': 'センチメントトラッカー',
+        'common.app-name-subtitle': 'Sentiment Tracker',
     }
 };
 

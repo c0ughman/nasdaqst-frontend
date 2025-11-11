@@ -501,9 +501,9 @@
         /* Driver Checkboxes */
         .driver-checkbox {
             appearance: none;
-            width: 14px;
-            height: 14px;
-            border: 2px solid #555;
+            width: 10px;
+            height: 10px;
+            border: 1.5px solid #555;
             border-radius: 50%;
             cursor: pointer;
             position: relative;
@@ -528,14 +528,7 @@
         }
 
         .driver-checkbox:checked::after {
-            content: '✓';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            font-size: 9px;
-            font-weight: bold;
+            content: '';
         }
 
         .driver-name {
@@ -622,8 +615,8 @@
         }
 
         .price-toggle input[type="checkbox"] {
-            width: 14px;
-            height: 14px;
+            width: 10px;
+            height: 10px;
             cursor: pointer;
             appearance: none;
             -webkit-appearance: none;
@@ -992,9 +985,9 @@
 
         .oscillator-score-checkbox {
             appearance: none;
-            width: 12px;
-            height: 12px;
-            border: 1.5px solid #555;
+            width: 9px;
+            height: 9px;
+            border: 1px solid #555;
             border-radius: 50%;
             cursor: pointer;
             position: relative;
@@ -1008,14 +1001,7 @@
         }
 
         .oscillator-score-checkbox:checked::after {
-            content: '✓';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            font-size: 8px;
-            font-weight: bold;
+            content: '';
         }
 
         /* Oscillator Scale Selector in Score Panel */
@@ -1712,9 +1698,9 @@
                 <!-- Left Top: Title -->
                 <div class="card left-top">
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 16px;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 40px; font-weight: 700; color: #fff; line-height: 0.9; margin-bottom: 4px;">NASDAQ</div>
-                            <div style="font-size: 21px; font-weight: 400; color: #fff; line-height: 0.9;">Sentiment Tracker</div>
+                        <div style="text-align: left;">
+                            <div style="font-size: 40px; font-weight: 700; color: #fff; line-height: 0.9; margin-bottom: 4px;">Sentiment</div>
+                            <div style="font-size: 40px; font-weight: 700; color: #fff; line-height: 0.9;">Tracker</div>
                         </div>
                         <div style="width: 85px; height: 85px; background: #1a1a1a; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px; border: 2px dashed #333;">
                             Logo
@@ -1891,7 +1877,7 @@
             <!-- Bottom Row: Historical Sentiment Trend -->
             <div class="card bottom-row" style="position: relative;">
                 <div class="chart-header">
-                    <span class="chart-title" data-i18n="dashboard.chart.title">Nasdaq Price & Sentiment</span>
+                    <span class="chart-title" data-i18n="dashboard.chart.title">NASDAQ</span>
                     <div class="chart-controls">
                         <div class="timeframe-selector">
                             <button class="timeframe-btn" data-timeframe="6h" data-i18n="dashboard.chart.timeframe.6h">Session</button>
