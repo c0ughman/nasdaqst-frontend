@@ -3617,6 +3617,18 @@
                     });
                 });
 
+                // Add event listener to composite score checkbox in oscillator panel
+                const compositeCheckbox = document.getElementById('checkbox-sentiment');
+                if (compositeCheckbox) {
+                    compositeCheckbox.addEventListener('change', () => {
+                        console.log(`Composite score line toggled: ${compositeCheckbox.checked}`);
+                        // Redraw oscillator immediately with current data
+                        if (window.currentChartData) {
+                            drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
+                        }
+                    });
+                }
+
                 // Add event listeners to scale mode radio buttons
                 const scaleRadios = document.querySelectorAll('input[name="oscillator-scale"]');
                 scaleRadios.forEach(radio => {
