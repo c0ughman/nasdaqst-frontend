@@ -1961,26 +1961,26 @@
                             </div>
 
                             <!-- Scale Mode Selector -->
-                            <div style="display: flex; flex-direction: column; gap: 4px; align-items: center;">
+                            <div style="display: flex; flex-direction: row; gap: 3px; align-items: center;">
                                 <input type="radio" id="scale-fixed" name="oscillator-scale" value="fixed" checked style="display: none;">
-                                <label for="scale-fixed" title="Fixed scale: -100 to +100" style="display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
-                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                                <label for="scale-fixed" title="Fixed scale: -100 to +100" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                    <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
                                         <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
                                         <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1"/>
                                     </svg>
                                 </label>
 
                                 <input type="radio" id="scale-visible" name="oscillator-scale" value="visible" style="display: none;">
-                                <label for="scale-visible" title="Scale to visible window" style="display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
-                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                                <label for="scale-visible" title="Scale to visible window" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                    <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
                                         <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
                                         <path d="M5 8 L8 5 L11 10 L14 6" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                     </svg>
                                 </label>
 
                                 <input type="radio" id="scale-full" name="oscillator-scale" value="full" style="display: none;">
-                                <label for="scale-full" title="Scale to full timeframe" style="display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
-                                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                                <label for="scale-full" title="Scale to full timeframe" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                    <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
                                         <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
                                         <path d="M2 8 L5 5 L8 10 L11 4 L14 9" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                     </svg>
@@ -2529,21 +2529,31 @@
         
         // Update sentiment display with real data
         function updateSentimentDisplay(data) {
+            console.log('updateSentimentDisplay called with data:', data);
             const scoreValueElement = document.querySelector('.score-value');
             const scoreStatus = document.querySelector('.score-status');
 
-            if (!scoreValueElement || !scoreStatus) return;
+            if (!scoreValueElement || !scoreStatus) {
+                console.error('Score elements not found!');
+                return;
+            }
 
             const sentiment = data.composite_score;
+            console.log('Composite score value:', sentiment);
             const sentimentDisplay = sentiment > 0 ? `+${sentiment.toFixed(1)}` : sentiment.toFixed(1);
+            console.log('Formatted sentiment display:', sentimentDisplay);
 
             // Update score value
             scoreValueElement.textContent = sentimentDisplay;
 
             // Update oscillator current score panel
             const oscillatorScoreElement = document.getElementById('oscillator-current-score');
+            console.log('Updating oscillator score panel:', sentimentDisplay, 'Element found:', !!oscillatorScoreElement);
             if (oscillatorScoreElement) {
                 oscillatorScoreElement.textContent = sentimentDisplay;
+                console.log('✅ Oscillator score updated to:', sentimentDisplay);
+            } else {
+                console.error('❌ oscillator-current-score element not found!');
             }
 
             // Update status and colors based on sentiment
