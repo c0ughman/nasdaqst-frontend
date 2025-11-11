@@ -2530,23 +2530,13 @@
         // Update sentiment display with real data
         function updateSentimentDisplay(data) {
             console.log('updateSentimentDisplay called with data:', data);
-            const scoreValueElement = document.querySelector('.score-value');
-            const scoreStatus = document.querySelector('.score-status');
-
-            if (!scoreValueElement || !scoreStatus) {
-                console.error('Score elements not found!');
-                return;
-            }
 
             const sentiment = data.composite_score;
             console.log('Composite score value:', sentiment);
             const sentimentDisplay = sentiment > 0 ? `+${sentiment.toFixed(1)}` : sentiment.toFixed(1);
             console.log('Formatted sentiment display:', sentimentDisplay);
 
-            // Update score value
-            scoreValueElement.textContent = sentimentDisplay;
-
-            // Update oscillator current score panel
+            // Update oscillator current score panel (primary display for this page)
             const oscillatorScoreElement = document.getElementById('oscillator-current-score');
             console.log('Updating oscillator score panel:', sentimentDisplay, 'Element found:', !!oscillatorScoreElement);
             if (oscillatorScoreElement) {
@@ -2556,28 +2546,40 @@
                 console.error('❌ oscillator-current-score element not found!');
             }
 
-            // Update status and colors based on sentiment
-            if (sentiment >= 30) {
-                scoreStatus.textContent = t('dashboard.status.bullish');
-                scoreStatus.setAttribute('data-i18n', 'dashboard.status.bullish');
-                scoreStatus.style.color = '#10b981';
-                scoreValueElement.style.background = 'linear-gradient(135deg, #10b981 0%, #34d399 100%)';
-            } else if (sentiment >= -30) {
-                scoreStatus.textContent = t('dashboard.status.neutral');
-                scoreStatus.setAttribute('data-i18n', 'dashboard.status.neutral');
-                scoreStatus.style.color = '#888';
-                scoreValueElement.style.background = 'linear-gradient(135deg, #888 0%, #aaa 100%)';
-            } else {
-                scoreStatus.textContent = t('dashboard.status.bearish');
-                scoreStatus.setAttribute('data-i18n', 'dashboard.status.bearish');
-                scoreStatus.style.color = '#ef4444';
-                scoreValueElement.style.background = 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)';
-            }
+            // Update main score elements if they exist (they may be in a different page/section)
+            const scoreValueElement = document.querySelector('.score-value');
+            const scoreStatus = document.querySelector('.score-status');
 
-            // Apply text styling
-            scoreValueElement.style.webkitBackgroundClip = 'text';
-            scoreValueElement.style.webkitTextFillColor = 'transparent';
-            scoreValueElement.style.backgroundClip = 'text';
+            if (scoreValueElement && scoreStatus) {
+                // Update score value
+                scoreValueElement.textContent = sentimentDisplay;
+
+                // Update status and colors based on sentiment
+                if (sentiment >= 30) {
+                    scoreStatus.textContent = t('dashboard.status.bullish');
+                    scoreStatus.setAttribute('data-i18n', 'dashboard.status.bullish');
+                    scoreStatus.style.color = '#10b981';
+                    scoreValueElement.style.background = 'linear-gradient(135deg, #10b981 0%, #34d399 100%)';
+                } else if (sentiment >= -30) {
+                    scoreStatus.textContent = t('dashboard.status.neutral');
+                    scoreStatus.setAttribute('data-i18n', 'dashboard.status.neutral');
+                    scoreStatus.style.color = '#888';
+                    scoreValueElement.style.background = 'linear-gradient(135deg, #888 0%, #aaa 100%)';
+                } else {
+                    scoreStatus.textContent = t('dashboard.status.bearish');
+                    scoreStatus.setAttribute('data-i18n', 'dashboard.status.bearish');
+                    scoreStatus.style.color = '#ef4444';
+                    scoreValueElement.style.background = 'linear-gradient(135deg, #ef4444 0%, #f87171 100%)';
+                }
+
+                // Apply text styling
+                scoreValueElement.style.webkitBackgroundClip = 'text';
+                scoreValueElement.style.webkitTextFillColor = 'transparent';
+                scoreValueElement.style.backgroundClip = 'text';
+                console.log('✅ Main score elements updated');
+            } else {
+                console.log('ℹ️ Main score elements not found (may be on different page) - oscillator panel updated successfully');
+            }
         }
 
         // Track market status globally
