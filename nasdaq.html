@@ -527,6 +527,12 @@
             border-color: #3b82f6;
         }
 
+        /* Composite Score checkbox - Orange when checked */
+        #checkbox-sentiment:checked {
+            background: #ff8c42;
+            border-color: #ff8c42;
+        }
+
         .driver-checkbox:checked::after {
             content: '✓';
             position: absolute;
@@ -947,6 +953,39 @@
             color: #888;
             text-align: right;
             line-height: 1;
+        }
+
+        /* Oscillator Sentiment Score Panel */
+        .oscillator-score-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 10%;
+            background: linear-gradient(135deg, #ff8c42 0%, #ff6b42 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0 8px 8px 0;
+            z-index: 5;
+        }
+
+        .oscillator-score-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .oscillator-score-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* Oscillator Scale Selector */
@@ -1683,6 +1722,20 @@
                 <div class="card left-bottom">
                     <h2 class="section-title" data-i18n="dashboard.drivers.title">Sentiment Drivers</h2>
                     <div class="drivers-grid-single">
+                        <!-- Composite Score Toggle -->
+                        <div class="driver-item">
+                            <div class="driver-header">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" class="driver-checkbox" data-driver="sentiment" id="checkbox-sentiment" checked>
+                                    <label for="checkbox-sentiment" class="driver-name">Composite Score</label>
+                                </div>
+                                <span class="driver-value" id="composite-driver-value">+0.0</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="composite-driver-progress" style="width: 50%"></div>
+                            </div>
+                        </div>
+
                         <div class="driver-item">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -1906,6 +1959,11 @@
                     <div class="chart-oscillator-container">
                         <div class="oscillator-y-axis" id="oscillator-y-axis"></div>
                         <div class="chart-oscillator" id="chart-oscillator"></div>
+                        <!-- Current Sentiment Score Panel -->
+                        <div class="oscillator-score-panel">
+                            <div class="oscillator-score-value" id="oscillator-current-score">+0</div>
+                            <div class="oscillator-score-label">Score</div>
+                        </div>
                         <div class="chart-tooltip" id="oscillator-tooltip">
                             <div class="tooltip-label">Sentiment Score</div>
                             <div class="tooltip-value" style="color: #ff8c42;">+0</div>
@@ -2484,6 +2542,12 @@
 
             // Update score value
             scoreValueElement.textContent = sentimentDisplay;
+
+            // Update oscillator current score panel
+            const oscillatorScoreElement = document.getElementById('oscillator-current-score');
+            if (oscillatorScoreElement) {
+                oscillatorScoreElement.textContent = sentimentDisplay;
+            }
 
             // Update status and colors based on sentiment
             if (sentiment >= 30) {
@@ -3420,14 +3484,14 @@
             // Define which drivers to plot and their colors
             // Only include drivers that have historical data from the API
             const driverConfig = [
-                { key: 'sentiment', color: '#ff8c42', label: 'Composite', checkbox: null }, // Always show
+                { key: 'sentiment', color: '#ff8c42', label: 'Composite', checkbox: document.getElementById('checkbox-sentiment') }, // Orange - toggleable
                 { key: 'news', color: '#ec4899', label: 'News', checkbox: document.getElementById('checkbox-news') }, // Pink
                 { key: 'indicators', color: '#3b82f6', label: 'Indicators', checkbox: document.getElementById('checkbox-indicators') } // Blue
             ];
 
             // Draw each enabled driver
             driverConfig.forEach(driver => {
-                // Check if this driver should be displayed (always show composite, check checkbox for others)
+                // Check if this driver should be displayed (check checkbox status)
                 const shouldDisplay = !driver.checkbox || driver.checkbox.checked;
                 if (!shouldDisplay) return;
 
