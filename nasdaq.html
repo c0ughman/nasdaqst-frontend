@@ -928,6 +928,46 @@
             cursor: crosshair;
         }
 
+        /* Oscillator Scale Selector */
+        .oscillator-scale-selector {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .oscillator-scale-selector input[type="radio"] {
+            display: none;
+        }
+
+        .oscillator-scale-selector label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #888;
+        }
+
+        .oscillator-scale-selector label:hover {
+            background: rgba(255, 140, 66, 0.2);
+            border-color: #ff8c42;
+            color: #ff8c42;
+        }
+
+        .oscillator-scale-selector input[type="radio"]:checked + label {
+            background: rgba(255, 140, 66, 0.3);
+            border-color: #ff8c42;
+            color: #ff8c42;
+        }
+
         .chart-scrollbar-container {
             position: relative;
             margin-top: 5px;
@@ -1848,6 +1888,32 @@
                             <div class="tooltip-label">Sentiment Score</div>
                             <div class="tooltip-value" style="color: #ff8c42;">+0</div>
                             <div class="tooltip-time">14:32:45</div>
+                        </div>
+                        <!-- Oscillator Scale Mode Selector -->
+                        <div class="oscillator-scale-selector">
+                            <input type="radio" id="scale-fixed" name="oscillator-scale" value="fixed" checked>
+                            <label for="scale-fixed" title="Fixed scale: -100 to +100">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
+                                    <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1"/>
+                                </svg>
+                            </label>
+
+                            <input type="radio" id="scale-visible" name="oscillator-scale" value="visible">
+                            <label for="scale-visible" title="Scale to visible window">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
+                                    <path d="M5 8 L8 5 L11 10 L14 6" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                </svg>
+                            </label>
+
+                            <input type="radio" id="scale-full" name="oscillator-scale" value="full">
+                            <label for="scale-full" title="Scale to full timeframe">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
+                                    <path d="M2 8 L5 5 L8 10 L11 4 L14 9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                </svg>
+                            </label>
                         </div>
                         <!-- Market Status Indicator (inside oscillator) -->
                         <div class="market-status-indicator" id="market-status-indicator" style="display: none;">
@@ -3006,7 +3072,15 @@
                 timeRange: `${config.label} (${allPoints.length} points)`,
                 minPrice,
                 maxPrice,
-                priceRange
+                priceRange,
+                fullTimeframeData: fullTimeframeData.map((d, index) => ({
+                    x: (index / (fullTimeframeData.length - 1)) * 100,
+                    sentiment: d.sentiment,
+                    price: d.price,
+                    news: d.news,
+                    indicators: d.indicators,
+                    timestamp: d.timestamp
+                }))
             };
         }
         
@@ -3064,10 +3138,11 @@
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
 
                 // Draw sentiment line in oscillator chart
-                drawSentimentOscillator(data.dataPoints);
+                drawSentimentOscillator(data.dataPoints, data.fullTimeframeData);
 
                 // Store current data points for hover functionality
                 window.currentChartData = data.dataPoints;
+                window.currentFullTimeframeData = data.fullTimeframeData;
 
                 console.log('=== UPDATE CHART COMPLETE ===');
             } catch (error) {
@@ -3215,7 +3290,7 @@
         }
 
         // Draw sentiment line in oscillator chart with optional driver overlays
-        function drawSentimentOscillator(dataPoints) {
+        function drawSentimentOscillator(dataPoints, fullTimeframeData) {
             const oscillatorDiv = document.getElementById('chart-oscillator');
             if (!oscillatorDiv) {
                 console.error('❌ chart-oscillator container not found');
@@ -3237,26 +3312,72 @@
             svg.style.width = '100%';
             svg.style.height = '100%';
 
-            // Map value to Y coordinate (0-100)
-            // FIXED SCALE: -100 to +100 range
-            // +100 = Y=0 (top of chart)
-            // 0 = Y=50 (center line)
-            // -100 = Y=100 (bottom of chart)
+            // Determine scale mode
+            const scaleMode = document.querySelector('input[name="oscillator-scale"]:checked')?.value || 'fixed';
+
+            // Calculate min/max range based on scale mode
+            let minValue, maxValue;
+
+            if (scaleMode === 'fixed') {
+                // Mode 1: Fixed -100 to +100
+                minValue = -100;
+                maxValue = 100;
+            } else {
+                // Collect all values from enabled drivers
+                const driverKeys = ['sentiment', 'news', 'indicators'];
+                const allValues = [];
+
+                // Determine which dataset to use
+                const datasetToUse = scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints);
+
+                driverKeys.forEach(key => {
+                    const checkbox = key === 'sentiment' ? null : document.getElementById(`checkbox-${key}`);
+                    const shouldInclude = !checkbox || checkbox.checked;
+
+                    if (shouldInclude) {
+                        datasetToUse.forEach(point => {
+                            if (point[key] != null && !isNaN(point[key])) {
+                                allValues.push(point[key]);
+                            }
+                        });
+                    }
+                });
+
+                if (allValues.length > 0) {
+                    minValue = Math.min(...allValues);
+                    maxValue = Math.max(...allValues);
+                } else {
+                    // Fallback to fixed scale
+                    minValue = -100;
+                    maxValue = 100;
+                }
+            }
+
+            // Create value to Y mapping function
+            // Midpoint of range is at Y=50 (visual center)
             const valueToY = (value) => {
-                const y = 50 - (value / 2);
+                const range = maxValue - minValue;
+                if (range === 0) return 50;
+
+                const midpoint = (minValue + maxValue) / 2;
+                // Map so that midpoint is at Y=50
+                const y = 50 - ((value - midpoint) / range) * 100;
                 return Math.max(0, Math.min(100, y));
             };
 
-            // Draw center line at Y=50 (value = 0)
-            const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            centerLine.setAttribute('x1', '0');
-            centerLine.setAttribute('y1', '50');
-            centerLine.setAttribute('x2', '100');
-            centerLine.setAttribute('y2', '50');
-            centerLine.setAttribute('stroke', 'rgba(136, 136, 136, 0.3)');
-            centerLine.setAttribute('stroke-width', '0.5');
-            centerLine.setAttribute('stroke-dasharray', '1,1');
-            svg.appendChild(centerLine);
+            // Draw center line at value = 0 (may be off-screen if range doesn't include 0)
+            const zeroY = valueToY(0);
+            if (zeroY >= 0 && zeroY <= 100) {
+                const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                centerLine.setAttribute('x1', '0');
+                centerLine.setAttribute('y1', zeroY.toString());
+                centerLine.setAttribute('x2', '100');
+                centerLine.setAttribute('y2', zeroY.toString());
+                centerLine.setAttribute('stroke', 'rgba(136, 136, 136, 0.3)');
+                centerLine.setAttribute('stroke-width', '0.5');
+                centerLine.setAttribute('stroke-dasharray', '1,1');
+                svg.appendChild(centerLine);
+            }
 
             // Define which drivers to plot and their colors
             // Only include drivers that have historical data from the API
@@ -3382,7 +3503,19 @@
                         console.log(`Driver ${checkbox.dataset.driver} toggled: ${checkbox.checked}`);
                         // Redraw oscillator with current data
                         if (window.currentChartData) {
-                            drawSentimentOscillator(window.currentChartData);
+                            drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
+                        }
+                    });
+                });
+
+                // Add event listeners to scale mode radio buttons
+                const scaleRadios = document.querySelectorAll('input[name="oscillator-scale"]');
+                scaleRadios.forEach(radio => {
+                    radio.addEventListener('change', () => {
+                        console.log(`Scale mode changed to: ${radio.value}`);
+                        // Redraw oscillator with new scale mode
+                        if (window.currentChartData) {
+                            drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
                         }
                     });
                 });
