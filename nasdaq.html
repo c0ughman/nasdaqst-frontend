@@ -920,12 +920,33 @@
         .chart-oscillator {
             position: absolute;
             top: 0;
-            left: 0;
+            left: 50px;
             right: 0;
             bottom: 0;
-            width: 100%;
+            width: calc(100% - 50px);
             height: 100%;
             cursor: crosshair;
+        }
+
+        /* Oscillator Y-axis */
+        .oscillator-y-axis {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 45px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 8px 5px;
+            z-index: 10;
+        }
+
+        .oscillator-y-axis span {
+            font-size: 10px;
+            color: #888;
+            text-align: right;
+            line-height: 1;
         }
 
         /* Oscillator Scale Selector */
@@ -946,9 +967,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
+            width: 22px;
+            height: 22px;
+            border-radius: 3px;
             background: rgba(0, 0, 0, 0.5);
             border: 1px solid #444;
             cursor: pointer;
@@ -1883,6 +1904,7 @@
 
                     <!-- Oscillator -->
                     <div class="chart-oscillator-container">
+                        <div class="oscillator-y-axis" id="oscillator-y-axis"></div>
                         <div class="chart-oscillator" id="chart-oscillator"></div>
                         <div class="chart-tooltip" id="oscillator-tooltip">
                             <div class="tooltip-label">Sentiment Score</div>
@@ -1893,7 +1915,7 @@
                         <div class="oscillator-scale-selector">
                             <input type="radio" id="scale-fixed" name="oscillator-scale" value="fixed" checked>
                             <label for="scale-fixed" title="Fixed scale: -100 to +100">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                                     <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
                                     <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1"/>
                                 </svg>
@@ -1901,7 +1923,7 @@
 
                             <input type="radio" id="scale-visible" name="oscillator-scale" value="visible">
                             <label for="scale-visible" title="Scale to visible window">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                                     <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
                                     <path d="M5 8 L8 5 L11 10 L14 6" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                 </svg>
@@ -1909,7 +1931,7 @@
 
                             <input type="radio" id="scale-full" name="oscillator-scale" value="full">
                             <label for="scale-full" title="Scale to full timeframe">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                                     <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
                                     <path d="M2 8 L5 5 L8 10 L11 4 L14 9" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                 </svg>
@@ -3351,6 +3373,22 @@
                     minValue = -100;
                     maxValue = 100;
                 }
+            }
+
+            // Update Y-axis labels
+            const yAxisDiv = document.getElementById('oscillator-y-axis');
+            if (yAxisDiv) {
+                // Display: max at top, 0 in middle, min at bottom
+                const formatValue = (val) => {
+                    if (val === 0) return '0';
+                    return val > 0 ? `+${val.toFixed(0)}` : val.toFixed(0);
+                };
+
+                yAxisDiv.innerHTML = `
+                    <span>${formatValue(maxValue)}</span>
+                    <span>0</span>
+                    <span>${formatValue(minValue)}</span>
+                `;
             }
 
             // Create value to Y mapping function
