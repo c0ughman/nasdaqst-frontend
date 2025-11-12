@@ -498,38 +498,7 @@
             margin-bottom: 8px;
         }
 
-        /* Driver Checkboxes */
-        .driver-checkbox {
-            appearance: none;
-            width: 10px;
-            height: 10px;
-            border: 1.5px solid #555;
-            border-radius: 50%;
-            cursor: pointer;
-            position: relative;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
-        }
-
-        .driver-checkbox:hover {
-            border-color: #ff8c42;
-        }
-
-        /* News checkbox - Pink when checked */
-        #checkbox-news:checked {
-            background: #ec4899;
-            border-color: #ec4899;
-        }
-
-        /* Indicators checkbox - Blue when checked */
-        #checkbox-indicators:checked {
-            background: #3b82f6;
-            border-color: #3b82f6;
-        }
-
-        .driver-checkbox:checked::after {
-            content: '';
-        }
+        /* Driver Eye Icons - styles handled by .eye-icon-btn above */
 
         .driver-name {
             cursor: pointer;
@@ -992,25 +961,44 @@
             letter-spacing: 0.5px;
         }
 
-        .oscillator-score-checkbox {
-            appearance: none;
-            width: 9px;
-            height: 9px;
-            border: 1px solid #555;
-            border-radius: 50%;
+        /* Eye Icon Button Styles */
+        .eye-icon-btn {
+            background: none;
+            border: none;
+            padding: 0;
             cursor: pointer;
-            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.2s ease;
             margin-bottom: 4px;
         }
 
-        .oscillator-score-checkbox:checked {
-            background: #ff8c42;
-            border-color: #ff8c42;
+        .eye-icon-btn:hover {
+            opacity: 0.7;
         }
 
-        .oscillator-score-checkbox:checked::after {
-            content: '';
+        .eye-icon {
+            width: 12.8px;
+            height: 12.8px;
+            stroke: #888;
+            transition: stroke 0.2s ease;
+        }
+
+        .eye-icon-btn.active .eye-icon {
+            stroke: #ff8c42;
+        }
+
+        .eye-icon-btn.driver-eye.active .eye-icon {
+            stroke: #ec4899;
+        }
+
+        #eye-news.active .eye-icon {
+            stroke: #ec4899;
+        }
+
+        #eye-indicators.active .eye-icon {
+            stroke: #3b82f6;
         }
 
         /* Oscillator Scale Selector in Score Panel */
@@ -1724,8 +1712,17 @@
                         <div class="driver-item">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="checkbox" class="driver-checkbox" data-driver="news" id="checkbox-news">
-                                    <label for="checkbox-news" class="driver-name" data-i18n="dashboard.driver.news">News Sentiment</label>
+                                    <span class="driver-name" data-i18n="dashboard.driver.news">News</span>
+                                    <button type="button" class="eye-icon-btn driver-eye" data-line="news" id="eye-news" title="Toggle news sentiment line">
+                                        <svg class="eye-icon eye-closed" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                                        </svg>
+                                        <svg class="eye-icon eye-open" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
                                 </div>
                                 <span class="driver-value negative">-1.2</span>
                             </div>
@@ -1750,8 +1747,17 @@
                         <div class="driver-item">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <input type="checkbox" class="driver-checkbox" data-driver="indicators" id="checkbox-indicators">
-                                    <label for="checkbox-indicators" class="driver-name" data-i18n="dashboard.driver.indicators">Indicators</label>
+                                    <span class="driver-name" data-i18n="dashboard.driver.indicators">Indicators</span>
+                                    <button type="button" class="eye-icon-btn driver-eye" data-line="indicators" id="eye-indicators" title="Toggle technical indicators line">
+                                        <svg class="eye-icon eye-closed" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                                        </svg>
+                                        <svg class="eye-icon eye-open" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
                                 </div>
                                 <span class="driver-value positive">+0.1</span>
                             </div>
@@ -1946,8 +1952,17 @@
                         <div class="chart-oscillator" id="chart-oscillator"></div>
                         <!-- Current Sentiment Score Panel -->
                         <div class="oscillator-score-panel">
-                            <!-- Composite Score Checkbox -->
-                            <input type="checkbox" class="oscillator-score-checkbox" id="checkbox-sentiment" checked title="Toggle composite score line">
+                            <!-- Composite Score Eye Icon -->
+                            <button type="button" class="eye-icon-btn active" id="eye-sentiment" data-line="sentiment" title="Toggle composite score line">
+                                <svg class="eye-icon eye-open" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <svg class="eye-icon eye-closed" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
 
                             <!-- Score Display -->
                             <div class="oscillator-score-display">
@@ -3488,15 +3503,15 @@
             // Define which drivers to plot and their colors
             // Only include drivers that have historical data from the API
             const driverConfig = [
-                { key: 'sentiment', color: '#ff8c42', label: 'Composite', checkbox: document.getElementById('checkbox-sentiment') }, // Orange - toggleable
-                { key: 'news', color: '#ec4899', label: 'News', checkbox: document.getElementById('checkbox-news') }, // Pink
-                { key: 'indicators', color: '#3b82f6', label: 'Indicators', checkbox: document.getElementById('checkbox-indicators') } // Blue
+                { key: 'sentiment', color: '#ff8c42', label: 'Composite', eyeBtn: document.getElementById('eye-sentiment') }, // Orange - toggleable
+                { key: 'news', color: '#ec4899', label: 'News', eyeBtn: document.getElementById('eye-news') }, // Pink
+                { key: 'indicators', color: '#3b82f6', label: 'Indicators', eyeBtn: document.getElementById('eye-indicators') } // Blue
             ];
 
             // Draw each enabled driver
             driverConfig.forEach(driver => {
-                // Check if this driver should be displayed (check checkbox status)
-                const shouldDisplay = !driver.checkbox || driver.checkbox.checked;
+                // Check if this driver should be displayed (check eye button active state)
+                const shouldDisplay = !driver.eyeBtn || driver.eyeBtn.classList.contains('active');
                 if (!shouldDisplay) return;
 
                 // Filter points that have this driver data
@@ -3602,29 +3617,72 @@
                 currentTimeframe = '1h';
                 await updateChart(currentTimeframe);
 
-                // Add event listeners to driver checkboxes to redraw oscillator when toggled
-                const driverCheckboxes = document.querySelectorAll('.driver-checkbox');
-                driverCheckboxes.forEach(checkbox => {
-                    checkbox.addEventListener('change', () => {
-                        console.log(`Driver ${checkbox.dataset.driver} toggled: ${checkbox.checked}`);
-                        // Redraw oscillator with current data
-                        if (window.currentChartData) {
-                            drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
-                        }
-                    });
-                });
-
-                // Add event listener to composite score checkbox in oscillator panel
-                const compositeCheckbox = document.getElementById('checkbox-sentiment');
-                if (compositeCheckbox) {
-                    compositeCheckbox.addEventListener('change', () => {
-                        console.log(`Composite score line toggled: ${compositeCheckbox.checked}`);
-                        // Redraw oscillator immediately with current data
-                        if (window.currentChartData) {
-                            drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
-                        }
-                    });
+                // Function to toggle eye icon state and update visibility
+                function toggleEyeIcon(eyeBtn, isActive) {
+                    const openEye = eyeBtn.querySelector('.eye-open');
+                    const closedEye = eyeBtn.querySelector('.eye-closed');
+                    
+                    if (isActive) {
+                        eyeBtn.classList.add('active');
+                        if (openEye) openEye.style.display = 'block';
+                        if (closedEye) closedEye.style.display = 'none';
+                    } else {
+                        eyeBtn.classList.remove('active');
+                        if (openEye) openEye.style.display = 'none';
+                        if (closedEye) closedEye.style.display = 'block';
+                    }
                 }
+
+                // Function to handle eye icon clicks with mutual exclusivity
+                function handleEyeClick(clickedBtn, lineType) {
+                    const allEyeBtns = {
+                        sentiment: document.getElementById('eye-sentiment'),
+                        news: document.getElementById('eye-news'),
+                        indicators: document.getElementById('eye-indicators')
+                    };
+
+                    const isCurrentlyActive = clickedBtn.classList.contains('active');
+
+                    // If clicking an active button, close it (toggle off)
+                    if (isCurrentlyActive) {
+                        toggleEyeIcon(clickedBtn, false);
+                    } else {
+                        // Close all other buttons
+                        Object.keys(allEyeBtns).forEach(key => {
+                            if (key !== lineType && allEyeBtns[key]) {
+                                toggleEyeIcon(allEyeBtns[key], false);
+                            }
+                        });
+                        // Open the clicked button
+                        toggleEyeIcon(clickedBtn, true);
+                    }
+
+                    // Redraw oscillator with current data
+                    if (window.currentChartData) {
+                        drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
+                    }
+                }
+
+                // Initialize sentiment score as active (open eye)
+                const sentimentEyeBtn = document.getElementById('eye-sentiment');
+                if (sentimentEyeBtn) {
+                    toggleEyeIcon(sentimentEyeBtn, true);
+                }
+
+                // Add event listeners to all eye icon buttons
+                const allEyeButtons = [
+                    { btn: document.getElementById('eye-sentiment'), line: 'sentiment' },
+                    { btn: document.getElementById('eye-news'), line: 'news' },
+                    { btn: document.getElementById('eye-indicators'), line: 'indicators' }
+                ];
+
+                allEyeButtons.forEach(({ btn, line }) => {
+                    if (btn) {
+                        btn.addEventListener('click', () => {
+                            handleEyeClick(btn, line);
+                        });
+                    }
+                });
 
                 // Add event listeners to scale mode radio buttons
                 const scaleRadios = document.querySelectorAll('input[name="oscillator-scale"]');

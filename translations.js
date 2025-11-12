@@ -80,7 +80,7 @@ const translations = {
         'dashboard.drivers.title': 'Sentiment Drivers',
         'dashboard.driver.indicators': 'Indicators',
         'dashboard.driver.social': 'Social Media',
-        'dashboard.driver.news': 'News Sentiment',
+        'dashboard.driver.news': 'News',
         'dashboard.driver.recommendations': 'Recommendations',
         'dashboard.driver.breadth': 'Market Breadth',
         'dashboard.driver.vix': 'VIX',
