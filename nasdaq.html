@@ -686,6 +686,35 @@
             padding: 12px 12px 0px 12px;
             min-height: 70px;
             max-height: 400px;
+            display: flex;
+            gap: 0;
+        }
+
+        .chart-content-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .chart-side-panel {
+            background: #000000;
+            border: 2px solid #ffffff;
+            margin: 70px 20px 70px 40px;
+            position: relative;
+            flex-shrink: 0;
+            width: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-side-panel::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #ffffff;
+            transform: translateY(-50%);
         }
 
         .market-status-indicator {
@@ -755,9 +784,9 @@
         .chart-tooltip {
             position: absolute;
             background: rgba(26, 26, 26, 0.3);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 6px;
             padding: 4px 8px;
             color: white;
@@ -1912,38 +1941,41 @@
                 <div class="charts-wrapper" id="charts-wrapper">
                     <!-- Main Chart Container -->
                     <div class="chart-container" id="chart-container" style="flex: 1; min-height: 442px;">
-                        <div class="chart-canvas" id="chart-canvas">
-                            <div class="chart-line">
-                                <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="sentiment-chart">
-                                    <defs>
-                                        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                            <stop offset="0%" style="stop-color:#ff8c42;stop-opacity:1" />
-                                            <stop offset="30%" style="stop-color:#ff7b52;stop-opacity:1" />
-                                            <stop offset="60%" style="stop-color:#ff6b6b;stop-opacity:1" />
-                                            <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
-                                        </linearGradient>
-                                    </defs>
-                                    <path class="chart-path" d="" />
+                        <div class="chart-content-wrapper">
+                            <div class="chart-canvas" id="chart-canvas">
+                                <div class="chart-line">
+                                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="sentiment-chart">
+                                        <defs>
+                                            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#ff8c42;stop-opacity:1" />
+                                                <stop offset="30%" style="stop-color:#ff7b52;stop-opacity:1" />
+                                                <stop offset="60%" style="stop-color:#ff6b6b;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
+                                            </linearGradient>
+                                        </defs>
+                                        <path class="chart-path" d="" />
+                                    </svg>
+                                </div>
+                                <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="chart-dots-svg" style="position: absolute; left: 20px; right: 10%; top: 0; bottom: 0; width: calc(90% - 20px); height: 100%; pointer-events: none;">
+                                    <g id="chart-dots"></g>
+                                    <g id="nasdaq-price-line"></g>
                                 </svg>
+                                <div class="chart-tooltip" id="chart-tooltip">
+                                    <div class="tooltip-label">Nasdaq Price</div>
+                                    <div class="tooltip-value">$0.00</div>
+                                    <div class="tooltip-sentiment" id="tooltip-sentiment">Score: +0</div>
+                                    <div class="tooltip-time">14:32:45</div>
+                                </div>
                             </div>
-                            <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="chart-dots-svg" style="position: absolute; left: 20px; right: 10%; top: 0; bottom: 0; width: calc(90% - 20px); height: 100%; pointer-events: none;">
-                                <g id="chart-dots"></g>
-                                <g id="nasdaq-price-line"></g>
-                            </svg>
-                            <div class="chart-tooltip" id="chart-tooltip">
-                                <div class="tooltip-label">Nasdaq Price</div>
-                                <div class="tooltip-value">$0.00</div>
-                                <div class="tooltip-sentiment" id="tooltip-sentiment">Score: +0</div>
-                                <div class="tooltip-time">14:32:45</div>
+                            <div class="x-axis" id="x-axis-labels">
+                                <span>-60m</span>
+                                <span>-45m</span>
+                                <span>-30m</span>
+                                <span>-15m</span>
+                                <span>Now</span>
                             </div>
                         </div>
-                        <div class="x-axis" id="x-axis-labels">
-                            <span>-60m</span>
-                            <span>-45m</span>
-                            <span>-30m</span>
-                            <span>-15m</span>
-                            <span>Now</span>
-                        </div>
+                        <div class="chart-side-panel"></div>
                     </div>
 
                     <!-- Oscillator -->
