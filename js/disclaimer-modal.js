@@ -22,7 +22,20 @@ function initDisclaimerModal() {
         return;
     }
 
-    // Show modal immediately on page load (every time)
+    // Check if user came from another page on the same site
+    const referrer = document.referrer;
+    const currentOrigin = window.location.origin;
+    const referrerUrl = referrer ? new URL(referrer) : null;
+    
+    // Don't show modal if coming from same origin (internal navigation)
+    const isInternalNavigation = referrerUrl && referrerUrl.origin === currentOrigin;
+    
+    if (isInternalNavigation) {
+        // User came from another page on the same site, skip the modal
+        return;
+    }
+
+    // Show modal for direct loads, bookmarks, external links, or page refreshes
     overlay.classList.add('show');
     body.style.overflow = 'hidden'; // Prevent scrolling
 
