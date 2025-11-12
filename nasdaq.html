@@ -3436,8 +3436,8 @@
                 const datasetToUse = scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints);
 
                 driverKeys.forEach(key => {
-                    const checkbox = key === 'sentiment' ? null : document.getElementById(`checkbox-${key}`);
-                    const shouldInclude = !checkbox || checkbox.checked;
+                    const eyeBtn = document.getElementById(`eye-${key}`);
+                    const shouldInclude = !eyeBtn || eyeBtn.classList.contains('active');
 
                     if (shouldInclude) {
                         datasetToUse.forEach(point => {
