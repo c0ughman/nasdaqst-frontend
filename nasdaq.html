@@ -3727,17 +3727,16 @@
 
         // Unified hover handler for both charts
         function handleChartHover(e, isMainChart) {
-            // Get rects for positioning - use chartCanvas as reference for unified elements
+            // Always use chartCanvas as reference for ALL calculations to ensure perfect alignment
             const chartCanvasRect = chartCanvas.getBoundingClientRect();
-            const hoverRect = isMainChart ? chartCanvasRect : oscillatorDiv.getBoundingClientRect();
+            const oscillatorRect = oscillatorDiv.getBoundingClientRect();
 
-            // Calculate mouse X position relative to the hovered element
-            const mouseX = e.clientX - hoverRect.left;
+            // Calculate mouse X position relative to chartCanvas (unified reference point)
+            const mouseX = e.clientX - chartCanvasRect.left;
 
             // Account for 20px left offset (Y-axis labels) and 90% chart width (10% right reserved for score panel)
             const chartLeftOffset = 20; // pixels
             const chartWidthPercent = 0.9; // 90% of container
-            // Always use chartCanvasRect width as reference (both main and oscillator use same container width)
             const effectiveChartWidth = chartCanvasRect.width * chartWidthPercent;
 
             // Adjust X to account for left offset
@@ -3758,20 +3757,16 @@
             // Interpolate the value based on X position
             const result = interpolateValue(percentX, window.currentChartData);
 
-            // Calculate position relative to chartCanvas for unified elements
-            // This ensures both charts position the line at the same X coordinate
-            const unifiedX = e.clientX - chartCanvasRect.left;
-
-            // Show unified hover line (spans both charts) - position relative to chartCanvas
+            // Show unified hover line (spans both charts) - use mouseX (already relative to chartCanvas)
             unifiedHoverLine.style.display = 'block';
-            unifiedHoverLine.style.left = unifiedX + 'px';
+            unifiedHoverLine.style.left = mouseX + 'px';
 
             // Show time label at bottom of main chart (only once, not duplicated)
             timeLabel.classList.add('show');
             const labelWidth = 90;
             // Calculate right bound: left offset + effective chart width
             const chartRightBound = chartLeftOffset + effectiveChartWidth;
-            const labelX = Math.max(chartLeftOffset, Math.min(unifiedX - (labelWidth / 2), chartRightBound - labelWidth));
+            const labelX = Math.max(chartLeftOffset, Math.min(mouseX - (labelWidth / 2), chartRightBound - labelWidth));
             timeLabel.style.left = labelX + 'px';
             timeLabel.innerHTML = `<strong>${result.time}</strong>`;
 
@@ -3801,9 +3796,9 @@
                     }
                 }
 
-                // Position tooltip using mouse X position
+                // Position tooltip using mouse X position (relative to chartCanvas)
                 const tooltipX = mouseX + 15;
-                const tooltipY = e.clientY - hoverRect.top - 60;
+                const tooltipY = e.clientY - chartCanvasRect.top - 60;
 
                 mainTooltip.style.left = tooltipX + 'px';
                 mainTooltip.style.top = tooltipY + 'px';
@@ -3831,9 +3826,9 @@
 
                 oscillatorTooltipTime.textContent = result.time;
 
-                // Position tooltip using mouse X position
+                // Position tooltip using mouse X position (relative to chartCanvas)
                 const tooltipX = mouseX + 15;
-                const tooltipY = e.clientY - hoverRect.top - 60;
+                const tooltipY = e.clientY - oscillatorRect.top - 60;
 
                 oscillatorTooltip.style.left = tooltipX + 'px';
                 oscillatorTooltip.style.top = tooltipY + 'px';
@@ -3841,7 +3836,7 @@
                 // Adjust tooltip position if it goes off screen (respect chart bounds)
                 const chartRightBound = chartLeftOffset + effectiveChartWidth;
                 if (tooltipX + oscillatorTooltip.offsetWidth > chartRightBound) {
-                    oscillatorTooltip.style.left = (rawX - oscillatorTooltip.offsetWidth - 15) + 'px';
+                    oscillatorTooltip.style.left = (mouseX - oscillatorTooltip.offsetWidth - 15) + 'px';
                 }
                 if (tooltipY < 0) {
                     oscillatorTooltip.style.top = '10px';
