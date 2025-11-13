@@ -13,6 +13,7 @@ const translations = {
         // Navigation
         'nav.dashboard': 'Dashboard',
         'nav.about': 'About Us',
+        'nav.indices': 'Indices',
         'nav.news': 'News',
         'nav.language': 'Language',
         'nav.logout': 'Logout',
@@ -108,6 +109,7 @@ const translations = {
         // Navigation
         'nav.dashboard': 'Panel',
         'nav.about': 'Acerca de',
+        'nav.indices': 'Índices',
         'nav.news': 'Noticias',
         'nav.language': 'Idioma',
         'nav.logout': 'Cerrar sesión',
@@ -203,6 +205,7 @@ const translations = {
         // Navigation
         'nav.dashboard': 'Tableau de bord',
         'nav.about': 'À propos',
+        'nav.indices': 'Indices',
         'nav.news': 'Actualités',
         'nav.language': 'Langue',
         'nav.logout': 'Déconnexion',
@@ -298,6 +301,7 @@ const translations = {
         // Navigation
         'nav.dashboard': 'Dashboard',
         'nav.about': 'Über uns',
+        'nav.indices': 'Indizes',
         'nav.news': 'Nachrichten',
         'nav.language': 'Sprache',
         'nav.logout': 'Abmelden',
@@ -393,6 +397,7 @@ const translations = {
         // Navigation
         'nav.dashboard': '仪表板',
         'nav.about': '关于我们',
+        'nav.indices': '指数',
         'nav.news': '新闻',
         'nav.language': '语言',
         'nav.logout': '登出',
@@ -488,6 +493,7 @@ const translations = {
         // Navigation
         'nav.dashboard': 'ダッシュボード',
         'nav.about': '概要',
+        'nav.indices': '指数',
         'nav.news': 'ニュース',
         'nav.language': '言語',
         'nav.logout': 'ログアウト',

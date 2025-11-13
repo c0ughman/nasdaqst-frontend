@@ -102,11 +102,13 @@
             grid-column: 2;
             grid-row: 1 / 2;
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 8px;
             align-items: center;
             margin-bottom: 70px;
             margin-top: -5px;
+            position: relative;
+            z-index: 100;
         }
 
         .right-top-item {
@@ -118,6 +120,7 @@
             justify-content: center;
             height: 70%;
             min-height: 44px;
+            position: relative;
         }
 
 
@@ -126,6 +129,8 @@
             grid-row: 2 / 7;
             padding: 12px 19px 0px 19px;
             margin-top: -10px;
+            position: relative;
+            z-index: 1;
         }
 
         /* Logout link styles */
@@ -345,6 +350,76 @@
 
         .timezone-dropdown::-webkit-scrollbar-thumb:hover {
             background: #333;
+        }
+
+        /* Indices Dropdown Styles */
+        .indices-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .indices-selector:hover {
+            opacity: 0.8;
+        }
+
+        .indices-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        .indices-chevron {
+            font-size: 13px;
+            color: #888;
+            transition: transform 0.2s ease;
+        }
+
+        .indices-selector:hover .indices-chevron {
+            color: #ccc;
+        }
+
+        .indices-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 8px;
+            min-width: 150px;
+            display: none;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+        }
+
+        .indices-dropdown.show {
+            display: block;
+        }
+
+        .indices-option {
+            padding: 10px 14px;
+            color: #ccc;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+            background: transparent;
+        }
+
+        .indices-option:hover {
+            background: #2a2a2a;
+            color: white;
+        }
+
+        .indices-option.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
         }
 
         .market-status {
@@ -1736,7 +1811,6 @@
                         <div class="driver-item">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span class="driver-name" data-i18n="dashboard.driver.news">News</span>
                                     <button type="button" class="eye-icon-btn driver-eye" data-line="news" id="eye-news" title="Toggle news sentiment line">
                                         <svg class="eye-icon eye-closed" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
@@ -1747,6 +1821,7 @@
                                             <circle cx="12" cy="12" r="3"></circle>
                                         </svg>
                                     </button>
+                                    <span class="driver-name" data-i18n="dashboard.driver.news">News</span>
                                 </div>
                                 <span class="driver-value negative">-1.2</span>
                             </div>
@@ -1771,7 +1846,6 @@
                         <div class="driver-item">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span class="driver-name" data-i18n="dashboard.driver.indicators">Indicators</span>
                                     <button type="button" class="eye-icon-btn driver-eye" data-line="indicators" id="eye-indicators" title="Toggle technical indicators line">
                                         <svg class="eye-icon eye-closed" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
@@ -1782,6 +1856,7 @@
                                             <circle cx="12" cy="12" r="3"></circle>
                                         </svg>
                                     </button>
+                                    <span class="driver-name" data-i18n="dashboard.driver.indicators">Indicators</span>
                                 </div>
                                 <span class="driver-value positive">+0.1</span>
                             </div>
@@ -1825,6 +1900,15 @@
             <div class="right-top">
                 <div class="right-top-item">
                     <a href="about.html" class="nav-link" data-i18n="nav.about">About Us</a>
+                </div>
+                <div class="right-top-item">
+                    <div class="indices-selector" id="indices-selector">
+                        <span class="indices-label" data-i18n="nav.indices">Indices</span>
+                        <span class="indices-chevron">▼</span>
+                        <div class="indices-dropdown" id="indices-dropdown">
+                            <div class="indices-option active" data-index="nasdaq">Nasdaq</div>
+                        </div>
+                    </div>
                 </div>
                 <div class="right-top-item">
                     <a href="news.html" class="nav-link" data-i18n="nav.news">News</a>
@@ -2364,6 +2448,47 @@
                         timezoneDropdown.classList.remove('show');
                         timezoneSelector.classList.remove('open');
                     }
+                });
+            }
+
+            // Indices dropdown toggle
+            const indicesSelector = document.getElementById('indices-selector');
+            const indicesDropdown = document.getElementById('indices-dropdown');
+
+            if (indicesSelector && indicesDropdown) {
+                indicesSelector.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('indices-option')) {
+                        indicesDropdown.classList.toggle('show');
+                    }
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!indicesSelector.contains(e.target)) {
+                        indicesDropdown.classList.remove('show');
+                    }
+                });
+
+                // Handle indices option selection
+                const indicesOptions = document.querySelectorAll('.indices-option');
+                indicesOptions.forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        
+                        // Update active state
+                        indicesOptions.forEach(opt => opt.classList.remove('active'));
+                        option.classList.add('active');
+                        
+                        // Get selected index
+                        const selectedIndex = option.getAttribute('data-index');
+                        console.log('Selected index:', selectedIndex);
+                        
+                        // Close dropdown
+                        indicesDropdown.classList.remove('show');
+                        
+                        // You can add additional functionality here when more indices are added
+                        // For now, only Nasdaq is available
+                    });
                 });
             }
         });
@@ -3570,7 +3695,7 @@
                     path.setAttribute('d', pathD);
                     path.setAttribute('fill', 'none');
                     path.setAttribute('stroke', driver.color);
-                    path.setAttribute('stroke-width', '0.5');
+                    path.setAttribute('stroke-width', '0.3');
                     path.setAttribute('stroke-linecap', 'round');
                     path.setAttribute('stroke-linejoin', 'round');
                     path.setAttribute('opacity', '0.9');
