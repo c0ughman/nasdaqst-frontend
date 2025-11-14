@@ -3582,8 +3582,22 @@
             // Store for tooltip
             window.nasdaqPriceScale = actualPriceRange;
 
-            // Calculate candle width based on number of points (reduced spacing by half)
-            const candleWidth = Math.min(3.0, Math.max(0.5, 100 / candlePoints.length));
+            // Dynamic candle width based on number of points
+            // For short timeframes (fewer candles): use smaller fill ratio (more space)
+            // For long timeframes (many candles): use larger fill ratio (less space to avoid overlap)
+            let fillRatio;
+            if (candlePoints.length < 30) {
+                // Short timeframes (5m, 15m, 30m): 50% fill - more space between
+                fillRatio = 0.5;
+            } else if (candlePoints.length < 60) {
+                // Medium timeframes: 70% fill
+                fillRatio = 0.7;
+            } else {
+                // Long timeframes (1h+): 85% fill - less space to prevent overlap
+                fillRatio = 0.85;
+            }
+            
+            const candleWidth = Math.min(4.0, Math.max(0.4, (100 / candlePoints.length) * fillRatio));
             const wickWidth = 0.15;
             const tickWidth = candleWidth * 0.3; // Horizontal tick marks at high/low
 
