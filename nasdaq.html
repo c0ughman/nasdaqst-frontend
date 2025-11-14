@@ -649,6 +649,24 @@
             flex-shrink: 0;
         }
 
+        .chart-type-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            padding: 6px 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e0e0e0;
+            transition: all 0.2s ease;
+        }
+
+        .chart-type-toggle:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
         /* Nasdaq price toggle as checkbox */
         .price-toggle {
             display: flex;
@@ -2001,7 +2019,19 @@
             <!-- Bottom Row: Historical Sentiment Trend -->
             <div class="card bottom-row" style="position: relative;">
                 <div class="chart-header">
-                    <span class="chart-title" data-i18n="dashboard.chart.title">NASDAQ</span>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="chart-title" data-i18n="dashboard.chart.title">NASDAQ</span>
+                        <button id="chart-type-toggle" class="chart-type-toggle" title="Toggle chart type">
+                            <svg id="line-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                            <svg id="candle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                                <line x1="12" y1="2" x2="12" y2="6"></line>
+                                <rect x="8" y="6" width="8" height="12" fill="currentColor"></rect>
+                                <line x1="12" y1="18" x2="12" y2="22"></line>
+                            </svg>
+                        </button>
+                    </div>
                     <div class="chart-controls">
                         <div class="timeframe-selector">
                             <button class="timeframe-btn" data-timeframe="6h" data-i18n="dashboard.chart.timeframe.6h">Session</button>
@@ -2500,6 +2530,7 @@
         const chartPath = document.querySelector('.chart-path');
         let currentTimeframe = '1h'; // Declare timeframe variable globally
         let scrollPosition = 100; // 100 = rightmost (most recent data), 0 = leftmost (oldest data)
+        let chartType = 'candlestick'; // 'line' or 'candlestick'
         
         // ===== REAL NASDAQ SENTIMENT DATA =====
         // Fetch real composite sentiment data from the API
@@ -3387,8 +3418,12 @@
                 // const verifyPath = chartPath.getAttribute('d');
                 // console.log('Path verification:', verifyPath);
 
-                // Draw Nasdaq price line in main chart
-                drawDataPointDots(data.dataPoints, data.minPrice, data.maxPrice, data.priceRange);
+                // Draw chart based on chart type
+                if (chartType === 'candlestick') {
+                    drawCandlesticks(data.dataPoints, data.minPrice, data.maxPrice, data.priceRange);
+                } else {
+                    drawDataPointDots(data.dataPoints, data.minPrice, data.maxPrice, data.priceRange);
+                }
 
                 // Draw market gap lines
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
@@ -3481,6 +3516,104 @@
             }
 
             console.log(`Drew Nasdaq price line with ${pricePoints.length} data points`);
+        }
+
+        // Draw candlesticks for OHLC data
+        function drawCandlesticks(dataPoints, minPrice, maxPrice, priceRange) {
+            const dotsContainer = document.getElementById('chart-dots');
+            if (!dotsContainer) return;
+
+            // Clear existing content
+            dotsContainer.innerHTML = '';
+
+            if (!dataPoints || dataPoints.length === 0) return;
+
+            // Filter out points without OHLC data
+            const candlePoints = dataPoints.filter(p => 
+                p.open != null && !isNaN(p.open) &&
+                p.high != null && !isNaN(p.high) &&
+                p.low != null && !isNaN(p.low) &&
+                p.price != null && !isNaN(p.price) // price is close
+            );
+
+            if (candlePoints.length === 0) {
+                console.warn('No OHLC data available for candlesticks');
+                return;
+            }
+
+            // Use priceRange if provided, otherwise calculate from current window
+            let actualPriceRange = priceRange;
+            if (!actualPriceRange) {
+                const allPrices = [];
+                candlePoints.forEach(p => {
+                    allPrices.push(p.open, p.high, p.low, p.price);
+                });
+                actualPriceRange = {
+                    min: Math.min(...allPrices),
+                    max: Math.max(...allPrices)
+                };
+            }
+
+            // Map price to Y coordinate
+            const priceToY = (price) => {
+                const range = actualPriceRange.max - actualPriceRange.min;
+                if (range === 0) return 50;
+                const y = ((actualPriceRange.max - price) / range) * 100;
+                return Math.max(0, Math.min(100, y));
+            };
+
+            // Store for tooltip
+            window.nasdaqPriceScale = actualPriceRange;
+
+            // Calculate candle width based on number of points
+            const candleWidth = Math.min(1.5, Math.max(0.3, 100 / (candlePoints.length * 2)));
+            const wickWidth = 0.1;
+
+            // Draw each candlestick
+            candlePoints.forEach(point => {
+                const x = point.x;
+                const open = point.open;
+                const high = point.high;
+                const low = point.low;
+                const close = point.price; // price field is the close
+
+                const openY = priceToY(open);
+                const highY = priceToY(high);
+                const lowY = priceToY(low);
+                const closeY = priceToY(close);
+
+                // Draw wick (high to low)
+                const wick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                wick.setAttribute('x1', x);
+                wick.setAttribute('y1', highY);
+                wick.setAttribute('x2', x);
+                wick.setAttribute('y2', lowY);
+                wick.setAttribute('stroke', '#ffffff');
+                wick.setAttribute('stroke-width', wickWidth);
+                wick.setAttribute('opacity', '0.8');
+                dotsContainer.appendChild(wick);
+
+                // Draw body (open to close)
+                const bodyTop = Math.min(openY, closeY);
+                const bodyHeight = Math.abs(openY - closeY);
+                
+                // If body height is too small (doji-like), make it visible
+                const minBodyHeight = 0.2;
+                const displayBodyHeight = Math.max(bodyHeight, minBodyHeight);
+
+                const body = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                body.setAttribute('x', x - candleWidth / 2);
+                body.setAttribute('y', bodyTop);
+                body.setAttribute('width', candleWidth);
+                body.setAttribute('height', displayBodyHeight);
+                body.setAttribute('fill', '#ffffff');
+                body.setAttribute('stroke', '#ffffff');
+                body.setAttribute('stroke-width', '0.1');
+                body.setAttribute('opacity', '0.9');
+                dotsContainer.appendChild(body);
+            });
+
+            console.log(`Drew ${candlePoints.length} candlesticks`);
         }
 
         // Draw vertical dotted lines for market gaps
@@ -3720,6 +3853,29 @@
             priceToggleCheckbox.addEventListener('change', async () => {
                 window.nasdaqPriceEnabled = !!priceToggleCheckbox.checked;
                 console.log(`☑️ Show Nasdaq: ${window.nasdaqPriceEnabled}`);
+                await updateChart(currentTimeframe);
+            });
+        }
+
+        // Chart type toggle button
+        const chartTypeToggle = document.getElementById('chart-type-toggle');
+        const lineIcon = document.getElementById('line-icon');
+        const candleIcon = document.getElementById('candle-icon');
+        
+        if (chartTypeToggle) {
+            chartTypeToggle.addEventListener('click', async () => {
+                // Toggle chart type
+                if (chartType === 'candlestick') {
+                    chartType = 'line';
+                    lineIcon.style.display = 'none';
+                    candleIcon.style.display = 'block';
+                } else {
+                    chartType = 'candlestick';
+                    lineIcon.style.display = 'block';
+                    candleIcon.style.display = 'none';
+                }
+                
+                console.log('Chart type changed to:', chartType);
                 await updateChart(currentTimeframe);
             });
         }
