@@ -3582,24 +3582,15 @@
             // Store for tooltip
             window.nasdaqPriceScale = actualPriceRange;
 
-            // Dynamic candle width based on number of points
-            // For short timeframes (fewer candles): use smaller fill ratio (more space)
-            // For long timeframes (many candles): use larger fill ratio (less space to avoid overlap)
-            let fillRatio;
-            if (candlePoints.length < 30) {
-                // Short timeframes (5m, 15m, 30m): 50% fill - more space between
-                fillRatio = 0.5;
-            } else if (candlePoints.length < 60) {
-                // Medium timeframes: 70% fill
-                fillRatio = 0.7;
-            } else {
-                // Long timeframes (1h+): 85% fill - less space to prevent overlap
-                fillRatio = 0.85;
-            }
+            // Dynamic candle width - fatter candles for shorter timeframes, consistent ~2px spacing
+            // Calculate available space per candle, then subtract fixed spacing
+            const spacePerCandle = 100 / candlePoints.length;
+            const spacingInPercent = 0.08; // ~2 pixel spacing (consistent across timeframes)
             
-            const candleWidth = Math.min(4.0, Math.max(0.4, (100 / candlePoints.length) * fillRatio));
-            const wickWidth = 0.15;
-            const tickWidth = candleWidth * 0.3; // Horizontal tick marks at high/low
+            // Candle width = available space minus spacing
+            // Shorter timeframes get fatter candles since they have more space
+            const candleWidth = Math.max(0.3, spacePerCandle - spacingInPercent);
+            const wickWidth = 0.2; // Thicker wicks for better visibility
 
             // Draw each candlestick
             candlePoints.forEach(point => {
@@ -3624,28 +3615,6 @@
                 wick.setAttribute('stroke-width', wickWidth);
                 wick.setAttribute('opacity', '0.9');
                 dotsContainer.appendChild(wick);
-
-                // Draw tick at high
-                const highTick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                highTick.setAttribute('x1', x - tickWidth / 2);
-                highTick.setAttribute('y1', highY);
-                highTick.setAttribute('x2', x + tickWidth / 2);
-                highTick.setAttribute('y2', highY);
-                highTick.setAttribute('stroke', '#ffffff');
-                highTick.setAttribute('stroke-width', wickWidth);
-                highTick.setAttribute('opacity', '0.9');
-                dotsContainer.appendChild(highTick);
-
-                // Draw tick at low
-                const lowTick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                lowTick.setAttribute('x1', x - tickWidth / 2);
-                lowTick.setAttribute('y1', lowY);
-                lowTick.setAttribute('x2', x + tickWidth / 2);
-                lowTick.setAttribute('y2', lowY);
-                lowTick.setAttribute('stroke', '#ffffff');
-                lowTick.setAttribute('stroke-width', wickWidth);
-                lowTick.setAttribute('opacity', '0.9');
-                dotsContainer.appendChild(lowTick);
 
                 // Draw body (open to close)
                 const bodyTop = Math.min(openY, closeY);
