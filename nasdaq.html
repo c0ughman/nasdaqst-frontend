@@ -3535,7 +3535,7 @@
             console.log(`Drew Nasdaq price line with ${pricePoints.length} data points`);
         }
 
-        // Draw candlesticks for OHLC data
+        // Draw candlesticks for OHLC data (Heikin-Ashi style)
         function drawCandlesticks(dataPoints, minPrice, maxPrice, priceRange) {
             const dotsContainer = document.getElementById('chart-dots');
             if (!dotsContainer) return;
@@ -3558,11 +3558,44 @@
                 return;
             }
 
+            // Calculate Heikin-Ashi values
+            const heikinAshiCandles = [];
+            let prevHAOpen = candlePoints[0].open;
+            let prevHAClose = candlePoints[0].price;
+
+            candlePoints.forEach((point, index) => {
+                const close = point.price;
+                const open = point.open;
+                const high = point.high;
+                const low = point.low;
+
+                // Heikin-Ashi calculations
+                const haClose = (open + high + low + close) / 4;
+                const haOpen = index === 0 ? open : (prevHAOpen + prevHAClose) / 2;
+                const haHigh = Math.max(high, haOpen, haClose);
+                const haLow = Math.min(low, haOpen, haClose);
+
+                heikinAshiCandles.push({
+                    ...point,
+                    haOpen,
+                    haHigh,
+                    haLow,
+                    haClose,
+                    isBullish: haClose >= haOpen
+                });
+
+                prevHAOpen = haOpen;
+                prevHAClose = haClose;
+            });
+
+            // Use heikinAshiCandles instead of regular candles
+            const displayCandles = heikinAshiCandles;
+
             // Use VISIBLE candles' price range for better proportions (not full day range)
-            // This prevents vertical compression
+            // This prevents vertical compression - use HA values for range
             const allPrices = [];
-            candlePoints.forEach(p => {
-                allPrices.push(p.open, p.high, p.low, p.price);
+            displayCandles.forEach(p => {
+                allPrices.push(p.haOpen, p.haHigh, p.haLow, p.haClose);
             });
             const visibleMin = Math.min(...allPrices);
             const visibleMax = Math.max(...allPrices);
@@ -3588,24 +3621,30 @@
 
             // Industry-standard candlestick proportions (TradingView style)
             // Candles should fill 65% of space, with 35% gap between them
-            const spacePerCandle = 100 / candlePoints.length;
+            const spacePerCandle = 100 / displayCandles.length;
             const candleWidth = spacePerCandle * 0.65;
             
             // Wick should be about 1/8th the width of candle body for clean look
             const wickWidth = Math.max(0.08, candleWidth * 0.125);
 
-            // Draw each candlestick
-            candlePoints.forEach(point => {
+            // Draw each Heikin-Ashi candlestick
+            displayCandles.forEach(point => {
                 const x = point.x;
-                const open = point.open;
-                const high = point.high;
-                const low = point.low;
-                const close = point.price; // price field is the close
+                
+                // Use Heikin-Ashi values
+                const open = point.haOpen;
+                const high = point.haHigh;
+                const low = point.haLow;
+                const close = point.haClose;
+                const isBullish = point.isBullish;
 
                 const openY = priceToY(open);
                 const highY = priceToY(high);
                 const lowY = priceToY(low);
                 const closeY = priceToY(close);
+                
+                // Color scheme: white for bullish, blue for bearish
+                const candleColor = isBullish ? '#ffffff' : '#3b82f6';
 
                 // Draw wick (high to low)
                 const wick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -3613,7 +3652,7 @@
                 wick.setAttribute('y1', highY);
                 wick.setAttribute('x2', x);
                 wick.setAttribute('y2', lowY);
-                wick.setAttribute('stroke', '#ffffff');
+                wick.setAttribute('stroke', candleColor);
                 wick.setAttribute('stroke-width', wickWidth);
                 wick.setAttribute('opacity', '0.9');
                 dotsContainer.appendChild(wick);
@@ -3632,12 +3671,12 @@
                 body.setAttribute('y', bodyTop);
                 body.setAttribute('width', candleWidth);
                 body.setAttribute('height', displayBodyHeight);
-                body.setAttribute('fill', '#ffffff');
+                body.setAttribute('fill', candleColor);
                 body.setAttribute('opacity', '0.95');
                 dotsContainer.appendChild(body);
             });
 
-            console.log(`Drew ${candlePoints.length} candlesticks`);
+            console.log(`Drew ${displayCandles.length} Heikin-Ashi candlesticks`);
         }
 
         // Draw vertical dotted lines for market gaps
