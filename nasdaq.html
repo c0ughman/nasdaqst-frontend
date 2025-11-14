@@ -3634,8 +3634,9 @@
 
             // Industry-standard candlestick proportions (TradingView style)
             // Candles should fill 65% of space, with 35% gap between them
-            const spacePerCandle = 100 / displayCandles.length;
-            const candleWidth = spacePerCandle * 0.65;
+            // Use 96 instead of 100 because candles span from x=2 to x=98
+            const spacePerCandle = 96 / displayCandles.length;
+            const candleWidth = Math.min(spacePerCandle * 0.65, 4); // Cap at 4 to prevent overflow on small datasets
             
             // Wick should be about 1/8th the width of candle body for clean look
             const wickWidth = Math.max(0.08, candleWidth * 0.125);
@@ -3715,8 +3716,9 @@
             if (maxVolume === 0) return;
 
             // Calculate bar width (same as candles)
-            const spacePerBar = 100 / volumePoints.length;
-            const barWidth = spacePerBar * 0.65;
+            // Use 96 instead of 100 because bars span from x=2 to x=98
+            const spacePerBar = 96 / volumePoints.length;
+            const barWidth = Math.min(spacePerBar * 0.65, 4); // Cap at 4 to prevent overflow
 
             // Draw each volume bar
             volumePoints.forEach(point => {
