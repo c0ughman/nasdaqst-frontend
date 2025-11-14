@@ -779,7 +779,7 @@
             border-radius: 12px;
             padding: 12px 0px 0px 12px;
             min-height: 70px;
-            overflow: visible;
+            overflow: hidden;
         }
 
         .chart-side-panel {
@@ -938,7 +938,6 @@
             top: 0;
             bottom: 0;
             pointer-events: none;
-            overflow: visible;
         }
 
         .chart-line svg {
@@ -2051,9 +2050,9 @@
                 <!-- Unified Charts Wrapper -->
                 <div class="charts-wrapper" id="charts-wrapper">
                     <!-- Main Chart Container -->
-                    <div class="chart-container" id="chart-container" style="flex: 1; min-height: 450px; display: flex; flex-direction: column; overflow: visible;">
+                    <div class="chart-container" id="chart-container" style="flex: 1; min-height: 450px; display: flex; flex-direction: column;">
                         <div style="position: relative; flex: 1; min-height: 340px;">
-                        <div class="chart-canvas" id="chart-canvas" style="overflow: visible;">
+                        <div class="chart-canvas" id="chart-canvas">
                             <div class="chart-line">
                                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="sentiment-chart">
                                     <defs>
@@ -2089,7 +2088,7 @@
                         
                         <!-- Volume Chart (below price chart) -->
                         <div class="volume-container" id="volume-container" style="height: 70px; flex-shrink: 0; margin-left: 20px;">
-                            <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="volume-chart-svg" style="width: calc(90% - 20px); height: 100%; overflow: visible;">
+                            <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="volume-chart-svg" style="width: calc(90% - 20px); height: 100%;">
                                 <g id="volume-bars"></g>
                             </svg>
                         </div>
@@ -3311,8 +3310,9 @@
             }
 
             // Use ALL data points for the chart path (smooth line)
+            // Add 2% margin on each side to prevent edge clipping
             const allPoints = filteredData.map((d, index) => ({
-                x: (index / (filteredData.length - 1)) * 100,
+                x: 2 + (index / (filteredData.length - 1)) * 96,
                 sentiment: d.sentiment,
                 price: d.price,
                 open: d.open,
@@ -3389,7 +3389,7 @@
                 maxPrice,
                 priceRange,
                 fullTimeframeData: fullTimeframeData.map((d, index) => ({
-                    x: (index / (fullTimeframeData.length - 1)) * 100,
+                    x: 2 + (index / (fullTimeframeData.length - 1)) * 96,
                     sentiment: d.sentiment,
                     price: d.price,
                     news: d.news,
@@ -3613,9 +3613,9 @@
             const visibleMin = Math.min(...allPrices);
             const visibleMax = Math.max(...allPrices);
             
-            // Add 2% padding top and bottom for better visual spacing
+            // Add 5% padding top and bottom to prevent candles from being cut off
             const visibleRange = visibleMax - visibleMin;
-            const padding = visibleRange * 0.02;
+            const padding = visibleRange * 0.05;
             const actualPriceRange = {
                 min: visibleMin - padding,
                 max: visibleMax + padding
