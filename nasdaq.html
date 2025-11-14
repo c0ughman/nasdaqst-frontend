@@ -2050,8 +2050,9 @@
                 <!-- Unified Charts Wrapper -->
                 <div class="charts-wrapper" id="charts-wrapper">
                     <!-- Main Chart Container -->
-                    <div class="chart-container" id="chart-container" style="flex: 1; min-height: 450px;">
-                        <div class="chart-canvas" id="chart-canvas" style="height: 310px;">
+                    <div class="chart-container" id="chart-container" style="flex: 1; min-height: 450px; display: flex; flex-direction: column;">
+                        <div style="position: relative; flex: 1; min-height: 310px;">
+                        <div class="chart-canvas" id="chart-canvas">
                             <div class="chart-line">
                                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="sentiment-chart">
                                     <defs>
@@ -2083,9 +2084,10 @@
                             <span>-15m</span>
                             <span>Now</span>
                         </div>
+                        </div>
                         
-                        <!-- Volume Chart (inside chart container) -->
-                        <div class="volume-container" id="volume-container" style="height: 100px; position: relative; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 8px;">
+                        <!-- Volume Chart (below price chart) -->
+                        <div class="volume-container" id="volume-container" style="height: 100px; border-top: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
                             <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="volume-chart-svg" style="width: 100%; height: 100%; padding-left: 50px; padding-right: 20px;">
                                 <g id="volume-bars"></g>
                             </svg>
