@@ -3558,20 +3558,24 @@
                 return;
             }
 
-            // Use priceRange if provided, otherwise calculate from current window
-            let actualPriceRange = priceRange;
-            if (!actualPriceRange) {
-                const allPrices = [];
-                candlePoints.forEach(p => {
-                    allPrices.push(p.open, p.high, p.low, p.price);
-                });
-                actualPriceRange = {
-                    min: Math.min(...allPrices),
-                    max: Math.max(...allPrices)
-                };
-            }
+            // Use VISIBLE candles' price range for better proportions (not full day range)
+            // This prevents vertical compression
+            const allPrices = [];
+            candlePoints.forEach(p => {
+                allPrices.push(p.open, p.high, p.low, p.price);
+            });
+            const visibleMin = Math.min(...allPrices);
+            const visibleMax = Math.max(...allPrices);
+            
+            // Add 2% padding top and bottom for better visual spacing
+            const visibleRange = visibleMax - visibleMin;
+            const padding = visibleRange * 0.02;
+            const actualPriceRange = {
+                min: visibleMin - padding,
+                max: visibleMax + padding
+            };
 
-            // Map price to Y coordinate
+            // Map price to Y coordinate with proper scaling
             const priceToY = (price) => {
                 const range = actualPriceRange.max - actualPriceRange.min;
                 if (range === 0) return 50;
@@ -3582,15 +3586,13 @@
             // Store for tooltip
             window.nasdaqPriceScale = actualPriceRange;
 
-            // Dynamic candle width - fatter candles for shorter timeframes, consistent ~2px spacing
-            // Calculate available space per candle, then subtract fixed spacing
+            // Industry-standard candlestick proportions (TradingView style)
+            // Candles should fill 65% of space, with 35% gap between them
             const spacePerCandle = 100 / candlePoints.length;
-            const spacingInPercent = 0.08; // ~2 pixel spacing (consistent across timeframes)
+            const candleWidth = spacePerCandle * 0.65;
             
-            // Candle width = available space minus spacing
-            // Shorter timeframes get fatter candles since they have more space
-            const candleWidth = Math.max(0.3, spacePerCandle - spacingInPercent);
-            const wickWidth = 0.2; // Thicker wicks for better visibility
+            // Wick should be about 1/8th the width of candle body for clean look
+            const wickWidth = Math.max(0.08, candleWidth * 0.125);
 
             // Draw each candlestick
             candlePoints.forEach(point => {
@@ -3620,8 +3622,9 @@
                 const bodyTop = Math.min(openY, closeY);
                 const bodyHeight = Math.abs(openY - closeY);
                 
-                // If body height is too small (doji-like), make it visible
-                const minBodyHeight = 0.2;
+                // Minimum body height for doji candles - should be visible as a line
+                // Scale with candle width for consistency
+                const minBodyHeight = wickWidth * 1.5;
                 const displayBodyHeight = Math.max(bodyHeight, minBodyHeight);
 
                 const body = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -3630,9 +3633,7 @@
                 body.setAttribute('width', candleWidth);
                 body.setAttribute('height', displayBodyHeight);
                 body.setAttribute('fill', '#ffffff');
-                body.setAttribute('stroke', '#ffffff');
-                body.setAttribute('stroke-width', '0.1');
-                body.setAttribute('opacity', '0.9');
+                body.setAttribute('opacity', '0.95');
                 dotsContainer.appendChild(body);
             });
 
