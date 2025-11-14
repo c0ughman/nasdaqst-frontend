@@ -779,7 +779,7 @@
             border-radius: 12px;
             padding: 12px 0px 0px 12px;
             min-height: 70px;
-            max-height: 400px;
+            overflow: visible;
         }
 
         .chart-side-panel {
@@ -936,8 +936,9 @@
             left: 0;
             right: 0;
             top: 0;
-            bottom: 20px;
+            bottom: 0;
             pointer-events: none;
+            overflow: visible;
         }
 
         .chart-line svg {
@@ -2050,9 +2051,9 @@
                 <!-- Unified Charts Wrapper -->
                 <div class="charts-wrapper" id="charts-wrapper">
                     <!-- Main Chart Container -->
-                    <div class="chart-container" id="chart-container" style="flex: 1; min-height: 450px; display: flex; flex-direction: column;">
-                        <div style="position: relative; flex: 1; min-height: 310px;">
-                        <div class="chart-canvas" id="chart-canvas">
+                    <div class="chart-container" id="chart-container" style="flex: 1; min-height: 450px; display: flex; flex-direction: column; overflow: visible;">
+                        <div style="position: relative; flex: 1; min-height: 340px;">
+                        <div class="chart-canvas" id="chart-canvas" style="overflow: visible;">
                             <div class="chart-line">
                                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="sentiment-chart">
                                     <defs>
@@ -2087,8 +2088,8 @@
                         </div>
                         
                         <!-- Volume Chart (below price chart) -->
-                        <div class="volume-container" id="volume-container" style="height: 100px; flex-shrink: 0; margin-left: 20px;">
-                            <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="volume-chart-svg" style="width: calc(90% - 20px); height: 100%;">
+                        <div class="volume-container" id="volume-container" style="height: 70px; flex-shrink: 0; margin-left: 20px;">
+                            <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="volume-chart-svg" style="width: calc(90% - 20px); height: 100%; overflow: visible;">
                                 <g id="volume-bars"></g>
                             </svg>
                         </div>
