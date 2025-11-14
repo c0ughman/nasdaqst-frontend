@@ -3582,9 +3582,10 @@
             // Store for tooltip
             window.nasdaqPriceScale = actualPriceRange;
 
-            // Calculate candle width based on number of points
-            const candleWidth = Math.min(1.5, Math.max(0.3, 100 / (candlePoints.length * 2)));
-            const wickWidth = 0.1;
+            // Calculate candle width based on number of points (reduced spacing by half)
+            const candleWidth = Math.min(3.0, Math.max(0.5, 100 / candlePoints.length));
+            const wickWidth = 0.15;
+            const tickWidth = candleWidth * 0.3; // Horizontal tick marks at high/low
 
             // Draw each candlestick
             candlePoints.forEach(point => {
@@ -3607,8 +3608,30 @@
                 wick.setAttribute('y2', lowY);
                 wick.setAttribute('stroke', '#ffffff');
                 wick.setAttribute('stroke-width', wickWidth);
-                wick.setAttribute('opacity', '0.8');
+                wick.setAttribute('opacity', '0.9');
                 dotsContainer.appendChild(wick);
+
+                // Draw tick at high
+                const highTick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                highTick.setAttribute('x1', x - tickWidth / 2);
+                highTick.setAttribute('y1', highY);
+                highTick.setAttribute('x2', x + tickWidth / 2);
+                highTick.setAttribute('y2', highY);
+                highTick.setAttribute('stroke', '#ffffff');
+                highTick.setAttribute('stroke-width', wickWidth);
+                highTick.setAttribute('opacity', '0.9');
+                dotsContainer.appendChild(highTick);
+
+                // Draw tick at low
+                const lowTick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                lowTick.setAttribute('x1', x - tickWidth / 2);
+                lowTick.setAttribute('y1', lowY);
+                lowTick.setAttribute('x2', x + tickWidth / 2);
+                lowTick.setAttribute('y2', lowY);
+                lowTick.setAttribute('stroke', '#ffffff');
+                lowTick.setAttribute('stroke-width', wickWidth);
+                lowTick.setAttribute('opacity', '0.9');
+                dotsContainer.appendChild(lowTick);
 
                 // Draw body (open to close)
                 const bodyTop = Math.min(openY, closeY);
