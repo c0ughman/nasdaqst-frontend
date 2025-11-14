@@ -2586,6 +2586,11 @@
                             timestamp: new Date(point.timestamp),
                             sentiment: point.composite_score,
                             price: point.price,
+                            // OHLC data for candlestick charts
+                            open: point.open,
+                            high: point.high,
+                            low: point.low,
+                            volume: point.volume,
                             // Include individual driver scores (using actual API field names)
                             news: point.news_composite || null,
                             indicators: point.technical_composite || null
@@ -2613,6 +2618,10 @@
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
                         price: point.price,
+                        open: point.open,
+                        high: point.high,
+                        low: point.low,
+                        volume: point.volume,
                         news: point.news_composite || null,
                         indicators: point.technical_composite || null
                     }));
@@ -2628,6 +2637,10 @@
                         timestamp: new Date(point.timestamp),
                         sentiment: point.composite_score,
                         price: point.price,
+                        open: point.open,
+                        high: point.high,
+                        low: point.low,
+                        volume: point.volume,
                         news: point.news_composite || null,
                         indicators: point.technical_composite || null
                     }));
@@ -3291,6 +3304,10 @@
                 x: (index / (filteredData.length - 1)) * 100,
                 sentiment: d.sentiment,
                 price: d.price,
+                open: d.open,
+                high: d.high,
+                low: d.low,
+                volume: d.volume,
                 news: d.news,
                 indicators: d.indicators,
                 timestamp: d.timestamp,
