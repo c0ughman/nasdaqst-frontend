@@ -777,7 +777,7 @@
             position: relative;
             background: #0f0f0f;
             border-radius: 12px;
-            padding: 12px 0px 0px 12px;
+            padding: 12px 0px 0px 0px;
             min-height: 70px;
             overflow: hidden;
         }
@@ -2087,8 +2087,8 @@
                         </div>
                         
                         <!-- Volume Chart (below price chart) -->
-                        <div class="volume-container" id="volume-container" style="height: 70px; flex-shrink: 0; margin-left: 20px;">
-                            <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="volume-chart-svg" style="width: calc(90% - 20px); height: 100%;">
+                        <div class="volume-container" id="volume-container" style="height: 70px; flex-shrink: 0;">
+                            <svg viewBox="0 0 100 100" preserveAspectRatio="none" id="volume-chart-svg" style="width: 100%; height: 100%; padding-left: 20px; padding-right: 10%;">
                                 <g id="volume-bars"></g>
                             </svg>
                         </div>
