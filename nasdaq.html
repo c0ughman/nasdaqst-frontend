@@ -873,8 +873,7 @@
         .chart-time-label {
             position: absolute;
             bottom: 145px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 0;
             background: #ff8c42;
             color: #000;
             padding: 6px 12px;
@@ -927,7 +926,6 @@
         .chart-tooltip .tooltip-time {
             color: #999;
             font-size: 9px;
-            display: none;
         }
 
         .chart-tooltip .tooltip-sentiment {
@@ -4307,11 +4305,14 @@
             unifiedHoverLine.style.display = 'block';
             unifiedHoverLine.style.left = (clampedMouseX + chartCanvasOffsetX) + 'px';
 
-            // Show time label between charts and oscillator (centered)
+            // Show time label between charts and oscillator (follows cursor x-position)
             timeLabel.classList.add('show');
             timeLabel.innerHTML = `<strong>${result.time}</strong>`;
-            // Remove any left positioning - it's now centered via CSS
-            timeLabel.style.left = '';
+            // Position time label to follow cursor x-position (same as hover line)
+            const labelWidth = 90;
+            const labelXRelativeToCanvas = Math.max(0, Math.min(clampedMouseX - (labelWidth / 2), chartCanvasRect.width - labelWidth));
+            const labelX = labelXRelativeToCanvas + chartCanvasOffsetX;
+            timeLabel.style.left = labelX + 'px';
             
             // Show time display between charts
             if (chartTimeDisplay) {
@@ -4331,7 +4332,7 @@
                     mainTooltipValue.textContent = 'N/A';
                 }
 
-                // Time is now shown in the display between charts, not in tooltip
+                mainTooltipTime.textContent = result.time;
 
                 // Show sentiment score as secondary info
                 const tooltipSentiment = document.getElementById('tooltip-sentiment');
@@ -4373,7 +4374,7 @@
                     oscillatorTooltipValue.textContent = 'N/A';
                 }
 
-                // Time is now shown in the display between charts, not in tooltip
+                oscillatorTooltipTime.textContent = result.time;
 
                 // Position tooltip using mouse X position (relative to chartCanvas)
                 // For oscillator, we need to calculate mouseX relative to oscillator
