@@ -872,8 +872,9 @@
 
         .chart-time-label {
             position: absolute;
-            bottom: -27px;
-            left: 0;
+            bottom: 145px;
+            left: 50%;
+            transform: translateX(-50%);
             background: #ff8c42;
             color: #000;
             padding: 6px 12px;
@@ -4306,14 +4307,11 @@
             unifiedHoverLine.style.display = 'block';
             unifiedHoverLine.style.left = (clampedMouseX + chartCanvasOffsetX) + 'px';
 
-            // Show time label at bottom of main chart (only once, not duplicated)
+            // Show time label between charts and oscillator (centered)
             timeLabel.classList.add('show');
-            const labelWidth = 90;
-            // Position relative to charts-wrapper (same as hover line)
-            const labelXRelativeToCanvas = Math.max(0, Math.min(clampedMouseX - (labelWidth / 2), chartCanvasRect.width - labelWidth));
-            const labelX = labelXRelativeToCanvas + chartCanvasOffsetX;
-            timeLabel.style.left = labelX + 'px';
             timeLabel.innerHTML = `<strong>${result.time}</strong>`;
+            // Remove any left positioning - it's now centered via CSS
+            timeLabel.style.left = '';
             
             // Show time display between charts
             if (chartTimeDisplay) {
