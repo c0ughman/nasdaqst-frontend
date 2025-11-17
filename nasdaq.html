@@ -2830,8 +2830,28 @@
                 // Market is open - hide indicator
                 indicator.style.display = 'none';
             } else {
-                // Market is closed - show small indicator with timestamp
-                const closeTime = new Date(marketStatus.last_close_time || new Date());
+                // Market is closed - show small indicator with timestamp from latest data point
+                // Find the latest timestamp from all available datasets
+                let latestTimestamp = null;
+                
+                // Check all datasets and find the most recent timestamp
+                const allDatasets = [sentimentDataset, sentimentDataset2d, sentimentDataset3d];
+                for (const dataset of allDatasets) {
+                    if (dataset && dataset.length > 0) {
+                        // Find the latest timestamp in this dataset
+                        const datasetLatest = dataset.reduce((latest, point) => {
+                            if (!latest || !point.timestamp) return point.timestamp || latest;
+                            return point.timestamp > latest ? point.timestamp : latest;
+                        }, null);
+                        
+                        if (datasetLatest && (!latestTimestamp || datasetLatest > latestTimestamp)) {
+                            latestTimestamp = datasetLatest;
+                        }
+                    }
+                }
+                
+                // Use the latest timestamp from data, or fallback to current time
+                const closeTime = latestTimestamp ? new Date(latestTimestamp) : new Date();
                 const formattedTime = closeTime.toLocaleString('en-US', {
                     month: 'short',
                     day: 'numeric',
