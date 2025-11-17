@@ -2600,7 +2600,6 @@
                 // Update sentiment display and drivers
                 updateSentimentDisplay(data);
                 updateSentimentDrivers(data.drivers, data.vxn_index);
-                updateMarketStatus(data.market_status);
 
                 // Populate sentimentDataset for chart (24 hours)
                 if (data.historical && data.historical.length > 0) {
@@ -2673,6 +2672,9 @@
                     console.warn('⚠️  No 3-day historical data in API response');
                     sentimentDataset3d = [];
                 }
+
+                // Update market status AFTER datasets are populated so we can use latest timestamp
+                updateMarketStatus(data.market_status);
 
                 return data;
             } catch (error) {
@@ -2839,13 +2841,13 @@
                 for (const dataset of allDatasets) {
                     if (dataset && dataset.length > 0) {
                         // Find the latest timestamp in this dataset
-                        const datasetLatest = dataset.reduce((latest, point) => {
-                            if (!latest || !point.timestamp) return point.timestamp || latest;
-                            return point.timestamp > latest ? point.timestamp : latest;
-                        }, null);
-                        
-                        if (datasetLatest && (!latestTimestamp || datasetLatest > latestTimestamp)) {
-                            latestTimestamp = datasetLatest;
+                        for (const point of dataset) {
+                            if (point && point.timestamp) {
+                                const pointTime = point.timestamp instanceof Date ? point.timestamp : new Date(point.timestamp);
+                                if (!latestTimestamp || pointTime > latestTimestamp) {
+                                    latestTimestamp = pointTime;
+                                }
+                            }
                         }
                     }
                 }
