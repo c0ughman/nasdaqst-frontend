@@ -15,6 +15,7 @@ const translations = {
         'nav.about': 'About Us',
         'nav.indices': 'Indices',
         'nav.news': 'News',
+        'nav.trading': 'Trading',
         'nav.language': 'Language',
         'nav.logout': 'Logout',
 
@@ -111,6 +112,7 @@ const translations = {
         'nav.about': 'Acerca de',
         'nav.indices': 'Índices',
         'nav.news': 'Noticias',
+        'nav.trading': 'Trading',
         'nav.language': 'Idioma',
         'nav.logout': 'Cerrar sesión',
 
@@ -207,6 +209,7 @@ const translations = {
         'nav.about': 'À propos',
         'nav.indices': 'Indices',
         'nav.news': 'Actualités',
+        'nav.trading': 'Trading',
         'nav.language': 'Langue',
         'nav.logout': 'Déconnexion',
 
@@ -303,6 +306,7 @@ const translations = {
         'nav.about': 'Über uns',
         'nav.indices': 'Indizes',
         'nav.news': 'Nachrichten',
+        'nav.trading': 'Trading',
         'nav.language': 'Sprache',
         'nav.logout': 'Abmelden',
 
@@ -399,6 +403,7 @@ const translations = {
         'nav.about': '关于我们',
         'nav.indices': '指数',
         'nav.news': '新闻',
+        'nav.trading': '交易',
         'nav.language': '语言',
         'nav.logout': '登出',
 
@@ -495,6 +500,7 @@ const translations = {
         'nav.about': '概要',
         'nav.indices': '指数',
         'nav.news': 'ニュース',
+        'nav.trading': '取引',
         'nav.language': '言語',
         'nav.logout': 'ログアウト',
 

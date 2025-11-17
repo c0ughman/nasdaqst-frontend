@@ -103,7 +103,7 @@
             grid-column: 2;
             grid-row: 1 / 2;
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
+            grid-template-columns: repeat(7, 1fr);
             gap: 8px;
             align-items: center;
             margin-bottom: 70px;
@@ -789,19 +789,19 @@
             top: 20px;
             right: 40px;
             bottom: 20px;
-            width: 50px;
+            width: 25px;
             pointer-events: none;
         }
 
-        .chart-side-panel::before {
-            content: '';
+        .chart-side-panel-second {
+            background: #000000;
+            border: 1px solid #ffffff;
             position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #ffffff;
-            transform: translateY(-50%);
+            top: 20px;
+            right: 10px;
+            bottom: 20px;
+            width: 25px;
+            pointer-events: none;
         }
 
         .market-status-indicator {
@@ -1933,6 +1933,9 @@
                     <a href="news.html" class="nav-link" data-i18n="nav.news">News</a>
                 </div>
                 <div class="right-top-item">
+                    <a href="#" class="nav-link" data-i18n="nav.trading">Trading</a>
+                </div>
+                <div class="right-top-item">
                     <a href="#" class="nav-link" id="language-selector" data-i18n="nav.language">Language</a>
                 </div>
                 <div class="right-top-item">
@@ -2034,11 +2037,11 @@
                     </div>
                     <div class="chart-controls">
                         <div class="timeframe-selector">
-                            <button class="timeframe-btn" data-timeframe="6h" data-i18n="dashboard.chart.timeframe.6h">Session</button>
+                            <button class="timeframe-btn active" data-timeframe="6h" data-i18n="dashboard.chart.timeframe.6h">Session</button>
                             <button class="timeframe-btn" data-timeframe="5m" data-i18n="dashboard.chart.timeframe.5m">5m</button>
                             <button class="timeframe-btn" data-timeframe="15m" data-i18n="dashboard.chart.timeframe.15m">15m</button>
                             <button class="timeframe-btn" data-timeframe="30m" data-i18n="dashboard.chart.timeframe.30m">30m</button>
-                            <button class="timeframe-btn active" data-timeframe="1h" data-i18n="dashboard.chart.timeframe.1h">1h</button>
+                            <button class="timeframe-btn" data-timeframe="1h" data-i18n="dashboard.chart.timeframe.1h">1h</button>
                             <button class="timeframe-btn" data-timeframe="2h" data-i18n="dashboard.chart.timeframe.2h">2h</button>
                             <button class="timeframe-btn" data-timeframe="4h" data-i18n="dashboard.chart.timeframe.4h">4h</button>
                             <button class="timeframe-btn" data-timeframe="2d" data-i18n="dashboard.chart.timeframe.2d">2d</button>
@@ -2094,6 +2097,7 @@
                         </div>
                         
                         <div class="chart-side-panel"></div>
+                        <div class="chart-side-panel-second"></div>
                     </div>
 
                     <!-- Oscillator -->
@@ -2122,7 +2126,7 @@
 
                             <!-- Scale Mode Selector -->
                             <div style="display: flex; flex-direction: row; gap: 3px; align-items: center;">
-                                <input type="radio" id="scale-fixed" name="oscillator-scale" value="fixed" checked style="display: none;">
+                                <input type="radio" id="scale-fixed" name="oscillator-scale" value="fixed" style="display: none;">
                                 <label for="scale-fixed" title="Fixed scale: -100 to +100" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
                                     <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
                                         <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
@@ -2130,7 +2134,7 @@
                                     </svg>
                                 </label>
 
-                                <input type="radio" id="scale-visible" name="oscillator-scale" value="visible" style="display: none;">
+                                <input type="radio" id="scale-visible" name="oscillator-scale" value="visible" checked style="display: none;">
                                 <label for="scale-visible" title="Scale to visible window" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
                                     <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
                                         <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
@@ -2538,7 +2542,7 @@
         const timeframeBtns = document.querySelectorAll('.timeframe-btn');
         const xAxisLabels = document.getElementById('x-axis-labels');
         const chartPath = document.querySelector('.chart-path');
-        let currentTimeframe = '1h'; // Declare timeframe variable globally
+        let currentTimeframe = '6h'; // Declare timeframe variable globally
         let scrollPosition = 100; // 100 = rightmost (most recent data), 0 = leftmost (oldest data)
         let chartType = 'candlestick'; // 'line' or 'candlestick'
         
@@ -3842,7 +3846,7 @@
             svg.style.height = '100%';
 
             // Determine scale mode
-            const scaleMode = document.querySelector('input[name="oscillator-scale"]:checked')?.value || 'fixed';
+            const scaleMode = document.querySelector('input[name="oscillator-scale"]:checked')?.value || 'visible';
 
             // Calculate min/max range based on scale mode
             let minValue, maxValue;
@@ -3969,7 +3973,7 @@
                     path.setAttribute('d', pathD);
                     path.setAttribute('fill', 'none');
                     path.setAttribute('stroke', driver.color);
-                    path.setAttribute('stroke-width', '0.3');
+                    path.setAttribute('stroke-width', '0.08');
                     path.setAttribute('stroke-linecap', 'round');
                     path.setAttribute('stroke-linejoin', 'round');
                     path.setAttribute('opacity', '0.9');
@@ -4060,8 +4064,8 @@
                     console.log('Drivers:', dashboardData.drivers);
                 }
 
-                // Initialize chart with default timeframe (1h = last 3 hours)
-                currentTimeframe = '1h';
+                // Initialize chart with default timeframe (6h = Session)
+                currentTimeframe = '6h';
                 await updateChart(currentTimeframe);
 
                 // Function to toggle eye icon state and update visibility
@@ -4345,7 +4349,7 @@
                 // For oscillator, we need to calculate mouseX relative to oscillator
                 const oscillatorMouseX = e.clientX - oscillatorRect.left;
                 const tooltipX = oscillatorMouseX + 15;
-                const tooltipY = e.clientY - oscillatorRect.top - 60;
+                const tooltipY = e.clientY - oscillatorRect.top - 75;
 
                 oscillatorTooltip.style.left = tooltipX + 'px';
                 oscillatorTooltip.style.top = tooltipY + 'px';
