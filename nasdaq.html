@@ -830,22 +830,6 @@
             position: relative;
         }
         
-        .chart-time-display {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: 130px;
-            color: #999;
-            font-size: 9px;
-            font-family: monospace;
-            pointer-events: none;
-            z-index: 100;
-            display: none;
-        }
-        
-        .chart-time-display.show {
-            display: block;
-        }
 
         .chart-canvas {
             position: absolute;
@@ -926,6 +910,10 @@
         .chart-tooltip .tooltip-time {
             color: #999;
             font-size: 9px;
+        }
+        
+        #chart-tooltip .tooltip-time {
+            display: none;
         }
 
         .chart-tooltip .tooltip-sentiment {
@@ -2074,8 +2062,6 @@
 
                 <!-- Unified Charts Wrapper -->
                 <div class="charts-wrapper" id="charts-wrapper">
-                    <!-- Time Display Between Charts -->
-                    <div class="chart-time-display" id="chart-time-display">14:32:45</div>
                     <!-- Main Chart Container -->
                     <div class="chart-container" id="chart-container" style="flex: 1; min-height: 450px; display: flex; flex-direction: column;">
                         <div style="position: relative; flex: 1; min-height: 340px;">
@@ -4212,7 +4198,6 @@
         const oscillatorDiv = document.getElementById('chart-oscillator');
         const unifiedHoverLine = document.getElementById('unified-hover-line');
         const timeLabel = document.getElementById('time-label');
-        const chartTimeDisplay = document.getElementById('chart-time-display');
         const mainTooltip = document.getElementById('chart-tooltip');
         const oscillatorTooltip = document.getElementById('oscillator-tooltip');
         const mainTooltipValue = mainTooltip.querySelector('.tooltip-value');
@@ -4313,12 +4298,6 @@
             const labelXRelativeToCanvas = Math.max(0, Math.min(clampedMouseX - (labelWidth / 2), chartCanvasRect.width - labelWidth));
             const labelX = labelXRelativeToCanvas + chartCanvasOffsetX;
             timeLabel.style.left = labelX + 'px';
-            
-            // Show time display between charts
-            if (chartTimeDisplay) {
-                chartTimeDisplay.textContent = result.time;
-                chartTimeDisplay.classList.add('show');
-            }
 
             if (isMainChart) {
                 // Show main chart tooltip
@@ -4331,8 +4310,6 @@
                 } else {
                     mainTooltipValue.textContent = 'N/A';
                 }
-
-                mainTooltipTime.textContent = result.time;
 
                 // Show sentiment score as secondary info
                 const tooltipSentiment = document.getElementById('tooltip-sentiment');
@@ -4399,9 +4376,6 @@
         function hideAllHoverElements() {
             unifiedHoverLine.style.display = 'none';
             timeLabel.classList.remove('show');
-            if (chartTimeDisplay) {
-                chartTimeDisplay.classList.remove('show');
-            }
             mainTooltip.style.display = 'none';
             oscillatorTooltip.style.display = 'none';
         }
