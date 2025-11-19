@@ -83,6 +83,7 @@ function initDisclaimerModal() {
     console.log('Loading audio from:', audioPath);
     console.log('Base URL:', baseUrl, 'Directory:', dirPath, 'Pathname:', currentPath);
     const audio = new Audio(audioPath);
+    audio.playbackRate = 1.5; // Play at 1.5x speed
     
     // Handle audio playback
     audio.addEventListener('loadeddata', () => {
