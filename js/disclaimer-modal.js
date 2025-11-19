@@ -64,15 +64,27 @@ function initDisclaimerModal() {
     checkbox.checked = false;
 
     // Create and play audio (path relative to HTML file location)
-    // Since both HTML and audio are in the same directory, use relative path
-    // Try different path formats to handle various deployment scenarios
-    let audioPath = 'disclaimer.mp3';
-    if (window.location.pathname.includes('/') && !window.location.pathname.endsWith('/')) {
-        // If pathname has slashes (e.g., /folder/nasdaq.html), get the directory
-        const dir = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-        audioPath = dir + 'disclaimer.mp3';
+    // Construct path based on current page location
+    const currentPath = window.location.pathname;
+    let audioPath;
+    
+    if (currentPath === '/' || currentPath.endsWith('/')) {
+        // Root or directory path
+        audioPath = 'disclaimer.mp3';
+    } else {
+        // File path - get directory
+        const lastSlash = currentPath.lastIndexOf('/');
+        if (lastSlash === 0) {
+            // Root level file like /nasdaq.html
+            audioPath = '/disclaimer.mp3';
+        } else {
+            // Subdirectory file
+            const dir = currentPath.substring(0, lastSlash + 1);
+            audioPath = dir + 'disclaimer.mp3';
+        }
     }
-    console.log('Loading audio from:', audioPath, 'Current pathname:', window.location.pathname);
+    
+    console.log('Loading audio from:', audioPath, 'Current pathname:', currentPath, 'Origin:', window.location.origin);
     const audio = new Audio(audioPath);
     
     // Handle audio playback
