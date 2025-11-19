@@ -22,18 +22,24 @@ function initDisclaimerModal() {
         return;
     }
 
-    // Check if user came from another page on the same site
+    // Check if user came from another page on the same site (but not a refresh)
     const referrer = document.referrer;
+    const currentUrl = window.location.href;
     const currentOrigin = window.location.origin;
     const referrerUrl = referrer ? new URL(referrer) : null;
     
-    // Don't show modal if coming from same origin (internal navigation)
-    const isInternalNavigation = referrerUrl && referrerUrl.origin === currentOrigin;
+    // Don't show modal if coming from a different page on the same site (internal navigation)
+    // But DO show if it's a page refresh (same URL) or no referrer (direct load)
+    const isInternalNavigation = referrerUrl && 
+                                 referrerUrl.origin === currentOrigin && 
+                                 referrerUrl.pathname !== window.location.pathname;
     
     if (isInternalNavigation) {
-        // User came from another page on the same site, skip the modal
+        // User came from another page on the same site (different path), skip the modal
         return;
     }
+    
+    // Show modal for: direct loads, bookmarks, external links, or page refreshes (same path)
 
     // Show modal for direct loads, bookmarks, external links, or page refreshes
     overlay.classList.add('show');
