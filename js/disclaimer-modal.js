@@ -63,8 +63,8 @@ function initDisclaimerModal() {
     continueBtn.disabled = true;
     checkbox.checked = false;
 
-    // Create and play audio
-    const audio = new Audio('disclaimer.mp3');
+    // Create and play audio (path relative to HTML file location, not JS file)
+    const audio = new Audio('../disclaimer.mp3');
     
     // Handle audio playback
     audio.addEventListener('loadeddata', () => {
