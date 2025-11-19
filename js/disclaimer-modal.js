@@ -64,10 +64,10 @@ function initDisclaimerModal() {
     checkbox.checked = false;
 
     // Create and play audio (path relative to HTML file location)
-    // Since HTML and audio are both in root, use root-relative path
-    const audioPath = window.location.pathname.includes('/') 
-        ? window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1) + 'disclaimer.mp3'
-        : 'disclaimer.mp3';
+    // Get the base path from the current page location
+    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+    const audioPath = basePath + 'disclaimer.mp3';
+    console.log('Loading audio from:', audioPath);
     const audio = new Audio(audioPath);
     
     // Handle audio playback
