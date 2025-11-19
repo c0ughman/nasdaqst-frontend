@@ -34,14 +34,22 @@ function initDisclaimerModal() {
                                  referrerUrl.origin === currentOrigin && 
                                  referrerUrl.pathname !== window.location.pathname;
     
+    console.log('Disclaimer modal check:', {
+        referrer: referrer,
+        currentPath: window.location.pathname,
+        referrerPath: referrerUrl?.pathname,
+        isInternalNavigation: isInternalNavigation,
+        overlayFound: !!overlay
+    });
+    
     if (isInternalNavigation) {
         // User came from another page on the same site (different path), skip the modal
+        console.log('Skipping disclaimer - internal navigation from another page');
         return;
     }
     
     // Show modal for: direct loads, bookmarks, external links, or page refreshes (same path)
-
-    // Show modal for direct loads, bookmarks, external links, or page refreshes
+    console.log('Showing disclaimer modal');
     overlay.classList.add('show');
     body.style.overflow = 'hidden'; // Prevent scrolling
 
