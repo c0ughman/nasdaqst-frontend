@@ -44,9 +44,47 @@ function initDisclaimerModal() {
         updateTranslations();
     }
 
-    // Handle checkbox change
+    // Disable checkbox and button initially (until audio finishes)
+    checkbox.disabled = true;
+    continueBtn.disabled = true;
+    checkbox.checked = false;
+
+    // Create and play audio
+    const audio = new Audio('disclaimer.mp3');
+    
+    // Handle audio playback
+    audio.addEventListener('loadeddata', () => {
+        // Audio is loaded, start playing
+        audio.play().catch(error => {
+            console.error('Error playing audio:', error);
+            // If audio fails to play, enable controls anyway
+            enableControls();
+        });
+    });
+
+    audio.addEventListener('ended', () => {
+        // Audio finished playing, enable controls
+        enableControls();
+    });
+
+    audio.addEventListener('error', (e) => {
+        console.error('Audio error:', e);
+        // If audio fails to load, enable controls anyway
+        enableControls();
+    });
+
+    // Function to enable checkbox and button
+    function enableControls() {
+        checkbox.disabled = false;
+        // Button stays disabled until checkbox is checked
+        continueBtn.disabled = true;
+    }
+
+    // Handle checkbox change (only works after audio finishes)
     checkbox.addEventListener('change', () => {
-        continueBtn.disabled = !checkbox.checked;
+        if (!checkbox.disabled) {
+            continueBtn.disabled = !checkbox.checked;
+        }
     });
 
     // Handle continue button
