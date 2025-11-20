@@ -97,20 +97,37 @@ function initDisclaimerModal() {
         });
     }
     
-    // Try to play audio on first user interaction with the modal
-    overlay.addEventListener('click', startAudio, { once: true });
-    overlay.addEventListener('touchstart', startAudio, { once: true });
-    
-    // Also try to play when audio is loaded (in case user already interacted)
+    // Try to play audio immediately when modal shows
+    // Also try to play when audio is loaded
     audio.addEventListener('loadeddata', () => {
         if (!audioStarted) {
-            // Try to play, but don't fail if blocked
-            audio.play().catch(() => {
+            // Try to play immediately
+            audio.play().then(() => {
+                audioStarted = true;
+                console.log('Audio started playing');
+            }).catch(() => {
                 // Audio blocked - will play on user interaction
                 console.log('Audio autoplay blocked - waiting for user interaction');
             });
         }
     });
+    
+    // Try to play on ANY user interaction with the page (not just overlay)
+    // This includes clicking checkbox, clicking anywhere on modal, etc.
+    const startAudioOnInteraction = () => {
+        if (!audioStarted) {
+            startAudio();
+        }
+    };
+    
+    // Listen for interactions on the entire modal (including checkbox)
+    overlay.addEventListener('click', startAudioOnInteraction, { once: true });
+    overlay.addEventListener('touchstart', startAudioOnInteraction, { once: true });
+    overlay.addEventListener('mousedown', startAudioOnInteraction, { once: true });
+    
+    // Also listen on the checkbox specifically
+    checkbox.addEventListener('click', startAudioOnInteraction, { once: true });
+    checkbox.addEventListener('mousedown', startAudioOnInteraction, { once: true });
 
     audio.addEventListener('ended', () => {
         // Audio finished playing, enable controls
