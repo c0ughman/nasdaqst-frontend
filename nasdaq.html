@@ -3309,36 +3309,36 @@
                 minutes: 1,   // Show last 1 minute of data
                 labelCount: 5,
                 label: '1min',
-                dataset: 'granular',
-                useGranular: true
+                dataset: 'sentimentDataset',
+                supportsGranular: true  // Can use granular data if toggle is enabled
             },
             '5m': {
                 minutes: 5,   // Show last 5 minutes of data
                 labelCount: 5,
                 label: '5min',
-                dataset: 'granular',
-                useGranular: true
+                dataset: 'sentimentDataset',
+                supportsGranular: true
             },
             '15m': {
                 minutes: 15,  // Show last 15 minutes
                 labelCount: 5,
                 label: '15min',
-                dataset: 'granular',
-                useGranular: true
+                dataset: 'sentimentDataset',
+                supportsGranular: true
             },
             '30m': {
                 minutes: 30,  // Show last 30 minutes
                 labelCount: 6,
                 label: '30min',
-                dataset: 'granular',
-                useGranular: true
+                dataset: 'sentimentDataset',
+                supportsGranular: true
             },
             '1h': {
                 minutes: 60,  // Show last 1 hour
                 labelCount: 5,
                 label: '1hr',
-                dataset: 'granular',
-                useGranular: true
+                dataset: 'sentimentDataset',
+                supportsGranular: true
             },
             '2h': {
                 minutes: 120, // Show last 2 hours
@@ -3378,35 +3378,40 @@
 
             // Select the appropriate dataset based on timeframe
             let activeDataset;
+            let usingGranularData = false;
             
-            // Use granular data for ≤1h timeframes
-            if (config.useGranular) {
-                if (granularDataType === 'second') {
-                    activeDataset = secondCandlesDataset;
-                    console.log('Using second candles dataset');
+            // Try to use granular data if:
+            // 1. Timeframe supports granular data
+            // 2. Granular dataset has data
+            // 3. User has interacted with the toggle (granular data was fetched)
+            if (config.supportsGranular) {
+                const granularDataset = granularDataType === 'second' ? secondCandlesDataset : tickCandlesDataset;
+                
+                if (granularDataset.length > 0) {
+                    console.log(`Using ${granularDataType} candles dataset (${granularDataset.length} points)`);
+                    activeDataset = granularDataset;
+                    usingGranularData = true;
                     
                     // Aggregate for longer timeframes to reduce point count
-                    if (timeframe === '1h' && activeDataset.length > 120) {
-                        // Aggregate 1s candles into 30s candles for 1h view (3600 -> 120 points)
-                        activeDataset = aggregateCandles(activeDataset, 30);
-                        console.log(`Aggregated to 30s candles: ${activeDataset.length} points`);
-                    } else if (timeframe === '30m' && activeDataset.length > 120) {
-                        // Aggregate 1s candles into 15s candles for 30m view
-                        activeDataset = aggregateCandles(activeDataset, 15);
-                        console.log(`Aggregated to 15s candles: ${activeDataset.length} points`);
-                    } else if (timeframe === '15m' && activeDataset.length > 90) {
-                        // Aggregate 1s candles into 10s candles for 15m view
-                        activeDataset = aggregateCandles(activeDataset, 10);
-                        console.log(`Aggregated to 10s candles: ${activeDataset.length} points`);
-                    } else if (timeframe === '5m' && activeDataset.length > 60) {
-                        // Aggregate 1s candles into 5s candles for 5m view
-                        activeDataset = aggregateCandles(activeDataset, 5);
-                        console.log(`Aggregated to 5s candles: ${activeDataset.length} points`);
+                    if (granularDataType === 'second') {
+                        if (timeframe === '1h' && activeDataset.length > 120) {
+                            activeDataset = aggregateCandles(activeDataset, 30);
+                            console.log(`Aggregated to 30s candles: ${activeDataset.length} points`);
+                        } else if (timeframe === '30m' && activeDataset.length > 120) {
+                            activeDataset = aggregateCandles(activeDataset, 15);
+                            console.log(`Aggregated to 15s candles: ${activeDataset.length} points`);
+                        } else if (timeframe === '15m' && activeDataset.length > 90) {
+                            activeDataset = aggregateCandles(activeDataset, 10);
+                            console.log(`Aggregated to 10s candles: ${activeDataset.length} points`);
+                        } else if (timeframe === '5m' && activeDataset.length > 60) {
+                            activeDataset = aggregateCandles(activeDataset, 5);
+                            console.log(`Aggregated to 5s candles: ${activeDataset.length} points`);
+                        }
                     }
-                    // 1m uses raw 1s candles (60 points)
                 } else {
-                    activeDataset = tickCandlesDataset;
-                    console.log('Using tick candles dataset');
+                    // Fallback to regular dataset if granular data not available
+                    console.log('Granular data not available, using regular sentimentDataset');
+                    activeDataset = sentimentDataset;
                 }
             } else if (config.dataset === 'sentimentDataset2d') {
                 activeDataset = sentimentDataset2d;
@@ -4354,16 +4359,21 @@
                 granularBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 
-                // Fetch new data if needed
+                // Fetch granular data if not already loaded
                 const config = timeframeConfig[currentTimeframe];
-                if (config && config.useGranular) {
+                if (config && config.supportsGranular) {
+                    console.log(`🔄 Fetching ${granularDataType} candles data...`);
+                    
                     if (granularDataType === 'second' && secondCandlesDataset.length === 0) {
                         await fetchSecondCandles();
                     } else if (granularDataType === 'tick' && tickCandlesDataset.length === 0) {
                         await fetchTickCandles();
                     }
                     
-                    // Update chart
+                    // Start auto-refresh for granular data
+                    startGranularRefresh();
+                    
+                    // Update chart with new data
                     await updateChart(currentTimeframe);
                 }
             });
@@ -4373,7 +4383,7 @@
         function updateGranularToggleVisibility() {
             const config = timeframeConfig[currentTimeframe];
             if (granularToggle && config) {
-                if (config.useGranular) {
+                if (config.supportsGranular) {
                     granularToggle.style.display = 'flex';
                 } else {
                     granularToggle.style.display = 'none';
@@ -4397,19 +4407,21 @@
                 // Update granular toggle visibility
                 updateGranularToggleVisibility();
                 
-                // Fetch granular data if needed
+                // Only manage granular refresh if we have granular data loaded
                 const config = timeframeConfig[timeframe];
-                if (config && config.useGranular) {
-                    if (granularDataType === 'second' && secondCandlesDataset.length === 0) {
-                        await fetchSecondCandles();
-                    } else if (granularDataType === 'tick' && tickCandlesDataset.length === 0) {
-                        await fetchTickCandles();
-                    }
+                if (config && config.supportsGranular) {
+                    const hasGranularData = (granularDataType === 'second' && secondCandlesDataset.length > 0) ||
+                                           (granularDataType === 'tick' && tickCandlesDataset.length > 0);
                     
-                    // Start granular auto-refresh (1 second)
-                    startGranularRefresh();
+                    if (hasGranularData) {
+                        // Start granular auto-refresh (1 second)
+                        startGranularRefresh();
+                    } else {
+                        // Stop granular refresh if no granular data
+                        stopGranularRefresh();
+                    }
                 } else {
-                    // Stop granular refresh if switching away
+                    // Stop granular refresh if switching away from granular-capable timeframes
                     stopGranularRefresh();
                 }
 
