@@ -85,14 +85,33 @@ function initDisclaimerModal() {
     const audio = new Audio(audioPath);
     audio.playbackRate = 1.5; // Play at 1.5x speed
     
-    // Handle audio playback
-    audio.addEventListener('loadeddata', () => {
-        // Audio is loaded, start playing
+    let audioStarted = false;
+    
+    // Function to start audio playback (requires user interaction)
+    function startAudio() {
+        if (audioStarted) return;
+        audioStarted = true;
+        
         audio.play().catch(error => {
             console.error('Error playing audio:', error);
             // If audio fails to play, enable controls anyway
             enableControls();
         });
+    }
+    
+    // Try to play audio on first user interaction with the modal
+    overlay.addEventListener('click', startAudio, { once: true });
+    overlay.addEventListener('touchstart', startAudio, { once: true });
+    
+    // Also try to play when audio is loaded (in case user already interacted)
+    audio.addEventListener('loadeddata', () => {
+        if (!audioStarted) {
+            // Try to play, but don't fail if blocked
+            audio.play().catch(() => {
+                // Audio blocked - will play on user interaction
+                console.log('Audio autoplay blocked - waiting for user interaction');
+            });
+        }
     });
 
     audio.addEventListener('ended', () => {
@@ -104,6 +123,11 @@ function initDisclaimerModal() {
         console.error('Audio error:', e);
         // If audio fails to load, enable controls anyway
         enableControls();
+    });
+    
+    // Track if audio has started playing
+    audio.addEventListener('play', () => {
+        audioStarted = true;
     });
 
     // Function to enable checkbox and button
