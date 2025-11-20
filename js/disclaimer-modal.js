@@ -14,10 +14,9 @@ function initDisclaimerModal() {
 
     const overlay = document.getElementById('disclaimer-modal-overlay');
     const checkbox = document.getElementById('disclaimer-modal-checkbox');
-    const continueBtn = document.getElementById('disclaimer-modal-continue-btn');
     const body = document.body;
 
-    if (!overlay || !checkbox || !continueBtn) {
+    if (!overlay || !checkbox) {
         // Disclaimer modal not found on this page, exit silently
         return;
     }
@@ -58,9 +57,8 @@ function initDisclaimerModal() {
         updateTranslations();
     }
 
-    // Disable checkbox and button initially (until audio finishes)
+    // Disable checkbox initially (until audio finishes)
     checkbox.disabled = true;
-    continueBtn.disabled = true;
     checkbox.checked = false;
 
     // Create and play audio (path relative to HTML file location)
@@ -83,7 +81,7 @@ function initDisclaimerModal() {
     console.log('Loading audio from:', audioPath);
     console.log('Base URL:', baseUrl, 'Directory:', dirPath, 'Pathname:', currentPath);
     const audio = new Audio(audioPath);
-    audio.playbackRate = 1.5; // Play at 1.5x speed
+    audio.playbackRate = 1.0; // Play at normal speed
     
     let audioStarted = false;
     
@@ -130,23 +128,15 @@ function initDisclaimerModal() {
         audioStarted = true;
     });
 
-    // Function to enable checkbox and button
+    // Function to enable checkbox
     function enableControls() {
         checkbox.disabled = false;
-        // Button stays disabled until checkbox is checked
-        continueBtn.disabled = true;
     }
 
-    // Handle checkbox change (only works after audio finishes)
+    // Handle checkbox change - automatically proceed when checked (after audio finishes)
     checkbox.addEventListener('change', () => {
-        if (!checkbox.disabled) {
-            continueBtn.disabled = !checkbox.checked;
-        }
-    });
-
-    // Handle continue button
-    continueBtn.addEventListener('click', () => {
-        if (checkbox.checked) {
+        if (!checkbox.disabled && checkbox.checked) {
+            // User checked the box - close modal and proceed
             overlay.classList.remove('show');
             body.style.overflow = ''; // Restore scrolling
             
