@@ -85,10 +85,11 @@ function initDisclaimerModal() {
     
     let audioStarted = false;
     
-    // Function to start audio playback (requires user interaction)
+    // Function to start audio playback
     function startAudio() {
         if (audioStarted) return;
         audioStarted = true;
+        console.log('Starting audio playback');
         
         audio.play().catch(error => {
             console.error('Error playing audio:', error);
@@ -97,46 +98,48 @@ function initDisclaimerModal() {
         });
     }
     
-    // Try to play audio immediately when modal shows
-    // Also try to play when audio is loaded
-    audio.addEventListener('loadeddata', () => {
+    // Try to play audio immediately when loaded (will likely be blocked by browser)
+    audio.addEventListener('canplaythrough', () => {
         if (!audioStarted) {
-            // Try to play immediately
+            console.log('Audio ready, attempting to play');
             audio.play().then(() => {
                 audioStarted = true;
-                console.log('Audio started playing');
+                console.log('Audio started playing automatically');
             }).catch(() => {
-                // Audio blocked - will play on user interaction
-                console.log('Audio autoplay blocked - waiting for user interaction');
+                console.log('Audio autoplay blocked - will play on first user interaction');
             });
         }
     });
     
-    // Try to play on ANY user interaction with the modal
-    // Use capture phase to catch events before they reach child elements
-    const startAudioOnInteraction = (e) => {
+    // Also try when loadeddata fires
+    audio.addEventListener('loadeddata', () => {
         if (!audioStarted) {
-            console.log('User interaction detected on modal, starting audio');
+            audio.play().then(() => {
+                audioStarted = true;
+                console.log('Audio started on loadeddata');
+            }).catch(() => {
+                // Will play on interaction
+            });
+        }
+    });
+    
+    // Start audio on ANY user interaction anywhere on the page
+    // This must happen BEFORE the checkbox can be clicked
+    const startAudioOnAnyInteraction = (e) => {
+        if (!audioStarted && overlay.classList.contains('show')) {
+            console.log('User interaction detected, starting audio immediately');
             startAudio();
+            // Remove listeners after audio starts
+            document.removeEventListener('click', startAudioOnAnyInteraction, true);
+            document.removeEventListener('touchstart', startAudioOnAnyInteraction, true);
+            document.removeEventListener('mousedown', startAudioOnAnyInteraction, true);
         }
     };
     
-    // Listen for interactions on the entire modal overlay using capture phase
-    // This catches clicks anywhere on the modal, including checkbox, before they bubble
-    overlay.addEventListener('click', startAudioOnInteraction, { once: true, capture: true });
-    overlay.addEventListener('touchstart', startAudioOnInteraction, { once: true, capture: true });
-    overlay.addEventListener('mousedown', startAudioOnInteraction, { once: true, capture: true });
-    
-    // Also listen on the document level as a fallback
-    const documentClickHandler = (e) => {
-        // Only trigger if modal is visible and audio hasn't started
-        if (overlay.classList.contains('show') && !audioStarted) {
-            console.log('Document click detected while modal visible, starting audio');
-            startAudio();
-            document.removeEventListener('click', documentClickHandler);
-        }
-    };
-    document.addEventListener('click', documentClickHandler, { once: true });
+    // Use capture phase on document to catch ALL clicks before they reach any element
+    document.addEventListener('click', startAudioOnAnyInteraction, { capture: true, once: false });
+    document.addEventListener('touchstart', startAudioOnAnyInteraction, { capture: true, once: false });
+    document.addEventListener('mousedown', startAudioOnAnyInteraction, { capture: true, once: false });
 
     audio.addEventListener('ended', () => {
         // Audio finished playing, enable controls
