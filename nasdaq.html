@@ -672,6 +672,41 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
 
+        /* Granular data toggle (Second/Tick) */
+        .granular-toggle {
+            display: flex;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            padding: 2px;
+        }
+
+        .granular-btn {
+            padding: 2px 8px;
+            background: transparent;
+            border: none;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .granular-btn:hover {
+            color: #ccc;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .granular-btn.active {
+            background: rgba(255, 140, 66, 0.15);
+            color: #ff8c42;
+        }
+
         /* Nasdaq price toggle as checkbox */
         .price-toggle {
             display: flex;
@@ -2053,10 +2088,17 @@
                                 <line x1="12" y1="18" x2="12" y2="22"></line>
                             </svg>
                         </button>
+                        
+                        <!-- Granular Data Toggle (Second/Tick) - Only visible for ≤1h timeframes -->
+                        <div id="granular-toggle" class="granular-toggle" style="display: none;">
+                            <button class="granular-btn active" data-type="second" title="1-Second Candles">Second</button>
+                            <button class="granular-btn" data-type="tick" title="100-Tick Candles">Tick</button>
+                        </div>
                     </div>
                     <div class="chart-controls">
                         <div class="timeframe-selector">
                             <button class="timeframe-btn active" data-timeframe="6h" data-i18n="dashboard.chart.timeframe.6h">Session</button>
+                            <button class="timeframe-btn" data-timeframe="1m" data-i18n="dashboard.chart.timeframe.1m">1m</button>
                             <button class="timeframe-btn" data-timeframe="5m" data-i18n="dashboard.chart.timeframe.5m">5m</button>
                             <button class="timeframe-btn" data-timeframe="15m" data-i18n="dashboard.chart.timeframe.15m">15m</button>
                             <button class="timeframe-btn" data-timeframe="30m" data-i18n="dashboard.chart.timeframe.30m">30m</button>
@@ -2572,6 +2614,13 @@
         let sentimentDataset3d = [];
         let currentCompositeScore = 0;
         
+        // ===== GRANULAR DATA (SECOND & TICK CANDLES) =====
+        let secondCandlesDataset = [];
+        let tickCandlesDataset = [];
+        let granularDataType = 'second'; // 'second' or 'tick'
+        let lastGranularTimestamp = null;
+        let granularRefreshInterval = null;
+        
         // API Base URL - adjust if needed
         // Dynamic API URL - detects localhost, file://, or production
         const API_BASE_URL = (
@@ -2699,6 +2748,189 @@
                 });
                 return null;
             }
+        }
+
+        // ===== GRANULAR DATA FETCH FUNCTIONS =====
+        
+        // Fetch second candles (1-second OHLCV data)
+        async function fetchSecondCandles(startTime = null) {
+            try {
+                let url = `${API_BASE_URL}/second-candles/?symbol=QLD&limit=3600`;
+                if (startTime) {
+                    url += `&start_time=${startTime.toISOString()}`;
+                }
+                
+                console.log('🔄 Fetching second candles:', url);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log(`✓ Received ${result.data.length} second candles`);
+                
+                // Map to internal format
+                const mappedData = result.data.map(candle => ({
+                    timestamp: new Date(candle.timestamp),
+                    open: candle.open,
+                    high: candle.high,
+                    low: candle.low,
+                    price: candle.close, // 'close' from API maps to 'price' internally
+                    volume: candle.volume,
+                    tick_count: candle.tick_count || 0,
+                    sentiment: 0, // No sentiment data in granular candles
+                    news: null,
+                    indicators: null
+                }));
+                
+                // If this is an incremental update, append to existing data
+                if (startTime && secondCandlesDataset.length > 0) {
+                    secondCandlesDataset = [...secondCandlesDataset, ...mappedData];
+                    // Keep only last 1 hour (3600 seconds)
+                    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                    secondCandlesDataset = secondCandlesDataset.filter(d => d.timestamp > oneHourAgo);
+                    console.log(`📊 Appended candles, kept last ${secondCandlesDataset.length} (sliding 1h window)`);
+                } else {
+                    secondCandlesDataset = mappedData;
+                }
+                
+                // Update last timestamp for incremental updates
+                if (secondCandlesDataset.length > 0) {
+                    lastGranularTimestamp = secondCandlesDataset[secondCandlesDataset.length - 1].timestamp;
+                }
+                
+                return mappedData;
+            } catch (error) {
+                console.error('❌ Error fetching second candles:', error);
+                return [];
+            }
+        }
+        
+        // Fetch tick candles (100-tick OHLCV data)
+        async function fetchTickCandles(startTime = null) {
+            try {
+                let url = `${API_BASE_URL}/tick-candles/?symbol=QLD&limit=3600`;
+                if (startTime) {
+                    url += `&start_time=${startTime.toISOString()}`;
+                }
+                
+                console.log('🔄 Fetching tick candles:', url);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log(`✓ Received ${result.data.length} tick candles`);
+                
+                // Map to internal format
+                const mappedData = result.data.map(candle => ({
+                    timestamp: new Date(candle.timestamp),
+                    open: candle.open,
+                    high: candle.high,
+                    low: candle.low,
+                    price: candle.close, // 'close' from API maps to 'price' internally
+                    volume: candle.volume,
+                    tick_count: candle.tick_count || 100,
+                    candle_number: candle.candle_number,
+                    duration_seconds: candle.duration_seconds,
+                    sentiment: 0, // No sentiment data in granular candles
+                    news: null,
+                    indicators: null
+                }));
+                
+                // If this is an incremental update, append to existing data
+                if (startTime && tickCandlesDataset.length > 0) {
+                    tickCandlesDataset = [...tickCandlesDataset, ...mappedData];
+                    // Keep only last 1 hour
+                    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                    tickCandlesDataset = tickCandlesDataset.filter(d => d.timestamp > oneHourAgo);
+                    console.log(`📊 Appended candles, kept last ${tickCandlesDataset.length} (sliding 1h window)`);
+                } else {
+                    tickCandlesDataset = mappedData;
+                }
+                
+                // Update last timestamp for incremental updates
+                if (tickCandlesDataset.length > 0) {
+                    lastGranularTimestamp = tickCandlesDataset[tickCandlesDataset.length - 1].timestamp;
+                }
+                
+                return mappedData;
+            } catch (error) {
+                console.error('❌ Error fetching tick candles:', error);
+                return [];
+            }
+        }
+        
+        // Aggregate candles into larger timeframes (e.g., 1s → 30s)
+        function aggregateCandles(candles, intervalSeconds) {
+            if (!candles || candles.length === 0) return [];
+            
+            console.log(`📊 Aggregating ${candles.length} candles into ${intervalSeconds}s intervals`);
+            
+            const aggregated = [];
+            const intervalMs = intervalSeconds * 1000;
+            
+            // Sort by timestamp
+            const sorted = [...candles].sort((a, b) => a.timestamp - b.timestamp);
+            
+            let currentBucket = [];
+            let bucketStartTime = null;
+            
+            for (const candle of sorted) {
+                const candleTime = candle.timestamp.getTime();
+                
+                if (!bucketStartTime) {
+                    bucketStartTime = Math.floor(candleTime / intervalMs) * intervalMs;
+                }
+                
+                const bucketEnd = bucketStartTime + intervalMs;
+                
+                if (candleTime < bucketEnd) {
+                    currentBucket.push(candle);
+                } else {
+                    // Finalize current bucket
+                    if (currentBucket.length > 0) {
+                        aggregated.push(createAggregatedCandle(currentBucket, bucketStartTime));
+                    }
+                    
+                    // Start new bucket
+                    bucketStartTime = Math.floor(candleTime / intervalMs) * intervalMs;
+                    currentBucket = [candle];
+                }
+            }
+            
+            // Finalize last bucket
+            if (currentBucket.length > 0) {
+                aggregated.push(createAggregatedCandle(currentBucket, bucketStartTime));
+            }
+            
+            console.log(`✓ Created ${aggregated.length} aggregated candles`);
+            return aggregated;
+        }
+        
+        function createAggregatedCandle(candles, bucketStartTime) {
+            const open = candles[0].open;
+            const close = candles[candles.length - 1].price;
+            const high = Math.max(...candles.map(c => c.high));
+            const low = Math.min(...candles.map(c => c.low));
+            const volume = candles.reduce((sum, c) => sum + (c.volume || 0), 0);
+            const tick_count = candles.reduce((sum, c) => sum + (c.tick_count || 0), 0);
+            
+            return {
+                timestamp: new Date(bucketStartTime),
+                open,
+                high,
+                low,
+                price: close,
+                volume,
+                tick_count,
+                sentiment: 0,
+                news: null,
+                indicators: null
+            };
         }
         
         // Fetch historical sentiment data for chart from dashboard endpoint
@@ -3073,29 +3305,40 @@
         
         // Timeframe configurations - how many minutes of data to show
         const timeframeConfig = {
+            '1m': {
+                minutes: 1,   // Show last 1 minute of data
+                labelCount: 5,
+                label: '1min',
+                dataset: 'granular',
+                useGranular: true
+            },
             '5m': {
                 minutes: 5,   // Show last 5 minutes of data
                 labelCount: 5,
                 label: '5min',
-                dataset: 'sentimentDataset'
+                dataset: 'granular',
+                useGranular: true
             },
             '15m': {
                 minutes: 15,  // Show last 15 minutes
                 labelCount: 5,
                 label: '15min',
-                dataset: 'sentimentDataset'
+                dataset: 'granular',
+                useGranular: true
             },
             '30m': {
                 minutes: 30,  // Show last 30 minutes
                 labelCount: 6,
                 label: '30min',
-                dataset: 'sentimentDataset'
+                dataset: 'granular',
+                useGranular: true
             },
             '1h': {
                 minutes: 60,  // Show last 1 hour
                 labelCount: 5,
                 label: '1hr',
-                dataset: 'sentimentDataset'
+                dataset: 'granular',
+                useGranular: true
             },
             '2h': {
                 minutes: 120, // Show last 2 hours
@@ -3135,7 +3378,37 @@
 
             // Select the appropriate dataset based on timeframe
             let activeDataset;
-            if (config.dataset === 'sentimentDataset2d') {
+            
+            // Use granular data for ≤1h timeframes
+            if (config.useGranular) {
+                if (granularDataType === 'second') {
+                    activeDataset = secondCandlesDataset;
+                    console.log('Using second candles dataset');
+                    
+                    // Aggregate for longer timeframes to reduce point count
+                    if (timeframe === '1h' && activeDataset.length > 120) {
+                        // Aggregate 1s candles into 30s candles for 1h view (3600 -> 120 points)
+                        activeDataset = aggregateCandles(activeDataset, 30);
+                        console.log(`Aggregated to 30s candles: ${activeDataset.length} points`);
+                    } else if (timeframe === '30m' && activeDataset.length > 120) {
+                        // Aggregate 1s candles into 15s candles for 30m view
+                        activeDataset = aggregateCandles(activeDataset, 15);
+                        console.log(`Aggregated to 15s candles: ${activeDataset.length} points`);
+                    } else if (timeframe === '15m' && activeDataset.length > 90) {
+                        // Aggregate 1s candles into 10s candles for 15m view
+                        activeDataset = aggregateCandles(activeDataset, 10);
+                        console.log(`Aggregated to 10s candles: ${activeDataset.length} points`);
+                    } else if (timeframe === '5m' && activeDataset.length > 60) {
+                        // Aggregate 1s candles into 5s candles for 5m view
+                        activeDataset = aggregateCandles(activeDataset, 5);
+                        console.log(`Aggregated to 5s candles: ${activeDataset.length} points`);
+                    }
+                    // 1m uses raw 1s candles (60 points)
+                } else {
+                    activeDataset = tickCandlesDataset;
+                    console.log('Using tick candles dataset');
+                }
+            } else if (config.dataset === 'sentimentDataset2d') {
                 activeDataset = sentimentDataset2d;
                 console.log('Using 2-day dataset');
             } else if (config.dataset === 'sentimentDataset3d') {
@@ -4065,17 +4338,80 @@
             });
         }
 
+        // Granular data toggle (Second/Tick)
+        const granularToggle = document.getElementById('granular-toggle');
+        const granularBtns = document.querySelectorAll('.granular-btn');
+        
+        granularBtns.forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const newType = btn.dataset.type;
+                if (newType === granularDataType) return; // Already selected
+                
+                granularDataType = newType;
+                console.log('📊 Switched to:', granularDataType, 'candles');
+                
+                // Update button states
+                granularBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Fetch new data if needed
+                const config = timeframeConfig[currentTimeframe];
+                if (config && config.useGranular) {
+                    if (granularDataType === 'second' && secondCandlesDataset.length === 0) {
+                        await fetchSecondCandles();
+                    } else if (granularDataType === 'tick' && tickCandlesDataset.length === 0) {
+                        await fetchTickCandles();
+                    }
+                    
+                    // Update chart
+                    await updateChart(currentTimeframe);
+                }
+            });
+        });
+        
+        // Function to update granular toggle visibility
+        function updateGranularToggleVisibility() {
+            const config = timeframeConfig[currentTimeframe];
+            if (granularToggle && config) {
+                if (config.useGranular) {
+                    granularToggle.style.display = 'flex';
+                } else {
+                    granularToggle.style.display = 'none';
+                }
+            }
+        }
+
         timeframeBtns.forEach(btn => {
             btn.addEventListener('click', async () => {
                 timeframeBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
 
                 const timeframe = btn.dataset.timeframe;
+                currentTimeframe = timeframe;
 
                 // Reset scroll position to rightmost (most recent data)
                 scrollPosition = 100;
                 const scrollbar = document.getElementById('chart-scrollbar');
                 if (scrollbar) scrollbar.value = '100';
+                
+                // Update granular toggle visibility
+                updateGranularToggleVisibility();
+                
+                // Fetch granular data if needed
+                const config = timeframeConfig[timeframe];
+                if (config && config.useGranular) {
+                    if (granularDataType === 'second' && secondCandlesDataset.length === 0) {
+                        await fetchSecondCandles();
+                    } else if (granularDataType === 'tick' && tickCandlesDataset.length === 0) {
+                        await fetchTickCandles();
+                    }
+                    
+                    // Start granular auto-refresh (1 second)
+                    startGranularRefresh();
+                } else {
+                    // Stop granular refresh if switching away
+                    stopGranularRefresh();
+                }
 
                 await updateChart(timeframe);
                 currentTimeframe = timeframe; // Update current timeframe for hover
@@ -4107,6 +4443,10 @@
 
                 // Initialize chart with default timeframe (6h = Session)
                 currentTimeframe = '6h';
+                
+                // Set initial granular toggle visibility
+                updateGranularToggleVisibility();
+                
                 await updateChart(currentTimeframe);
 
                 // Function to toggle eye icon state and update visibility
@@ -4196,6 +4536,53 @@
                 const statusElement = document.querySelector('.score-status');
                 if (scoreElement) scoreElement.textContent = '0.0';
                 if (statusElement) statusElement.textContent = 'LOADING...';
+            }
+        }
+
+        // ===== GRANULAR DATA AUTO-REFRESH (1 second) =====
+        
+        function startGranularRefresh() {
+            // Stop any existing interval
+            stopGranularRefresh();
+            
+            console.log('🔄 Starting granular data auto-refresh (1 second interval)');
+            
+            granularRefreshInterval = setInterval(async () => {
+                // Only refresh if market is open
+                if (!isMarketOpen) {
+                    console.log('Market is closed - skipping granular refresh');
+                    return;
+                }
+                
+                // Only auto-update if viewing most recent data
+                if (scrollPosition !== 100) {
+                    console.log('User viewing historical data - skipping granular refresh');
+                    return;
+                }
+                
+                try {
+                    console.log('🔄 Auto-refreshing granular data...');
+                    
+                    // Fetch incremental updates
+                    if (granularDataType === 'second') {
+                        await fetchSecondCandles(lastGranularTimestamp);
+                    } else {
+                        await fetchTickCandles(lastGranularTimestamp);
+                    }
+                    
+                    // Update chart
+                    await updateChart(currentTimeframe);
+                } catch (error) {
+                    console.error('Error in granular auto-refresh:', error);
+                }
+            }, 1000); // 1 second
+        }
+        
+        function stopGranularRefresh() {
+            if (granularRefreshInterval) {
+                console.log('⏹️ Stopping granular data auto-refresh');
+                clearInterval(granularRefreshInterval);
+                granularRefreshInterval = null;
             }
         }
 
