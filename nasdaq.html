@@ -2768,7 +2768,12 @@
                 }
                 
                 const result = await response.json();
-                console.log(`✓ Received ${result.data.length} second candles`);
+                console.log(`✅ Received ${result.data.length} second candles from API`);
+                
+                if (result.data.length === 0) {
+                    console.warn('⚠️ No second candles data available from API');
+                    return [];
+                }
                 
                 // Map to internal format
                 const mappedData = result.data.map(candle => ({
@@ -2790,9 +2795,16 @@
                     // Keep only last 1 hour (3600 seconds)
                     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
                     secondCandlesDataset = secondCandlesDataset.filter(d => d.timestamp > oneHourAgo);
-                    console.log(`📊 Appended candles, kept last ${secondCandlesDataset.length} (sliding 1h window)`);
+                    console.log(`📊 Appended ${mappedData.length} candles, kept last ${secondCandlesDataset.length} (sliding 1h window)`);
                 } else {
                     secondCandlesDataset = mappedData;
+                    console.log(`📊 Loaded ${secondCandlesDataset.length} second candles`);
+                }
+                
+                // Log sample data for debugging
+                if (secondCandlesDataset.length > 0) {
+                    const sample = secondCandlesDataset[0];
+                    console.log(`📊 Sample candle: O=${sample.open} H=${sample.high} L=${sample.low} C=${sample.price} V=${sample.volume} @ ${sample.timestamp.toISOString()}`);
                 }
                 
                 // Update last timestamp for incremental updates
@@ -2823,7 +2835,12 @@
                 }
                 
                 const result = await response.json();
-                console.log(`✓ Received ${result.data.length} tick candles`);
+                console.log(`✅ Received ${result.data.length} tick candles from API`);
+                
+                if (result.data.length === 0) {
+                    console.warn('⚠️ No tick candles data available from API');
+                    return [];
+                }
                 
                 // Map to internal format
                 const mappedData = result.data.map(candle => ({
@@ -2847,9 +2864,16 @@
                     // Keep only last 1 hour
                     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
                     tickCandlesDataset = tickCandlesDataset.filter(d => d.timestamp > oneHourAgo);
-                    console.log(`📊 Appended candles, kept last ${tickCandlesDataset.length} (sliding 1h window)`);
+                    console.log(`📊 Appended ${mappedData.length} candles, kept last ${tickCandlesDataset.length} (sliding 1h window)`);
                 } else {
                     tickCandlesDataset = mappedData;
+                    console.log(`📊 Loaded ${tickCandlesDataset.length} tick candles`);
+                }
+                
+                // Log sample data for debugging
+                if (tickCandlesDataset.length > 0) {
+                    const sample = tickCandlesDataset[0];
+                    console.log(`📊 Sample candle: O=${sample.open} H=${sample.high} L=${sample.low} C=${sample.price} V=${sample.volume} @ ${sample.timestamp.toISOString()}`);
                 }
                 
                 // Update last timestamp for incremental updates
@@ -3388,29 +3412,29 @@
                 const granularDataset = granularDataType === 'second' ? secondCandlesDataset : tickCandlesDataset;
                 
                 if (granularDataset.length > 0) {
-                    console.log(`Using ${granularDataType} candles dataset (${granularDataset.length} points)`);
-                    activeDataset = granularDataset;
+                    console.log(`✅ Using ${granularDataType} candles dataset (${granularDataset.length} points)`);
+                    activeDataset = [...granularDataset]; // Clone to avoid mutating original
                     usingGranularData = true;
                     
                     // Aggregate for longer timeframes to reduce point count
                     if (granularDataType === 'second') {
                         if (timeframe === '1h' && activeDataset.length > 120) {
                             activeDataset = aggregateCandles(activeDataset, 30);
-                            console.log(`Aggregated to 30s candles: ${activeDataset.length} points`);
+                            console.log(`📊 Aggregated to 30s candles: ${activeDataset.length} points`);
                         } else if (timeframe === '30m' && activeDataset.length > 120) {
                             activeDataset = aggregateCandles(activeDataset, 15);
-                            console.log(`Aggregated to 15s candles: ${activeDataset.length} points`);
+                            console.log(`📊 Aggregated to 15s candles: ${activeDataset.length} points`);
                         } else if (timeframe === '15m' && activeDataset.length > 90) {
                             activeDataset = aggregateCandles(activeDataset, 10);
-                            console.log(`Aggregated to 10s candles: ${activeDataset.length} points`);
+                            console.log(`📊 Aggregated to 10s candles: ${activeDataset.length} points`);
                         } else if (timeframe === '5m' && activeDataset.length > 60) {
                             activeDataset = aggregateCandles(activeDataset, 5);
-                            console.log(`Aggregated to 5s candles: ${activeDataset.length} points`);
+                            console.log(`📊 Aggregated to 5s candles: ${activeDataset.length} points`);
                         }
                     }
                 } else {
                     // Fallback to regular dataset if granular data not available
-                    console.log('Granular data not available, using regular sentimentDataset');
+                    console.log('⚠️ Granular data not available, using regular sentimentDataset as fallback');
                     activeDataset = sentimentDataset;
                 }
             } else if (config.dataset === 'sentimentDataset2d') {
@@ -4352,8 +4376,9 @@
                 const newType = btn.dataset.type;
                 if (newType === granularDataType) return; // Already selected
                 
+                const previousType = granularDataType;
                 granularDataType = newType;
-                console.log('📊 Switched to:', granularDataType, 'candles');
+                console.log(`📊 Switched from ${previousType} to ${granularDataType} candles`);
                 
                 // Update button states
                 granularBtns.forEach(b => b.classList.remove('active'));
@@ -4364,16 +4389,22 @@
                 if (config && config.supportsGranular) {
                     console.log(`🔄 Fetching ${granularDataType} candles data...`);
                     
-                    if (granularDataType === 'second' && secondCandlesDataset.length === 0) {
-                        await fetchSecondCandles();
-                    } else if (granularDataType === 'tick' && tickCandlesDataset.length === 0) {
-                        await fetchTickCandles();
+                    // Always fetch when switching to ensure we have fresh data
+                    if (granularDataType === 'second') {
+                        if (secondCandlesDataset.length === 0) {
+                            await fetchSecondCandles();
+                        }
+                    } else if (granularDataType === 'tick') {
+                        if (tickCandlesDataset.length === 0) {
+                            await fetchTickCandles();
+                        }
                     }
                     
-                    // Start auto-refresh for granular data
+                    // Restart auto-refresh for the new granular data type
+                    stopGranularRefresh();
                     startGranularRefresh();
                     
-                    // Update chart with new data
+                    // Update chart with new data type
                     await updateChart(currentTimeframe);
                 }
             });
@@ -4407,19 +4438,20 @@
                 // Update granular toggle visibility
                 updateGranularToggleVisibility();
                 
-                // Only manage granular refresh if we have granular data loaded
+                // Automatically fetch granular data for granular-capable timeframes
                 const config = timeframeConfig[timeframe];
                 if (config && config.supportsGranular) {
-                    const hasGranularData = (granularDataType === 'second' && secondCandlesDataset.length > 0) ||
-                                           (granularDataType === 'tick' && tickCandlesDataset.length > 0);
+                    console.log(`📊 Granular timeframe selected, fetching ${granularDataType} candles...`);
                     
-                    if (hasGranularData) {
-                        // Start granular auto-refresh (1 second)
-                        startGranularRefresh();
-                    } else {
-                        // Stop granular refresh if no granular data
-                        stopGranularRefresh();
+                    // Fetch the appropriate granular data based on toggle selection
+                    if (granularDataType === 'second' && secondCandlesDataset.length === 0) {
+                        await fetchSecondCandles();
+                    } else if (granularDataType === 'tick' && tickCandlesDataset.length === 0) {
+                        await fetchTickCandles();
                     }
+                    
+                    // Start granular auto-refresh (1 second)
+                    startGranularRefresh();
                 } else {
                     // Stop granular refresh if switching away from granular-capable timeframes
                     stopGranularRefresh();
