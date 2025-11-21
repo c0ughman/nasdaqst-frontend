@@ -2758,9 +2758,11 @@
                 // If startTime is provided, we're doing an incremental update - only fetch recent data
                 let url = `${API_BASE_URL}/second-candles/?symbol=QLD`;
                 if (startTime) {
-                    // For incremental updates, only fetch data after the last timestamp
-                    url += `&limit=10&start_time=${startTime.toISOString()}`;
-                    console.log('🔄 Fetching incremental second candles (last 10):', url);
+                    // For incremental updates, fetch the most recent candles
+                    // Use a 2-minute window to ensure we catch any new data
+                    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+                    url += `&limit=120&start_time=${twoMinutesAgo.toISOString()}`;
+                    console.log('🔄 Fetching incremental second candles (last 2 min):', url);
                 } else {
                     // Initial load: fetch enough for the longest view (15m = 900 seconds)
                     url += `&limit=1000`;
@@ -2781,6 +2783,14 @@
                     return [];
                 }
                 
+                // Log the timestamp range of received data
+                if (result.data.length > 0) {
+                    const firstTs = new Date(result.data[0].timestamp);
+                    const lastTs = new Date(result.data[result.data.length - 1].timestamp);
+                    console.log(`📅 API data range: ${firstTs.toISOString()} to ${lastTs.toISOString()}`);
+                    console.log(`⏰ Current time: ${new Date().toISOString()}`);
+                }
+                
                 // Map to internal format
                 const mappedData = result.data.map(candle => ({
                     timestamp: new Date(candle.timestamp),
@@ -2795,20 +2805,35 @@
                     indicators: null
                 }));
                 
-                // If this is an incremental update, append to existing data
+                // If this is an incremental update, merge with existing data
                 if (startTime && secondCandlesDataset.length > 0) {
+                    // Create a map of existing timestamps for faster lookup
+                    const existingTimestamps = new Set(
+                        secondCandlesDataset.map(d => d.timestamp.getTime())
+                    );
+                    
                     // Filter out duplicates based on timestamp
-                    const lastTimestamp = secondCandlesDataset[secondCandlesDataset.length - 1].timestamp.getTime();
-                    const uniqueNewData = mappedData.filter(d => d.timestamp.getTime() > lastTimestamp);
+                    const uniqueNewData = mappedData.filter(d => !existingTimestamps.has(d.timestamp.getTime()));
                     
                     if (uniqueNewData.length > 0) {
-                        secondCandlesDataset = [...secondCandlesDataset, ...uniqueNewData];
+                        // Merge and sort by timestamp
+                        secondCandlesDataset = [...secondCandlesDataset, ...uniqueNewData]
+                            .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                        
                         // Keep only last 15 minutes (900 seconds) to support 15m view
                         const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
                         secondCandlesDataset = secondCandlesDataset.filter(d => d.timestamp > fifteenMinutesAgo);
+                        
                         console.log(`📊 Appended ${uniqueNewData.length} new candles, total ${secondCandlesDataset.length}`);
+                        
+                        // Log the new data range
+                        if (secondCandlesDataset.length > 0) {
+                            const firstDs = secondCandlesDataset[0].timestamp;
+                            const lastDs = secondCandlesDataset[secondCandlesDataset.length - 1].timestamp;
+                            console.log(`📊 Dataset now spans: ${firstDs.toISOString()} to ${lastDs.toISOString()}`);
+                        }
                     } else {
-                        console.log('✓ No new unique candles to append');
+                        console.log('✓ No new unique candles to append (all timestamps already exist)');
                     }
                 } else {
                     secondCandlesDataset = mappedData;
@@ -2833,9 +2858,11 @@
                 // If startTime is provided, we're doing an incremental update - only fetch recent data
                 let url = `${API_BASE_URL}/tick-candles/?symbol=QLD`;
                 if (startTime) {
-                    // For incremental updates, only fetch data after the last timestamp
-                    url += `&limit=10&start_time=${startTime.toISOString()}`;
-                    console.log('🔄 Fetching incremental tick candles (last 10):', url);
+                    // For incremental updates, fetch the most recent candles
+                    // Use a 2-minute window to ensure we catch any new data
+                    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+                    url += `&limit=120&start_time=${twoMinutesAgo.toISOString()}`;
+                    console.log('🔄 Fetching incremental tick candles (last 2 min):', url);
                 } else {
                     // Initial load: fetch enough for the longest view
                     url += `&limit=1000`;
@@ -2856,6 +2883,14 @@
                     return [];
                 }
                 
+                // Log the timestamp range of received data
+                if (result.data.length > 0) {
+                    const firstTs = new Date(result.data[0].timestamp);
+                    const lastTs = new Date(result.data[result.data.length - 1].timestamp);
+                    console.log(`📅 API data range: ${firstTs.toISOString()} to ${lastTs.toISOString()}`);
+                    console.log(`⏰ Current time: ${new Date().toISOString()}`);
+                }
+                
                 // Map to internal format
                 const mappedData = result.data.map(candle => ({
                     timestamp: new Date(candle.timestamp),
@@ -2872,20 +2907,35 @@
                     indicators: null
                 }));
                 
-                // If this is an incremental update, append to existing data
+                // If this is an incremental update, merge with existing data
                 if (startTime && tickCandlesDataset.length > 0) {
+                    // Create a map of existing timestamps for faster lookup
+                    const existingTimestamps = new Set(
+                        tickCandlesDataset.map(d => d.timestamp.getTime())
+                    );
+                    
                     // Filter out duplicates based on timestamp
-                    const lastTimestamp = tickCandlesDataset[tickCandlesDataset.length - 1].timestamp.getTime();
-                    const uniqueNewData = mappedData.filter(d => d.timestamp.getTime() > lastTimestamp);
+                    const uniqueNewData = mappedData.filter(d => !existingTimestamps.has(d.timestamp.getTime()));
                     
                     if (uniqueNewData.length > 0) {
-                        tickCandlesDataset = [...tickCandlesDataset, ...uniqueNewData];
+                        // Merge and sort by timestamp
+                        tickCandlesDataset = [...tickCandlesDataset, ...uniqueNewData]
+                            .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                        
                         // Keep only last 1 hour
                         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
                         tickCandlesDataset = tickCandlesDataset.filter(d => d.timestamp > oneHourAgo);
+                        
                         console.log(`📊 Appended ${uniqueNewData.length} new tick candles, total ${tickCandlesDataset.length}`);
+                        
+                        // Log the new data range
+                        if (tickCandlesDataset.length > 0) {
+                            const firstDs = tickCandlesDataset[0].timestamp;
+                            const lastDs = tickCandlesDataset[tickCandlesDataset.length - 1].timestamp;
+                            console.log(`📊 Dataset now spans: ${firstDs.toISOString()} to ${lastDs.toISOString()}`);
+                        }
                     } else {
-                        console.log('✓ No new unique tick candles to append');
+                        console.log('✓ No new unique tick candles to append (all timestamps already exist)');
                     }
                 } else {
                     tickCandlesDataset = mappedData;
