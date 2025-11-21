@@ -80,66 +80,81 @@ function initDisclaimerModal() {
     
     console.log('Loading audio from:', audioPath);
     console.log('Base URL:', baseUrl, 'Directory:', dirPath, 'Pathname:', currentPath);
+    
+    // Create audio element
     const audio = new Audio(audioPath);
-    audio.playbackRate = 1.0; // Play at normal speed
+    audio.preload = 'auto';
+    audio.autoplay = true; // Try setting autoplay attribute
+    audio.style.display = 'none';
+    document.body.appendChild(audio);
     
     let audioStarted = false;
+    let isAttemptingPlay = false;
     
     // Function to start audio playback
     function startAudio() {
-        if (audioStarted) return;
-        audioStarted = true;
-        console.log('Starting audio playback');
+        if (audioStarted || isAttemptingPlay) return;
         
-        audio.play().catch(error => {
-            console.error('Error playing audio:', error);
-            // If audio fails to play, enable controls anyway
-            enableControls();
-        });
+        isAttemptingPlay = true;
+        // Create a play promise
+        const playPromise = audio.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                audioStarted = true;
+                isAttemptingPlay = false;
+                console.log('Audio started playing');
+                // Remove interaction listeners since we're playing
+                removeInteractionListeners();
+            }).catch(error => {
+                isAttemptingPlay = false;
+                // Only log real errors, not autoplay blocks (to reduce noise)
+                if (error.name !== 'NotAllowedError') {
+                    console.error('Audio playback failed:', error);
+                } else {
+                    // Autoplay blocked - enable controls so user isn't stuck
+                    console.log('Autoplay blocked, enabling controls immediately');
+                    enableControls();
+                }
+                // If blocked, we keep the listeners active
+            });
+        } else {
+            isAttemptingPlay = false;
+        }
     }
     
-    // Try to play audio immediately when loaded (will likely be blocked by browser)
-    audio.addEventListener('canplaythrough', () => {
-        if (!audioStarted) {
-            console.log('Audio ready, attempting to play');
-            audio.play().then(() => {
-                audioStarted = true;
-                console.log('Audio started playing automatically');
-            }).catch(() => {
-                console.log('Audio autoplay blocked - will play on first user interaction');
-            });
-        }
-    });
+    // Attempt to play immediately
+    startAudio();
     
-    // Also try when loadeddata fires
-    audio.addEventListener('loadeddata', () => {
-        if (!audioStarted) {
-            audio.play().then(() => {
-                audioStarted = true;
-                console.log('Audio started on loadeddata');
-            }).catch(() => {
-                // Will play on interaction
-            });
-        }
-    });
+    // Also try on various load events just in case
+    audio.addEventListener('canplay', startAudio);
+    audio.addEventListener('loadeddata', startAudio);
+    audio.addEventListener('canplaythrough', startAudio);
     
-    // Start audio on ANY user interaction anywhere on the page
-    // This must happen BEFORE the checkbox can be clicked
-    const startAudioOnAnyInteraction = (e) => {
+    // Interaction listeners
+    const handleInteraction = (e) => {
         if (!audioStarted && overlay.classList.contains('show')) {
-            console.log('User interaction detected, starting audio immediately');
+            // console.log('User interaction detected (' + e.type + '), starting audio');
             startAudio();
-            // Remove listeners after audio starts
-            document.removeEventListener('click', startAudioOnAnyInteraction, true);
-            document.removeEventListener('touchstart', startAudioOnAnyInteraction, true);
-            document.removeEventListener('mousedown', startAudioOnAnyInteraction, true);
         }
     };
     
-    // Use capture phase on document to catch ALL clicks before they reach any element
-    document.addEventListener('click', startAudioOnAnyInteraction, { capture: true, once: false });
-    document.addEventListener('touchstart', startAudioOnAnyInteraction, { capture: true, once: false });
-    document.addEventListener('mousedown', startAudioOnAnyInteraction, { capture: true, once: false });
+    function addInteractionListeners() {
+        // Listen for ANY interaction that might allow audio
+        document.addEventListener('click', handleInteraction, { capture: true, once: false });
+        document.addEventListener('touchstart', handleInteraction, { capture: true, once: false });
+        document.addEventListener('mousedown', handleInteraction, { capture: true, once: false });
+        document.addEventListener('keydown', handleInteraction, { capture: true, once: false });
+    }
+    
+    function removeInteractionListeners() {
+        document.removeEventListener('click', handleInteraction, true);
+        document.removeEventListener('touchstart', handleInteraction, true);
+        document.removeEventListener('mousedown', handleInteraction, true);
+        document.removeEventListener('keydown', handleInteraction, true);
+    }
+    
+    addInteractionListeners();
 
     audio.addEventListener('ended', () => {
         // Audio finished playing, enable controls
