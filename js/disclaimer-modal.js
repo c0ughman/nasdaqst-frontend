@@ -104,6 +104,11 @@ function initDisclaimerModal() {
                 audioStarted = true;
                 isAttemptingPlay = false;
                 console.log('Audio started playing');
+                
+                // Hide play button if it exists
+                const playBtn = document.getElementById('disclaimer-play-btn');
+                if (playBtn) playBtn.style.display = 'none';
+                
                 // Remove interaction listeners since we're playing
                 removeInteractionListeners();
             }).catch(error => {
@@ -111,16 +116,64 @@ function initDisclaimerModal() {
                 // Only log real errors, not autoplay blocks (to reduce noise)
                 if (error.name !== 'NotAllowedError') {
                     console.error('Audio playback failed:', error);
-                } else {
-                    // Autoplay blocked - enable controls so user isn't stuck
-                    console.log('Autoplay blocked, enabling controls immediately');
+                    // If it's a real error (not block), we might want to enable controls
                     enableControls();
+                } else {
+                    // Autoplay blocked - SHOW PLAY BUTTON
+                    console.log('Autoplay blocked, showing play button');
+                    showPlayButton();
                 }
                 // If blocked, we keep the listeners active
             });
         } else {
             isAttemptingPlay = false;
         }
+    }
+    
+    // Helper to create/show play button
+    function showPlayButton() {
+        let playBtn = document.getElementById('disclaimer-play-btn');
+        
+        if (!playBtn) {
+            // Find where to insert it
+            const checkboxContainer = overlay.querySelector('.disclaimer-checkbox-container');
+            if (!checkboxContainer) return;
+            
+            playBtn = document.createElement('button');
+            playBtn.id = 'disclaimer-play-btn';
+            playBtn.innerHTML = '🔊 Play Disclaimer Audio';
+            playBtn.style.cssText = `
+                display: block;
+                width: 100%;
+                padding: 12px;
+                margin-bottom: 16px;
+                background: #ffffff;
+                color: #000;
+                border: none;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                font-family: inherit;
+                text-align: center;
+            `;
+            
+            playBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent bubble to overlay
+                startAudio();
+            });
+            
+            playBtn.addEventListener('mouseenter', () => {
+                playBtn.style.background = '#e0e0e0';
+            });
+            
+            playBtn.addEventListener('mouseleave', () => {
+                playBtn.style.background = '#ffffff';
+            });
+            
+            checkboxContainer.parentNode.insertBefore(playBtn, checkboxContainer);
+        }
+        
+        playBtn.style.display = 'block';
     }
     
     // Attempt to play immediately
