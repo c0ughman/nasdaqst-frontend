@@ -2755,9 +2755,7 @@
         // Fetch second candles (1-second OHLCV data)
         async function fetchSecondCandles(startTime = null) {
             try {
-                // Always fetch at least 300 candles (5 mins) to support 1m and 5m views
-                // Fetch slightly more (360) to be safe
-                let url = `${API_BASE_URL}/second-candles/?symbol=QLD&limit=360`; 
+                let url = `${API_BASE_URL}/second-candles/?symbol=QLD&limit=3600`;
                 if (startTime) {
                     url += `&start_time=${startTime.toISOString()}`;
                 }
@@ -2794,11 +2792,10 @@
                 // If this is an incremental update, append to existing data
                 if (startTime && secondCandlesDataset.length > 0) {
                     secondCandlesDataset = [...secondCandlesDataset, ...mappedData];
-                    // Keep enough for 5m view + buffer (300 seconds = 5 mins)
-                    // Keep last 10 minutes (600 seconds) to allow for some scrolling
-                    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-                    secondCandlesDataset = secondCandlesDataset.filter(d => d.timestamp > tenMinutesAgo);
-                    console.log(`📊 Appended ${mappedData.length} candles, kept last ${secondCandlesDataset.length} (sliding window)`);
+                    // Keep only last 1 hour (3600 seconds)
+                    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                    secondCandlesDataset = secondCandlesDataset.filter(d => d.timestamp > oneHourAgo);
+                    console.log(`📊 Appended ${mappedData.length} candles, kept last ${secondCandlesDataset.length} (sliding 1h window)`);
                 } else {
                     secondCandlesDataset = mappedData;
                     console.log(`📊 Loaded ${secondCandlesDataset.length} second candles`);
@@ -3430,9 +3427,10 @@
                         } else if (timeframe === '15m' && activeDataset.length > 90) {
                             activeDataset = aggregateCandles(activeDataset, 10);
                             console.log(`📊 Aggregated to 10s candles: ${activeDataset.length} points`);
+                        } else if (timeframe === '5m' && activeDataset.length > 60) {
+                            activeDataset = aggregateCandles(activeDataset, 5);
+                            console.log(`📊 Aggregated to 5s candles: ${activeDataset.length} points`);
                         }
-                        // For 5m, we want full 1-second resolution (300 candles)
-                        // For 1m, we want full 1-second resolution (60 candles)
                     }
                 } else {
                     // Fallback to regular dataset if granular data not available
@@ -3507,56 +3505,60 @@
             const etMonth = parseInt(parts.find(p => p.type === 'month').value) - 1;
             const etDay = parseInt(parts.find(p => p.type === 'day').value);
 
-            // Calculate cutoff time based on timeframe window size
-            if (timeframe === '6h' || timeframe === '2d' || timeframe === '3d') {
-                // ... (existing logic for fixed timeframes)
+            // Special handling for Session (6h), 2-day, and 3-day timeframes
+            if (timeframe === '6h') {
+                // Session: Show current trading day only
+                cutoffTime = etToUTC(etYear, etMonth, etDay, 9, 30);
+                endTime = etToUTC(etYear, etMonth, etDay, 16, 0);
+
+                console.log('Session timeframe: Current trading day');
+                console.log('Market open (9:30 AM ET):', cutoffTime.toISOString());
+                console.log('Market close (4:00 PM ET):', endTime.toISOString());
+            } else if (timeframe === '2d') {
+                // 2-day: Show last 2 complete trading days (yesterday + today)
+                const yesterday = new Date(etYear, etMonth, etDay);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yParts = etFormatter.formatToParts(yesterday);
+                const yYear = parseInt(yParts.find(p => p.type === 'year').value);
+                const yMonth = parseInt(yParts.find(p => p.type === 'month').value) - 1;
+                const yDay = parseInt(yParts.find(p => p.type === 'day').value);
+
+                cutoffTime = etToUTC(yYear, yMonth, yDay, 9, 30);
+                endTime = isMarketOpen ? now : etToUTC(etYear, etMonth, etDay, 16, 0);
+
+                console.log('2-day timeframe: From', cutoffTime.toISOString(), 'to', endTime.toISOString());
+            } else if (timeframe === '3d') {
+                // 3-day: Show last 3 complete trading days
+                const twoDaysAgo = new Date(etYear, etMonth, etDay);
+                twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+                const tParts = etFormatter.formatToParts(twoDaysAgo);
+                const tYear = parseInt(tParts.find(p => p.type === 'year').value);
+                const tMonth = parseInt(tParts.find(p => p.type === 'month').value) - 1;
+                const tDay = parseInt(tParts.find(p => p.type === 'day').value);
+
+                cutoffTime = etToUTC(tYear, tMonth, tDay, 9, 30);
+                endTime = isMarketOpen ? now : etToUTC(etYear, etMonth, etDay, 16, 0);
+
+                console.log('3-day timeframe: From', cutoffTime.toISOString(), 'to', endTime.toISOString());
             } else {
-                // Granular handling for 1m and 5m (Seconds)
-                if (usingGranularData && granularDataType === 'second' && (timeframe === '1m' || timeframe === '5m')) {
-                     // Strict window size enforcement
-                    const windowSizeSeconds = timeframe === '1m' ? 60 : 300;
-                    const windowSizeMs = windowSizeSeconds * 1000;
-                    
-                    // Get the very latest timestamp in the dataset as our anchor "now"
-                    const latestDataTime = activeDataset[activeDataset.length - 1].timestamp;
-                    
-                    // Calculate end time based on scroll position (100 = latestDataTime)
-                    // If scroll is 100, we want exactly [latest - window] to [latest]
-                    if (scrollPos >= 100) {
-                         endTime = latestDataTime;
-                         cutoffTime = new Date(endTime.getTime() - windowSizeMs);
-                         // Ensure we capture the last second inclusive if needed, but exact window is safer
-                    } else {
-                        // Scrolling back logic...
-                        const marketOpenTime = activeDataset[0].timestamp; // Or true market open
-                        const maxScrollRangeMs = latestDataTime.getTime() - marketOpenTime.getTime() - windowSizeMs;
-                         if (maxScrollRangeMs > 0) {
-                            const scrollFraction = scrollPos / 100;
-                            endTime = new Date(marketOpenTime.getTime() + windowSizeMs + (scrollFraction * maxScrollRangeMs));
-                            cutoffTime = new Date(endTime.getTime() - windowSizeMs);
-                        } else {
-                            endTime = latestDataTime;
-                            cutoffTime = new Date(endTime.getTime() - windowSizeMs);
-                        }
-                    }
-                    
-                    console.log(`⏱️ Strict ${timeframe} window: ${cutoffTime.toISOString()} to ${endTime.toISOString()} (${windowSizeSeconds}s)`);
-                    
+                // Regular timeframes: scrollable window within today's data
+                const marketOpenTime = etToUTC(etYear, etMonth, etDay, 9, 30);
+
+                // Calculate the window end time based on scroll position
+                // scrollPos = 100 means endTime = now (most recent)
+                // scrollPos = 0 means endTime = marketOpenTime + window size
+                const windowSizeMs = config.minutes * 60 * 1000;
+                const maxScrollRangeMs = now.getTime() - marketOpenTime.getTime() - windowSizeMs;
+
+                if (maxScrollRangeMs > 0) {
+                    // Calculate end time based on scroll position (inverse: 100 = now, 0 = earliest)
+                    const scrollFraction = scrollPos / 100;
+                    endTime = new Date(marketOpenTime.getTime() + windowSizeMs + (scrollFraction * maxScrollRangeMs));
+                    cutoffTime = new Date(endTime.getTime() - windowSizeMs);
                 } else {
-                    // Regular logic for other timeframes
-                    // ... existing logic ...
-                    const marketOpenTime = etToUTC(etYear, etMonth, etDay, 9, 30);
-                    const windowSizeMs = config.minutes * 60 * 1000;
-                    const maxScrollRangeMs = now.getTime() - marketOpenTime.getTime() - windowSizeMs;
-    
-                    if (maxScrollRangeMs > 0) {
-                        const scrollFraction = scrollPos / 100;
-                        endTime = new Date(marketOpenTime.getTime() + windowSizeMs + (scrollFraction * maxScrollRangeMs));
-                        cutoffTime = new Date(endTime.getTime() - windowSizeMs);
-                    } else {
-                        cutoffTime = marketOpenTime;
-                        endTime = now;
-                    }
+                    // Not enough data for scrolling, just show what we have
+                    cutoffTime = marketOpenTime;
+                    endTime = now;
                 }
             }
 
