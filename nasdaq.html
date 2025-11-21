@@ -2758,14 +2758,15 @@
                 // If startTime is provided, we're doing an incremental update - only fetch recent data
                 let url = `${API_BASE_URL}/second-candles/?symbol=QLD`;
                 if (startTime) {
-                    // For incremental updates, just fetch the most recent candles
-                    // Don't use start_time filter - just get the latest data
-                    url += `&limit=120`;
-                    console.log('🔄 Fetching incremental second candles (last 120):', url);
+                    // For incremental updates, fetch the most recent candles
+                    // Order by timestamp descending to get the newest data first
+                    url += `&limit=120&ordering=-timestamp`;
+                    console.log('🔄 Fetching incremental second candles (last 120, newest first):', url);
                 } else {
                     // Initial load: fetch enough for the longest view (15m = 900 seconds)
-                    url += `&limit=1000`;
-                    console.log('🔄 Fetching initial second candles:', url);
+                    // Order by timestamp descending to get the newest data
+                    url += `&limit=1000&ordering=-timestamp`;
+                    console.log('🔄 Fetching initial second candles (last 1000, newest first):', url);
                 }
                 
                 const response = await fetch(url);
@@ -2857,14 +2858,15 @@
                 // If startTime is provided, we're doing an incremental update - only fetch recent data
                 let url = `${API_BASE_URL}/tick-candles/?symbol=QLD`;
                 if (startTime) {
-                    // For incremental updates, just fetch the most recent candles
-                    // Don't use start_time filter - just get the latest data
-                    url += `&limit=120`;
-                    console.log('🔄 Fetching incremental tick candles (last 120):', url);
+                    // For incremental updates, fetch the most recent candles
+                    // Order by timestamp descending to get the newest data first
+                    url += `&limit=120&ordering=-timestamp`;
+                    console.log('🔄 Fetching incremental tick candles (last 120, newest first):', url);
                 } else {
                     // Initial load: fetch enough for the longest view
-                    url += `&limit=1000`;
-                    console.log('🔄 Fetching initial tick candles:', url);
+                    // Order by timestamp descending to get the newest data
+                    url += `&limit=1000&ordering=-timestamp`;
+                    console.log('🔄 Fetching initial tick candles (last 1000, newest first):', url);
                 }
                 
                 const response = await fetch(url);
