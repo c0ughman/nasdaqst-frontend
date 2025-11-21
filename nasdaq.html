@@ -3424,13 +3424,11 @@
                         } else if (timeframe === '30m' && activeDataset.length > 120) {
                             activeDataset = aggregateCandles(activeDataset, 15);
                             console.log(`📊 Aggregated to 15s candles: ${activeDataset.length} points`);
-                        } else if (timeframe === '15m' && activeDataset.length > 90) {
-                            activeDataset = aggregateCandles(activeDataset, 10);
-                            console.log(`📊 Aggregated to 10s candles: ${activeDataset.length} points`);
-                        } else if (timeframe === '5m' && activeDataset.length > 60) {
-                            activeDataset = aggregateCandles(activeDataset, 5);
-                            console.log(`📊 Aggregated to 5s candles: ${activeDataset.length} points`);
                         }
+                        // For 15m, 5m, and 1m, we want full 1-second resolution
+                        // 15m = 900 candles
+                        // 5m = 300 candles
+                        // 1m = 60 candles
                     }
                 } else {
                     // Fallback to regular dataset if granular data not available
@@ -3548,17 +3546,41 @@
                 // scrollPos = 100 means endTime = now (most recent)
                 // scrollPos = 0 means endTime = marketOpenTime + window size
                 const windowSizeMs = config.minutes * 60 * 1000;
-                const maxScrollRangeMs = now.getTime() - marketOpenTime.getTime() - windowSizeMs;
-
-                if (maxScrollRangeMs > 0) {
-                    // Calculate end time based on scroll position (inverse: 100 = now, 0 = earliest)
-                    const scrollFraction = scrollPos / 100;
-                    endTime = new Date(marketOpenTime.getTime() + windowSizeMs + (scrollFraction * maxScrollRangeMs));
-                    cutoffTime = new Date(endTime.getTime() - windowSizeMs);
+                
+                // If using granular seconds, ensure we respect strict 1s candles for 1m, 5m, 15m
+                if (usingGranularData && granularDataType === 'second' && (timeframe === '1m' || timeframe === '5m' || timeframe === '15m')) {
+                    const latestDataTime = activeDataset[activeDataset.length - 1].timestamp;
+                    
+                    if (scrollPos >= 100) {
+                        // Strict window ending at latest data point
+                        endTime = latestDataTime;
+                        cutoffTime = new Date(endTime.getTime() - windowSizeMs);
+                    } else {
+                        // Scrolling back
+                        const maxScrollRangeMs = latestDataTime.getTime() - marketOpenTime.getTime() - windowSizeMs;
+                        if (maxScrollRangeMs > 0) {
+                            const scrollFraction = scrollPos / 100;
+                            endTime = new Date(marketOpenTime.getTime() + windowSizeMs + (scrollFraction * maxScrollRangeMs));
+                            cutoffTime = new Date(endTime.getTime() - windowSizeMs);
+                        } else {
+                            endTime = latestDataTime;
+                            cutoffTime = new Date(endTime.getTime() - windowSizeMs);
+                        }
+                    }
                 } else {
-                    // Not enough data for scrolling, just show what we have
-                    cutoffTime = marketOpenTime;
-                    endTime = now;
+                    // Standard logic for other timeframes
+                    const maxScrollRangeMs = now.getTime() - marketOpenTime.getTime() - windowSizeMs;
+
+                    if (maxScrollRangeMs > 0) {
+                        // Calculate end time based on scroll position (inverse: 100 = now, 0 = earliest)
+                        const scrollFraction = scrollPos / 100;
+                        endTime = new Date(marketOpenTime.getTime() + windowSizeMs + (scrollFraction * maxScrollRangeMs));
+                        cutoffTime = new Date(endTime.getTime() - windowSizeMs);
+                    } else {
+                        // Not enough data for scrolling, just show what we have
+                        cutoffTime = marketOpenTime;
+                        endTime = now;
+                    }
                 }
             }
 
@@ -4449,10 +4471,13 @@
                     console.log(`📊 Granular timeframe selected, fetching ${granularDataType} candles...`);
                     
                     // Fetch the appropriate granular data based on toggle selection
-                    if (granularDataType === 'second' && secondCandlesDataset.length === 0) {
-                        await fetchSecondCandles();
-                    } else if (granularDataType === 'tick' && tickCandlesDataset.length === 0) {
-                        await fetchTickCandles();
+                    // ALWAYS fetch fresh data when switching tabs to ensure the chart updates immediately
+                    // instead of relying on cached data which might be stale or empty
+                    if (granularDataType === 'second') {
+                         // Reset dataset to force refresh or just call fetch directly
+                         await fetchSecondCandles();
+                    } else if (granularDataType === 'tick') {
+                         await fetchTickCandles();
                     }
                     
                     // Start granular auto-refresh (1 second)
