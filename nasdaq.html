@@ -3469,6 +3469,7 @@
             // Select the appropriate dataset based on timeframe
             let activeDataset;
             let usingGranularData = false;
+            let rawGranularDataset = null; // Store raw dataset before aggregation
             
             // Try to use granular data if:
             // 1. Timeframe supports granular data
@@ -3479,6 +3480,7 @@
                 
                 if (granularDataset.length > 0) {
                     console.log(`✅ Using ${granularDataType} candles dataset (${granularDataset.length} points)`);
+                    rawGranularDataset = granularDataset; // Store reference to raw data
                     activeDataset = [...granularDataset]; // Clone to avoid mutating original
                     usingGranularData = true;
                     
@@ -3618,7 +3620,13 @@
                 
                 // If using granular seconds, ensure we respect strict 1s candles for 1m, 5m, 15m
                 if (usingGranularData && granularDataType === 'second' && (timeframe === '1m' || timeframe === '5m' || timeframe === '15m')) {
-                    const latestDataTime = activeDataset[activeDataset.length - 1].timestamp;
+                    // CRITICAL: Use raw dataset timestamp, not aggregated dataset!
+                    // The aggregated dataset may have older timestamps due to aggregation boundaries
+                    const latestDataTime = rawGranularDataset && rawGranularDataset.length > 0
+                        ? rawGranularDataset[rawGranularDataset.length - 1].timestamp
+                        : activeDataset[activeDataset.length - 1].timestamp;
+                    
+                    console.log(`🔍 Using latest timestamp from raw data: ${latestDataTime.toISOString()}`);
                     
                     if (scrollPos >= 100) {
                         // Strict window ending at latest data point
