@@ -3712,13 +3712,39 @@
                 
                 // FALLBACK: If we're in live mode but have no data in the current window,
                 // it means the backend hasn't saved new data recently.
-                // Show the most recent data we have instead of showing nothing.
+                // Show the most recent data aligned to the right edge of the window.
                 if (usingGranularData && scrollPos >= 100 && activeDataset.length >= 3) {
-                    console.log('📊 Fallback: Showing most recent available data instead');
-                    // Get the last N data points (where N = expected candles for timeframe)
-                    const expectedCandles = Math.min(config.minutes * 60, 300); // Cap at 300 candles
-                    filteredData = activeDataset.slice(-expectedCandles);
-                    console.log(`📊 Using last ${filteredData.length} candles from dataset`);
+                    console.log('📊 Fallback: Aligning most recent data to right edge of window');
+                    
+                    // Calculate window duration
+                    const windowDurationMs = endTime.getTime() - cutoffTime.getTime();
+                    const windowDurationSeconds = windowDurationMs / 1000;
+                    
+                    // Find the most recent data point
+                    const latestDataPoint = activeDataset[activeDataset.length - 1];
+                    const latestTimestamp = latestDataPoint.timestamp.getTime();
+                    
+                    // Calculate how much data we need (window duration)
+                    // Get data points that fit within the window duration, ending at the latest data point
+                    const windowStartTime = latestTimestamp - windowDurationMs;
+                    
+                    // Filter data to fit within the window duration, ending at latest data point
+                    filteredData = activeDataset.filter(d => {
+                        const dTime = d.timestamp.getTime();
+                        return dTime >= windowStartTime && dTime <= latestTimestamp;
+                    });
+                    
+                    // If we don't have enough data to fill the window, take the most recent data we have
+                    if (filteredData.length < 3) {
+                        const expectedCandles = Math.min(config.minutes * 60, 300);
+                        filteredData = activeDataset.slice(-expectedCandles);
+                    }
+                    
+                    // The gap between latestTimestamp and endTime will create a visible gap on the right
+                    // This gap grows each second as endTime advances, showing the window is moving
+                    const gapSeconds = (endTime.getTime() - latestTimestamp) / 1000;
+                    console.log(`📊 Using ${filteredData.length} candles ending at ${new Date(latestTimestamp).toISOString()}`);
+                    console.log(`📊 Gap to window end: ${gapSeconds.toFixed(1)} seconds (window moves forward)`);
                 } else {
                     return {
                         labels: [],
