@@ -2755,12 +2755,18 @@
         // Fetch second candles (1-second OHLCV data)
         async function fetchSecondCandles(startTime = null) {
             try {
-                let url = `${API_BASE_URL}/second-candles/?symbol=QLD&limit=3600`;
+                // If startTime is provided, we're doing an incremental update - only fetch recent data
+                let url = `${API_BASE_URL}/second-candles/?symbol=QLD`;
                 if (startTime) {
-                    url += `&start_time=${startTime.toISOString()}`;
+                    // For incremental updates, only fetch data after the last timestamp
+                    url += `&limit=10&start_time=${startTime.toISOString()}`;
+                    console.log('🔄 Fetching incremental second candles (last 10):', url);
+                } else {
+                    // Initial load: fetch enough for the longest view (15m = 900 seconds)
+                    url += `&limit=1000`;
+                    console.log('🔄 Fetching initial second candles:', url);
                 }
                 
-                console.log('🔄 Fetching second candles:', url);
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -2797,9 +2803,9 @@
                     
                     if (uniqueNewData.length > 0) {
                         secondCandlesDataset = [...secondCandlesDataset, ...uniqueNewData];
-                        // Keep only last 1 hour (3600 seconds)
-                        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-                        secondCandlesDataset = secondCandlesDataset.filter(d => d.timestamp > oneHourAgo);
+                        // Keep only last 15 minutes (900 seconds) to support 15m view
+                        const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+                        secondCandlesDataset = secondCandlesDataset.filter(d => d.timestamp > fifteenMinutesAgo);
                         console.log(`📊 Appended ${uniqueNewData.length} new candles, total ${secondCandlesDataset.length}`);
                     } else {
                         console.log('✓ No new unique candles to append');
@@ -2807,12 +2813,6 @@
                 } else {
                     secondCandlesDataset = mappedData;
                     console.log(`📊 Loaded ${secondCandlesDataset.length} second candles`);
-                }
-                
-                // Log sample data for debugging
-                if (secondCandlesDataset.length > 0) {
-                    const sample = secondCandlesDataset[0];
-                    console.log(`📊 Sample candle: O=${sample.open} H=${sample.high} L=${sample.low} C=${sample.price} V=${sample.volume} @ ${sample.timestamp.toISOString()}`);
                 }
                 
                 // Update last timestamp for incremental updates
@@ -2830,12 +2830,18 @@
         // Fetch tick candles (100-tick OHLCV data)
         async function fetchTickCandles(startTime = null) {
             try {
-                let url = `${API_BASE_URL}/tick-candles/?symbol=QLD&limit=3600`;
+                // If startTime is provided, we're doing an incremental update - only fetch recent data
+                let url = `${API_BASE_URL}/tick-candles/?symbol=QLD`;
                 if (startTime) {
-                    url += `&start_time=${startTime.toISOString()}`;
+                    // For incremental updates, only fetch data after the last timestamp
+                    url += `&limit=10&start_time=${startTime.toISOString()}`;
+                    console.log('🔄 Fetching incremental tick candles (last 10):', url);
+                } else {
+                    // Initial load: fetch enough for the longest view
+                    url += `&limit=1000`;
+                    console.log('🔄 Fetching initial tick candles:', url);
                 }
                 
-                console.log('🔄 Fetching tick candles:', url);
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -2884,12 +2890,6 @@
                 } else {
                     tickCandlesDataset = mappedData;
                     console.log(`📊 Loaded ${tickCandlesDataset.length} tick candles`);
-                }
-                
-                // Log sample data for debugging
-                if (tickCandlesDataset.length > 0) {
-                    const sample = tickCandlesDataset[0];
-                    console.log(`📊 Sample candle: O=${sample.open} H=${sample.high} L=${sample.low} C=${sample.price} V=${sample.volume} @ ${sample.timestamp.toISOString()}`);
                 }
                 
                 // Update last timestamp for incremental updates
