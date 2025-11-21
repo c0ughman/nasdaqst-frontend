@@ -2758,11 +2758,10 @@
                 // If startTime is provided, we're doing an incremental update - only fetch recent data
                 let url = `${API_BASE_URL}/second-candles/?symbol=QLD`;
                 if (startTime) {
-                    // For incremental updates, fetch the most recent candles
-                    // Use a 2-minute window to ensure we catch any new data
-                    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
-                    url += `&limit=120&start_time=${twoMinutesAgo.toISOString()}`;
-                    console.log('🔄 Fetching incremental second candles (last 2 min):', url);
+                    // For incremental updates, just fetch the most recent candles
+                    // Don't use start_time filter - just get the latest data
+                    url += `&limit=120`;
+                    console.log('🔄 Fetching incremental second candles (last 120):', url);
                 } else {
                     // Initial load: fetch enough for the longest view (15m = 900 seconds)
                     url += `&limit=1000`;
@@ -2858,11 +2857,10 @@
                 // If startTime is provided, we're doing an incremental update - only fetch recent data
                 let url = `${API_BASE_URL}/tick-candles/?symbol=QLD`;
                 if (startTime) {
-                    // For incremental updates, fetch the most recent candles
-                    // Use a 2-minute window to ensure we catch any new data
-                    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
-                    url += `&limit=120&start_time=${twoMinutesAgo.toISOString()}`;
-                    console.log('🔄 Fetching incremental tick candles (last 2 min):', url);
+                    // For incremental updates, just fetch the most recent candles
+                    // Don't use start_time filter - just get the latest data
+                    url += `&limit=120`;
+                    console.log('🔄 Fetching incremental tick candles (last 120):', url);
                 } else {
                     // Initial load: fetch enough for the longest view
                     url += `&limit=1000`;
@@ -3733,14 +3731,26 @@
 
             // Check if we have enough data
             if (filteredData.length < 3) {
-                console.log('⚠️  Not enough data points:', filteredData.length);
-                return {
-                    labels: [],
-                    path: '',
-                    dataPoints: [],
-                    count: filteredData.length,
-                    error: 'Not enough data - need at least 3 data points'
-                };
+                console.log('⚠️  Not enough data points in window:', filteredData.length);
+                
+                // FALLBACK: If we're in live mode but have no data in the current window,
+                // it means the backend hasn't saved new data recently.
+                // Show the most recent data we have instead of showing nothing.
+                if (usingGranularData && scrollPos >= 100 && activeDataset.length >= 3) {
+                    console.log('📊 Fallback: Showing most recent available data instead');
+                    // Get the last N data points (where N = expected candles for timeframe)
+                    const expectedCandles = Math.min(config.minutes * 60, 300); // Cap at 300 candles
+                    filteredData = activeDataset.slice(-expectedCandles);
+                    console.log(`📊 Using last ${filteredData.length} candles from dataset`);
+                } else {
+                    return {
+                        labels: [],
+                        path: '',
+                        dataPoints: [],
+                        count: filteredData.length,
+                        error: 'Not enough data - need at least 3 data points'
+                    };
+                }
             }
 
             // Sort by timestamp (oldest first for left-to-right chart)
