@@ -3438,13 +3438,16 @@
                             activeDataset = aggregateCandles(activeDataset, 30);
                             console.log(`📊 Aggregated to 30s candles: ${activeDataset.length} points`);
                         } else if (timeframe === '30m' && activeDataset.length > 120) {
-                            activeDataset = aggregateCandles(activeDataset, 15);
-                            console.log(`📊 Aggregated to 15s candles: ${activeDataset.length} points`);
+                            activeDataset = aggregateCandles(activeDataset, 30);
+                            console.log(`📊 Aggregated to 30s candles: ${activeDataset.length} points`);
+                        } else if (timeframe === '15m' && activeDataset.length > 180) {
+                            activeDataset = aggregateCandles(activeDataset, 5);
+                            console.log(`📊 Aggregated to 5s candles: ${activeDataset.length} points`);
+                        } else if (timeframe === '5m' && activeDataset.length > 60) {
+                            activeDataset = aggregateCandles(activeDataset, 5);
+                            console.log(`📊 Aggregated to 5s candles: ${activeDataset.length} points`);
                         }
-                        // For 15m, 5m, and 1m, we want full 1-second resolution
-                        // 15m = 900 candles
-                        // 5m = 300 candles
-                        // 1m = 60 candles
+                        // For 1m, we want full 1-second resolution (60 candles)
                     }
                 } else {
                     // Fallback to regular dataset if granular data not available
