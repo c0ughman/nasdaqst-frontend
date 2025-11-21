@@ -4727,17 +4727,21 @@
             console.log('🔄 Starting granular data auto-refresh (1 second interval)');
             
             granularRefreshInterval = setInterval(async () => {
+                console.log(`⏱️ Auto-refresh tick (market: ${isMarketOpen ? 'OPEN' : 'CLOSED'}, scroll: ${scrollPosition}%)`);
+                
                 // Only refresh if market is open
                 if (!isMarketOpen) {
-                    console.log('Market is closed - skipping granular refresh');
+                    console.log('❌ Market is closed - skipping granular refresh');
                     return;
                 }
                 
                 // Only auto-update if viewing most recent data
                 if (scrollPosition !== 100) {
-                    console.log('User viewing historical data - skipping granular refresh');
+                    console.log('❌ User viewing historical data - skipping granular refresh');
                     return;
                 }
+                
+                console.log('✅ Proceeding with data fetch...');
                 
                 try {
                     // Store dataset length before fetch
