@@ -3626,12 +3626,21 @@
                         ? rawGranularDataset[rawGranularDataset.length - 1].timestamp
                         : activeDataset[activeDataset.length - 1].timestamp;
                     
-                    console.log(`🔍 Using latest timestamp from raw data: ${latestDataTime.toISOString()}`);
+                    console.log(`🔍 Latest data timestamp: ${latestDataTime.toISOString()}`);
                     
                     if (scrollPos >= 100) {
-                        // Strict window ending at latest data point
-                        endTime = latestDataTime;
-                        cutoffTime = new Date(endTime.getTime() - windowSizeMs);
+                        // When viewing live data and market is open, use current time
+                        // This ensures the window slides forward in real-time
+                        if (isMarketOpen) {
+                            endTime = now; // Use current time for live updates
+                            cutoffTime = new Date(endTime.getTime() - windowSizeMs);
+                            console.log(`📍 Live mode: window from ${cutoffTime.toISOString()} to ${endTime.toISOString()}`);
+                        } else {
+                            // Market closed: window ends at latest data
+                            endTime = latestDataTime;
+                            cutoffTime = new Date(endTime.getTime() - windowSizeMs);
+                            console.log(`📍 Replay mode: window from ${cutoffTime.toISOString()} to ${endTime.toISOString()}`);
+                        }
                     } else {
                         // Scrolling back
                         const maxScrollRangeMs = latestDataTime.getTime() - marketOpenTime.getTime() - windowSizeMs;
@@ -4712,21 +4721,29 @@
                 }
                 
                 try {
-                    // console.log('🔄 Auto-refreshing granular data...');
+                    // Store dataset length before fetch
+                    const beforeLength = granularDataType === 'second' 
+                        ? secondCandlesDataset.length 
+                        : tickCandlesDataset.length;
                     
                     // Fetch incremental updates
                     if (granularDataType === 'second') {
-                        // Use current lastGranularTimestamp to only fetch what's new
-                        const newData = await fetchSecondCandles(lastGranularTimestamp);
-                        
-                        // If we got new data, update the chart
-                        if (newData && newData.length > 0) {
-                            // Force chart update with new data
-                            await updateChart(currentTimeframe);
-                        }
+                        await fetchSecondCandles(lastGranularTimestamp);
                     } else {
                         await fetchTickCandles(lastGranularTimestamp);
-                        await updateChart(currentTimeframe);
+                    }
+                    
+                    // Check if dataset actually grew
+                    const afterLength = granularDataType === 'second' 
+                        ? secondCandlesDataset.length 
+                        : tickCandlesDataset.length;
+                    
+                    // ALWAYS update chart, even if no new data
+                    // This ensures the sliding window moves forward with current time
+                    await updateChart(currentTimeframe);
+                    
+                    if (afterLength > beforeLength) {
+                        console.log(`✅ Chart updated with ${afterLength - beforeLength} new candles`);
                     }
                     
                 } catch (error) {
