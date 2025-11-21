@@ -4766,7 +4766,13 @@
                         ? secondCandlesDataset[secondCandlesDataset.length - 1]
                         : tickCandlesDataset[tickCandlesDataset.length - 1];
                     if (latestCandle) {
-                        console.log(`📅 Latest candle in dataset: ${latestCandle.timestamp.toISOString()}`);
+                        const dataAge = (Date.now() - latestCandle.timestamp.getTime()) / 1000;
+                        console.log(`📅 Latest candle in dataset: ${latestCandle.timestamp.toISOString()} (${dataAge.toFixed(0)}s ago)`);
+                        
+                        // Warn if data is stale (more than 10 seconds old)
+                        if (dataAge > 10) {
+                            console.warn(`⚠️ DATA IS STALE! Latest data is ${dataAge.toFixed(0)} seconds old. Backend may not be saving new data.`);
+                        }
                     }
                     
                     // ALWAYS update chart, even if no new data
