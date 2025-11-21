@@ -2755,19 +2755,12 @@
         // Fetch second candles (1-second OHLCV data)
         async function fetchSecondCandles(startTime = null) {
             try {
-                // If startTime is provided, we're doing an incremental update - only fetch recent data
+                // Always fetch ALL available data for the symbol, then client-side filter to most recent
                 let url = `${API_BASE_URL}/second-candles/?symbol=QLD`;
-                if (startTime) {
-                    // For incremental updates, fetch the most recent candles
-                    // Order by timestamp descending to get the newest data first
-                    url += `&limit=120&ordering=-timestamp`;
-                    console.log('🔄 Fetching incremental second candles (last 120, newest first):', url);
-                } else {
-                    // Initial load: fetch enough for the longest view (15m = 900 seconds)
-                    // Order by timestamp descending to get the newest data
-                    url += `&limit=1000&ordering=-timestamp`;
-                    console.log('🔄 Fetching initial second candles (last 1000, newest first):', url);
-                }
+                console.log('🔄 Fetching all second candles:', url);
+                
+                // Note: We removed limit and ordering because the API seems to return old data
+                // Instead, we'll fetch everything and sort/filter on the client side
                 
                 const response = await fetch(url);
                 
@@ -2792,7 +2785,7 @@
                 }
                 
                 // Map to internal format
-                const mappedData = result.data.map(candle => ({
+                let mappedData = result.data.map(candle => ({
                     timestamp: new Date(candle.timestamp),
                     open: candle.open,
                     high: candle.high,
@@ -2804,6 +2797,18 @@
                     news: null,
                     indicators: null
                 }));
+                
+                // ALWAYS sort by timestamp descending (newest first) on client side
+                mappedData.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+                
+                // Keep only the most recent 1000 candles (about 16 minutes)
+                mappedData = mappedData.slice(0, 1000);
+                
+                console.log(`📊 After client-side sort and limit: ${mappedData.length} candles`);
+                if (mappedData.length > 0) {
+                    console.log(`   Newest: ${mappedData[0].timestamp.toISOString()}`);
+                    console.log(`   Oldest: ${mappedData[mappedData.length - 1].timestamp.toISOString()}`);
+                }
                 
                 // If this is an incremental update, merge with existing data
                 if (startTime && secondCandlesDataset.length > 0) {
@@ -2836,8 +2841,9 @@
                         console.log('✓ No new unique candles to append (all timestamps already exist)');
                     }
                 } else {
+                    // Replace entire dataset with fresh data
                     secondCandlesDataset = mappedData;
-                    console.log(`📊 Loaded ${secondCandlesDataset.length} second candles`);
+                    console.log(`📊 Loaded ${secondCandlesDataset.length} second candles (full refresh)`);
                 }
                 
                 // Update last timestamp for incremental updates
