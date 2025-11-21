@@ -3983,10 +3983,12 @@
             // Candles should fill 65% of space, with 35% gap between them
             // Use 96 instead of 100 because candles span from x=2 to x=98
             const spacePerCandle = 96 / displayCandles.length;
-            const candleWidth = Math.min(spacePerCandle * 0.65, 4); // Cap at 4 to prevent overflow on small datasets
+            // Cap at 4 to prevent overflow on small datasets, but allow to be thin on large datasets
+            const candleWidth = Math.max(spacePerCandle * 0.65, 0.5); 
             
-            // Wick should be about 1/8th the width of candle body for clean look
-            const wickWidth = Math.max(0.08, candleWidth * 0.125);
+            // Wick should be about 1/8th the width of candle body for clean look, but visible
+            // Ensure wick is always visible (at least 0.5px width equivalent)
+            const wickWidth = Math.max(0.05, candleWidth * 0.125);
 
             // Draw each Heikin-Ashi candlestick
             displayCandles.forEach(point => {
@@ -4065,7 +4067,8 @@
             // Calculate bar width (same as candles)
             // Use 96 instead of 100 because bars span from x=2 to x=98
             const spacePerBar = 96 / volumePoints.length;
-            const barWidth = Math.min(spacePerBar * 0.65, 4); // Cap at 4 to prevent overflow
+            // Cap at 4 to prevent overflow, but ensure visibility on large datasets
+            const barWidth = Math.max(spacePerBar * 0.65, 0.5); 
 
             // Draw each volume bar
             volumePoints.forEach(point => {
@@ -4074,7 +4077,8 @@
                 
                 // Calculate bar height (volume as % of max)
                 const heightPercent = (volume / maxVolume) * 100;
-                const barHeight = heightPercent;
+                // Minimum height for visibility
+                const barHeight = Math.max(heightPercent, 0.5);
                 const barY = 100 - barHeight; // Start from bottom
 
                 // Determine color: green for bullish (close > open), red for bearish
@@ -4096,7 +4100,8 @@
                 bar.setAttribute('width', barWidth);
                 bar.setAttribute('height', barHeight);
                 bar.setAttribute('fill', barColor);
-                bar.setAttribute('opacity', '0.7');
+                // Increased opacity for better visibility, matching the requested style
+                bar.setAttribute('opacity', '0.9'); 
                 volumeBarsContainer.appendChild(bar);
             });
 
