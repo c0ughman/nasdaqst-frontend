@@ -2810,41 +2810,10 @@
                     console.log(`   Oldest: ${mappedData[mappedData.length - 1].timestamp.toISOString()}`);
                 }
                 
-                // If this is an incremental update, merge with existing data
-                if (startTime && secondCandlesDataset.length > 0) {
-                    // Create a map of existing timestamps for faster lookup
-                    const existingTimestamps = new Set(
-                        secondCandlesDataset.map(d => d.timestamp.getTime())
-                    );
-                    
-                    // Filter out duplicates based on timestamp
-                    const uniqueNewData = mappedData.filter(d => !existingTimestamps.has(d.timestamp.getTime()));
-                    
-                    if (uniqueNewData.length > 0) {
-                        // Merge and sort by timestamp
-                        secondCandlesDataset = [...secondCandlesDataset, ...uniqueNewData]
-                            .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-                        
-                        // Keep only last 15 minutes (900 seconds) to support 15m view
-                        const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-                        secondCandlesDataset = secondCandlesDataset.filter(d => d.timestamp > fifteenMinutesAgo);
-                        
-                        console.log(`📊 Appended ${uniqueNewData.length} new candles, total ${secondCandlesDataset.length}`);
-                        
-                        // Log the new data range
-                        if (secondCandlesDataset.length > 0) {
-                            const firstDs = secondCandlesDataset[0].timestamp;
-                            const lastDs = secondCandlesDataset[secondCandlesDataset.length - 1].timestamp;
-                            console.log(`📊 Dataset now spans: ${firstDs.toISOString()} to ${lastDs.toISOString()}`);
-                        }
-                    } else {
-                        console.log('✓ No new unique candles to append (all timestamps already exist)');
-                    }
-                } else {
-                    // Replace entire dataset with fresh data
-                    secondCandlesDataset = mappedData;
-                    console.log(`📊 Loaded ${secondCandlesDataset.length} second candles (full refresh)`);
-                }
+                // ALWAYS replace the dataset with the freshest data
+                // This ensures the chart updates every second even if no NEW candles exist
+                secondCandlesDataset = mappedData;
+                console.log(`📊 Dataset refreshed: ${secondCandlesDataset.length} candles (newest: ${mappedData[0].timestamp.toISOString()})`);
                 
                 // Update last timestamp for incremental updates
                 if (secondCandlesDataset.length > 0) {
