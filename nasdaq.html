@@ -2791,11 +2791,19 @@
                 
                 // If this is an incremental update, append to existing data
                 if (startTime && secondCandlesDataset.length > 0) {
-                    secondCandlesDataset = [...secondCandlesDataset, ...mappedData];
-                    // Keep only last 1 hour (3600 seconds)
-                    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-                    secondCandlesDataset = secondCandlesDataset.filter(d => d.timestamp > oneHourAgo);
-                    console.log(`📊 Appended ${mappedData.length} candles, kept last ${secondCandlesDataset.length} (sliding 1h window)`);
+                    // Filter out duplicates based on timestamp
+                    const lastTimestamp = secondCandlesDataset[secondCandlesDataset.length - 1].timestamp.getTime();
+                    const uniqueNewData = mappedData.filter(d => d.timestamp.getTime() > lastTimestamp);
+                    
+                    if (uniqueNewData.length > 0) {
+                        secondCandlesDataset = [...secondCandlesDataset, ...uniqueNewData];
+                        // Keep only last 1 hour (3600 seconds)
+                        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                        secondCandlesDataset = secondCandlesDataset.filter(d => d.timestamp > oneHourAgo);
+                        console.log(`📊 Appended ${uniqueNewData.length} new candles, total ${secondCandlesDataset.length}`);
+                    } else {
+                        console.log('✓ No new unique candles to append');
+                    }
                 } else {
                     secondCandlesDataset = mappedData;
                     console.log(`📊 Loaded ${secondCandlesDataset.length} second candles`);
@@ -2860,11 +2868,19 @@
                 
                 // If this is an incremental update, append to existing data
                 if (startTime && tickCandlesDataset.length > 0) {
-                    tickCandlesDataset = [...tickCandlesDataset, ...mappedData];
-                    // Keep only last 1 hour
-                    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-                    tickCandlesDataset = tickCandlesDataset.filter(d => d.timestamp > oneHourAgo);
-                    console.log(`📊 Appended ${mappedData.length} candles, kept last ${tickCandlesDataset.length} (sliding 1h window)`);
+                    // Filter out duplicates based on timestamp
+                    const lastTimestamp = tickCandlesDataset[tickCandlesDataset.length - 1].timestamp.getTime();
+                    const uniqueNewData = mappedData.filter(d => d.timestamp.getTime() > lastTimestamp);
+                    
+                    if (uniqueNewData.length > 0) {
+                        tickCandlesDataset = [...tickCandlesDataset, ...uniqueNewData];
+                        // Keep only last 1 hour
+                        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                        tickCandlesDataset = tickCandlesDataset.filter(d => d.timestamp > oneHourAgo);
+                        console.log(`📊 Appended ${uniqueNewData.length} new tick candles, total ${tickCandlesDataset.length}`);
+                    } else {
+                        console.log('✓ No new unique tick candles to append');
+                    }
                 } else {
                     tickCandlesDataset = mappedData;
                     console.log(`📊 Loaded ${tickCandlesDataset.length} tick candles`);
