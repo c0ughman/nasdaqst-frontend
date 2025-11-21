@@ -4654,17 +4654,23 @@
                 }
                 
                 try {
-                    console.log('🔄 Auto-refreshing granular data...');
+                    // console.log('🔄 Auto-refreshing granular data...');
                     
                     // Fetch incremental updates
                     if (granularDataType === 'second') {
-                        await fetchSecondCandles(lastGranularTimestamp);
+                        // Use current lastGranularTimestamp to only fetch what's new
+                        const newData = await fetchSecondCandles(lastGranularTimestamp);
+                        
+                        // If we got new data, update the chart
+                        if (newData && newData.length > 0) {
+                            // Force chart update with new data
+                            await updateChart(currentTimeframe);
+                        }
                     } else {
                         await fetchTickCandles(lastGranularTimestamp);
+                        await updateChart(currentTimeframe);
                     }
                     
-                    // Update chart
-                    await updateChart(currentTimeframe);
                 } catch (error) {
                     console.error('Error in granular auto-refresh:', error);
                 }
