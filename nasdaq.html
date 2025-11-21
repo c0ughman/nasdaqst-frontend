@@ -3756,8 +3756,15 @@
             // Sort by timestamp (oldest first for left-to-right chart)
             filteredData.sort((a, b) => a.timestamp - b.timestamp);
 
-            console.log('First point:', filteredData[0].timestamp.toISOString(), '=', filteredData[0].sentiment);
-            console.log('Last point:', filteredData[filteredData.length - 1].timestamp.toISOString(), '=', filteredData[filteredData.length - 1].sentiment);
+            const firstPoint = filteredData[0];
+            const lastPoint = filteredData[filteredData.length - 1];
+            console.log(`📊 Displaying ${filteredData.length} candles:`);
+            console.log(`   First: ${firstPoint.timestamp.toISOString()} (price: $${firstPoint.price})`);
+            console.log(`   Last:  ${lastPoint.timestamp.toISOString()} (price: $${lastPoint.price})`);
+            
+            // Calculate time span
+            const timeSpanSeconds = (lastPoint.timestamp - firstPoint.timestamp) / 1000;
+            console.log(`   Span:  ${timeSpanSeconds} seconds (${(timeSpanSeconds / 60).toFixed(1)} minutes)`);
 
             // Detect market gaps (periods longer than 1 hour between data points)
             const gaps = [];
@@ -4748,13 +4755,23 @@
                         ? secondCandlesDataset.length 
                         : tickCandlesDataset.length;
                     
+                    if (afterLength > beforeLength) {
+                        console.log(`✅ Dataset grew by ${afterLength - beforeLength} candles (${beforeLength} → ${afterLength})`);
+                    } else {
+                        console.log(`ℹ️ No new data added (dataset still ${afterLength} candles)`);
+                    }
+                    
+                    // Log the latest timestamp in the dataset
+                    const latestCandle = granularDataType === 'second' 
+                        ? secondCandlesDataset[secondCandlesDataset.length - 1]
+                        : tickCandlesDataset[tickCandlesDataset.length - 1];
+                    if (latestCandle) {
+                        console.log(`📅 Latest candle in dataset: ${latestCandle.timestamp.toISOString()}`);
+                    }
+                    
                     // ALWAYS update chart, even if no new data
                     // This ensures the sliding window moves forward with current time
                     await updateChart(currentTimeframe);
-                    
-                    if (afterLength > beforeLength) {
-                        console.log(`✅ Chart updated with ${afterLength - beforeLength} new candles`);
-                    }
                     
                 } catch (error) {
                     console.error('Error in granular auto-refresh:', error);
