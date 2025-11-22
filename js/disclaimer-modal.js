@@ -57,9 +57,17 @@ function initDisclaimerModal() {
         updateTranslations();
     }
 
+    // Get the Enter button
+    const enterButton = document.getElementById('disclaimer-enter-button');
+    
     // Disable checkbox initially (until audio finishes)
     checkbox.disabled = true;
     checkbox.checked = false;
+    
+    // Disable Enter button initially (until audio finishes)
+    if (enterButton) {
+        enterButton.disabled = true;
+    }
 
     // Create and play audio (path relative to HTML file location)
     // Use document base URL or construct from current location
@@ -105,9 +113,10 @@ function initDisclaimerModal() {
                 isAttemptingPlay = false;
                 console.log('Audio started playing');
                 
-                // Hide play button if it exists
-                const playBtn = document.getElementById('disclaimer-play-btn');
-                if (playBtn) playBtn.style.display = 'none';
+                // Enable Enter button when audio starts
+                if (enterButton) {
+                    enterButton.disabled = false;
+                }
                 
                 // Remove interaction listeners since we're playing
                 removeInteractionListeners();
@@ -119,9 +128,11 @@ function initDisclaimerModal() {
                     // If it's a real error (not block), we might want to enable controls
                     enableControls();
                 } else {
-                    // Autoplay blocked - SHOW PLAY BUTTON
-                    console.log('Autoplay blocked, showing play button');
-                    showPlayButton();
+                    // Autoplay blocked - ENABLE ENTER BUTTON so user can click it
+                    console.log('Autoplay blocked, enabling Enter button');
+                    if (enterButton) {
+                        enterButton.disabled = false;
+                    }
                 }
                 // If blocked, we keep the listeners active
             });
@@ -130,50 +141,12 @@ function initDisclaimerModal() {
         }
     }
     
-    // Helper to create/show play button
-    function showPlayButton() {
-        let playBtn = document.getElementById('disclaimer-play-btn');
-        
-        if (!playBtn) {
-            // Find where to insert it
-            const checkboxContainer = overlay.querySelector('.disclaimer-checkbox-container');
-            if (!checkboxContainer) return;
-            
-            playBtn = document.createElement('button');
-            playBtn.id = 'disclaimer-play-btn';
-            playBtn.innerHTML = '🔊 Play Disclaimer Audio';
-            playBtn.style.cssText = `
-                display: block;
-                width: 100%;
-                padding: 12px;
-                margin-bottom: 16px;
-                background: #ffffff;
-                color: #000;
-                border: none;
-                border-radius: 8px;
-                font-weight: 600;
-                cursor: pointer;
-                font-family: inherit;
-                text-align: center;
-            `;
-            
-            playBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent bubble to overlay
-                startAudio();
-            });
-            
-            playBtn.addEventListener('mouseenter', () => {
-                playBtn.style.background = '#e0e0e0';
-            });
-            
-            playBtn.addEventListener('mouseleave', () => {
-                playBtn.style.background = '#ffffff';
-            });
-            
-            checkboxContainer.parentNode.insertBefore(playBtn, checkboxContainer);
-        }
-        
-        playBtn.style.display = 'block';
+    // Add event listener to Enter button to play audio
+    if (enterButton) {
+        enterButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent bubble to overlay
+            startAudio();
+        });
     }
     
     // Attempt to play immediately
@@ -225,9 +198,12 @@ function initDisclaimerModal() {
         audioStarted = true;
     });
 
-    // Function to enable checkbox
+    // Function to enable checkbox and Enter button
     function enableControls() {
         checkbox.disabled = false;
+        if (enterButton) {
+            enterButton.disabled = false;
+        }
     }
 
     // Handle checkbox change - automatically proceed when checked (after audio finishes)

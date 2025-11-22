@@ -1718,8 +1718,48 @@
             font-size: 28px;
             font-weight: 700;
             color: #fff;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
             text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .disclaimer-modal-title img {
+            width: 32px;
+            height: 32px;
+        }
+
+        .disclaimer-enter-button {
+            width: 100%;
+            padding: 14px 32px;
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            margin-bottom: 24px;
+        }
+
+        .disclaimer-enter-button:hover {
+            background: #e0e0e0;
+            transform: translateY(-1px);
+        }
+
+        .disclaimer-enter-button:disabled {
+            background: #2a2a2a;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .disclaimer-enter-button:disabled:hover {
+            background: #2a2a2a;
         }
 
         .disclaimer-modal-button {
@@ -1770,7 +1810,11 @@
     <div class="disclaimer-modal-overlay" id="disclaimer-modal-overlay">
         <div class="disclaimer-modal">
             <div class="disclaimer-modal-content">
-                <h2 class="disclaimer-modal-title" data-i18n="onboarding.title.disclaimer">Important Disclaimer</h2>
+                <h2 class="disclaimer-modal-title">
+                    <img src="favicon.ico" alt="Sentiment Tracker">
+                    <span>Sentiment Tracker</span>
+                </h2>
+                <button id="disclaimer-enter-button" class="disclaimer-enter-button">Enter</button>
                 <div class="disclaimer-content">
                     <div class="disclaimer-section">
                         <h3 class="disclaimer-heading">
