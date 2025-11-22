@@ -93,8 +93,15 @@ function initDisclaimerModal() {
     const audio = new Audio(audioPath);
     audio.preload = 'auto';
     audio.autoplay = true; // Try setting autoplay attribute
+    audio.volume = 1.0; // Set to maximum volume (0.0 to 1.0)
     audio.style.display = 'none';
     document.body.appendChild(audio);
+    
+    // Note: Volume can also be affected by:
+    // - Browser tab volume (some browsers allow per-tab volume control)
+    // - System volume settings
+    // - Audio file encoding level (the MP3 file itself might be quiet)
+    // - Browser autoplay policies (some browsers reduce volume for autoplay)
     
     let audioStarted = false;
     let isAttemptingPlay = false;
@@ -112,6 +119,7 @@ function initDisclaimerModal() {
                 audioStarted = true;
                 isAttemptingPlay = false;
                 console.log('Audio started playing');
+                console.log('Audio volume level:', audio.volume, '(1.0 = maximum)');
                 
                 // Enable Enter button when audio starts
                 if (enterButton) {
