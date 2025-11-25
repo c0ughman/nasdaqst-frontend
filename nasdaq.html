@@ -3767,15 +3767,29 @@
                             console.log(`📍 Replay mode: window from ${cutoffTime.toISOString()} to ${endTime.toISOString()}`);
                         }
                     } else {
-                        // Scrolling back
-                        const maxScrollRangeMs = latestDataTime.getTime() - marketOpenTime.getTime() - windowSizeMs;
+                        // Scrolling back - use actual data range, not market open time
+                        // Get the oldest available data timestamp
+                        const oldestDataTime = rawGranularDataset && rawGranularDataset.length > 0
+                            ? rawGranularDataset[0].timestamp
+                            : activeDataset[0].timestamp;
+
+                        console.log(`📜 Scrollback mode: data range from ${oldestDataTime.toISOString()} to ${latestDataTime.toISOString()}`);
+
+                        // Calculate scrollable range based on ACTUAL available data
+                        const availableDataRangeMs = latestDataTime.getTime() - oldestDataTime.getTime();
+                        const maxScrollRangeMs = availableDataRangeMs - windowSizeMs;
+
                         if (maxScrollRangeMs > 0) {
+                            // Map scroll position (0-100) to available data range
                             const scrollFraction = scrollPos / 100;
-                            endTime = new Date(marketOpenTime.getTime() + windowSizeMs + (scrollFraction * maxScrollRangeMs));
+                            endTime = new Date(oldestDataTime.getTime() + windowSizeMs + (scrollFraction * maxScrollRangeMs));
                             cutoffTime = new Date(endTime.getTime() - windowSizeMs);
+                            console.log(`📍 Scrollback position ${scrollPos}%: window from ${cutoffTime.toISOString()} to ${endTime.toISOString()}`);
                         } else {
+                            // Not enough data to scroll - show all available data
+                            cutoffTime = oldestDataTime;
                             endTime = latestDataTime;
-                            cutoffTime = new Date(endTime.getTime() - windowSizeMs);
+                            console.log(`📍 Not enough data to scroll, showing all: ${cutoffTime.toISOString()} to ${endTime.toISOString()}`);
                         }
                     }
                 } else {
