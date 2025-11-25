@@ -3745,14 +3745,19 @@
                 
                 // If using granular seconds, ensure we respect proper window calculation for all granular timeframes
                 if (usingGranularData && granularDataType === 'second' && (timeframe === '1m' || timeframe === '5m' || timeframe === '15m' || timeframe === '30m' || timeframe === '1h')) {
-                    // CRITICAL: Use raw dataset timestamp, not aggregated dataset!
-                    // The aggregated dataset may have older timestamps due to aggregation boundaries
-                    const latestDataTime = rawGranularDataset && rawGranularDataset.length > 0
-                        ? rawGranularDataset[rawGranularDataset.length - 1].timestamp
-                        : activeDataset[activeDataset.length - 1].timestamp;
-                    
-                    console.log(`🔍 Latest data timestamp: ${latestDataTime.toISOString()}`);
-                    
+                    // CRITICAL: Use activeDataset (aggregated) timestamps for BOTH calculation AND filtering
+                    // This prevents timestamp mismatch between window calculation and data filtering
+                    const latestDataTime = activeDataset.length > 0
+                        ? activeDataset[activeDataset.length - 1].timestamp
+                        : new Date();
+
+                    const oldestDataTime = activeDataset.length > 0
+                        ? activeDataset[0].timestamp
+                        : new Date();
+
+                    console.log(`🔍 Active dataset range: ${oldestDataTime.toISOString()} to ${latestDataTime.toISOString()}`);
+                    console.log(`🔍 Active dataset size: ${activeDataset.length} candles`);
+
                     if (scrollPos >= 100) {
                         // When viewing live data and market is open, use current time
                         // This ensures the window slides forward in real-time
@@ -3768,11 +3773,6 @@
                         }
                     } else {
                         // Scrolling back - use sliding window approach like standard timeframes
-                        // Get the oldest available data timestamp
-                        const oldestDataTime = rawGranularDataset && rawGranularDataset.length > 0
-                            ? rawGranularDataset[0].timestamp
-                            : activeDataset[0].timestamp;
-
                         console.log(`📜 Scrollback mode: data range from ${oldestDataTime.toISOString()} to ${latestDataTime.toISOString()}`);
 
                         // Calculate the scrollable range (same logic as standard timeframes)
