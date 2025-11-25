@@ -3767,7 +3767,7 @@
                             console.log(`📍 Replay mode: window from ${cutoffTime.toISOString()} to ${endTime.toISOString()}`);
                         }
                     } else {
-                        // Scrolling back - show ALL accumulated data from start up to scroll position
+                        // Scrolling back - use sliding window approach like standard timeframes
                         // Get the oldest available data timestamp
                         const oldestDataTime = rawGranularDataset && rawGranularDataset.length > 0
                             ? rawGranularDataset[0].timestamp
@@ -3775,21 +3775,22 @@
 
                         console.log(`📜 Scrollback mode: data range from ${oldestDataTime.toISOString()} to ${latestDataTime.toISOString()}`);
 
-                        // Always start from the oldest data
-                        cutoffTime = oldestDataTime;
-
-                        // Map scroll position (0-100) to end time
-                        // scrollPos 100 = latestDataTime, scrollPos 0 = oldestDataTime + windowSize
+                        // Calculate the scrollable range (same logic as standard timeframes)
                         const availableDataRangeMs = latestDataTime.getTime() - oldestDataTime.getTime();
-                        const scrollFraction = scrollPos / 100;
+                        const maxScrollRangeMs = availableDataRangeMs - windowSizeMs;
 
-                        // Ensure we always show at least windowSize of data
-                        const minEndTime = oldestDataTime.getTime() + windowSizeMs;
-                        const maxEndTime = latestDataTime.getTime();
-
-                        endTime = new Date(minEndTime + (scrollFraction * (maxEndTime - minEndTime)));
-
-                        console.log(`📍 Scrollback position ${scrollPos}%: showing ALL data from ${cutoffTime.toISOString()} to ${endTime.toISOString()}`);
+                        if (maxScrollRangeMs > 0) {
+                            // Sliding window: both cutoffTime and endTime move based on scroll position
+                            const scrollFraction = scrollPos / 100;
+                            endTime = new Date(oldestDataTime.getTime() + windowSizeMs + (scrollFraction * maxScrollRangeMs));
+                            cutoffTime = new Date(endTime.getTime() - windowSizeMs);
+                            console.log(`📍 Scrollback ${scrollPos}%: window from ${cutoffTime.toISOString()} to ${endTime.toISOString()}`);
+                        } else {
+                            // Not enough data for a full window, show everything we have
+                            cutoffTime = oldestDataTime;
+                            endTime = latestDataTime;
+                            console.log(`📍 Showing all available data: ${cutoffTime.toISOString()} to ${endTime.toISOString()}`);
+                        }
                     }
                 } else {
                     // Standard logic for other timeframes
