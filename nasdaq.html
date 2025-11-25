@@ -3601,30 +3601,41 @@
                 
                 if (granularDataset.length > 0) {
                     console.log(`✅ Using ${granularDataType} candles dataset (${granularDataset.length} points)`);
-                    rawGranularDataset = granularDataset; // Store reference to raw data
-                    activeDataset = [...granularDataset]; // Clone to avoid mutating original
                     usingGranularData = true;
-                    
+
                     // Aggregate for longer timeframes to reduce point count
                     if (granularDataType === 'second') {
                         if (timeframe === '1h') {
                             // 1-hour timeframe: use 30-second candles
-                            activeDataset = aggregateCandles(activeDataset, 30);
+                            rawGranularDataset = granularDataset; // Store reference to raw data
+                            activeDataset = aggregateCandles([...granularDataset], 30);
                             console.log(`📊 Aggregated to 30s candles: ${activeDataset.length} points`);
                         } else if (timeframe === '30m') {
                             // 30-minute timeframe: use 30-second candles
-                            activeDataset = aggregateCandles(activeDataset, 30);
+                            rawGranularDataset = granularDataset; // Store reference to raw data
+                            activeDataset = aggregateCandles([...granularDataset], 30);
                             console.log(`📊 Aggregated to 30s candles: ${activeDataset.length} points`);
                         } else if (timeframe === '15m') {
                             // 15-minute timeframe: use 5-second candles
-                            activeDataset = aggregateCandles(activeDataset, 5);
+                            rawGranularDataset = granularDataset; // Store reference to raw data
+                            activeDataset = aggregateCandles([...granularDataset], 5);
                             console.log(`📊 Aggregated to 5s candles: ${activeDataset.length} points`);
                         } else if (timeframe === '5m') {
                             // 5-minute timeframe: use 5-second candles
-                            activeDataset = aggregateCandles(activeDataset, 5);
+                            rawGranularDataset = granularDataset; // Store reference to raw data
+                            activeDataset = aggregateCandles([...granularDataset], 5);
                             console.log(`📊 Aggregated to 5s candles: ${activeDataset.length} points`);
+                        } else if (timeframe === '1m') {
+                            // For 1m, we want full 1-second resolution (no aggregation)
+                            // Both raw and active should point to the same data
+                            rawGranularDataset = granularDataset;
+                            activeDataset = granularDataset;
+                            console.log(`📊 Using 1s candles (no aggregation): ${activeDataset.length} points`);
                         }
-                        // For 1m, we want full 1-second resolution (no aggregation)
+                    } else {
+                        // For tick data, no aggregation needed
+                        rawGranularDataset = granularDataset;
+                        activeDataset = granularDataset;
                     }
                 } else {
                     // Fallback to regular dataset if granular data not available
