@@ -2890,9 +2890,9 @@
                     price: candle.close, // 'close' from API maps to 'price' internally
                     volume: candle.volume,
                     tick_count: candle.tick_count || 0,
-                    sentiment: 0, // No sentiment data in granular candles
-                    news: null,
-                    indicators: null
+                    sentiment: candle.composite_score ?? 0, // Composite score from API
+                    news: candle.news_component ?? null, // News component from API
+                    indicators: candle.technical_component ?? null // Technical component from API
                 }));
                 
                 // ALWAYS sort by timestamp descending (newest first) on client side
@@ -2974,9 +2974,9 @@
                     tick_count: candle.tick_count || 100,
                     candle_number: candle.candle_number,
                     duration_seconds: candle.duration_seconds,
-                    sentiment: 0, // No sentiment data in granular candles
-                    news: null,
-                    indicators: null
+                    sentiment: candle.composite_score ?? 0, // Composite score from API
+                    news: candle.news_component ?? null, // News component from API
+                    indicators: candle.technical_component ?? null // Technical component from API
                 }));
                 
                 // If this is an incremental update, merge with existing data
