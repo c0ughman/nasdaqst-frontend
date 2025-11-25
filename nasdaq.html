@@ -3627,10 +3627,12 @@
                             console.log(`📊 Aggregated to 5s candles: ${activeDataset.length} points`);
                         } else {
                             // For 1m or any other second-based timeframe: full 1-second resolution (no aggregation)
-                            // Both raw and active should point to the same data
+                            // IMPORTANT: secondCandlesDataset is sorted DESCENDING (newest first)
+                            // But other timeframes use aggregateCandles() which sorts ASCENDING
+                            // We need to reverse it to match the expected order for scrollback
                             rawGranularDataset = granularDataset;
-                            activeDataset = granularDataset;
-                            console.log(`📊 Using 1s candles (no aggregation): ${activeDataset.length} points for ${timeframe}`);
+                            activeDataset = [...granularDataset].reverse(); // Reverse to ascending (oldest first)
+                            console.log(`📊 Using 1s candles (no aggregation, reversed to ascending): ${activeDataset.length} points for ${timeframe}`);
                         }
                     } else {
                         // For tick data, no aggregation needed
