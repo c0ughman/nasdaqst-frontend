@@ -3087,6 +3087,12 @@
             }
             
             console.log(`✓ Created ${aggregated.length} aggregated candles`);
+
+            // Debug: Log sentiment data in first aggregated candle
+            if (aggregated.length > 0) {
+                console.log(`   First aggregated candle sentiment: composite=${aggregated[0].sentiment}, news=${aggregated[0].news}, indicators=${aggregated[0].indicators}`);
+            }
+
             return aggregated;
         }
         
@@ -3097,7 +3103,23 @@
             const low = Math.min(...candles.map(c => c.low));
             const volume = candles.reduce((sum, c) => sum + (c.volume || 0), 0);
             const tick_count = candles.reduce((sum, c) => sum + (c.tick_count || 0), 0);
-            
+
+            // Average the sentiment values across all candles in this bucket
+            const sentimentValues = candles.filter(c => c.sentiment != null && !isNaN(c.sentiment));
+            const avgSentiment = sentimentValues.length > 0
+                ? sentimentValues.reduce((sum, c) => sum + c.sentiment, 0) / sentimentValues.length
+                : 0;
+
+            const newsValues = candles.filter(c => c.news != null && !isNaN(c.news));
+            const avgNews = newsValues.length > 0
+                ? newsValues.reduce((sum, c) => sum + c.news, 0) / newsValues.length
+                : null;
+
+            const indicatorValues = candles.filter(c => c.indicators != null && !isNaN(c.indicators));
+            const avgIndicators = indicatorValues.length > 0
+                ? indicatorValues.reduce((sum, c) => sum + c.indicators, 0) / indicatorValues.length
+                : null;
+
             return {
                 timestamp: new Date(bucketStartTime),
                 open,
@@ -3106,9 +3128,9 @@
                 price: close,
                 volume,
                 tick_count,
-                sentiment: 0,
-                news: null,
-                indicators: null
+                sentiment: avgSentiment,
+                news: avgNews,
+                indicators: avgIndicators
             };
         }
         
