@@ -2866,23 +2866,33 @@
                 }
                 
                 const result = await response.json();
-                console.log(`✅ Received ${result.data.length} second candles from API`);
-                
-                if (result.data.length === 0) {
+
+                // Handle both API response structures: result.data or result.data_points
+                const dataArray = result.data_points || result.data || [];
+                console.log(`✅ Received ${dataArray.length} second candles from API`);
+                console.log('🔍 Full API Response Keys:', Object.keys(result));
+
+                // Debug: Log the API response structure
+                if (dataArray.length > 0) {
+                    console.log('🔍 API Response Structure Sample:', dataArray[0]);
+                    console.log('🔍 Available fields:', Object.keys(dataArray[0]));
+                }
+
+                if (dataArray.length === 0) {
                     console.warn('⚠️ No second candles data available from API');
                     return [];
                 }
-                
+
                 // Log the timestamp range of received data
-                if (result.data.length > 0) {
-                    const firstTs = new Date(result.data[0].timestamp);
-                    const lastTs = new Date(result.data[result.data.length - 1].timestamp);
+                if (dataArray.length > 0) {
+                    const firstTs = new Date(dataArray[0].timestamp);
+                    const lastTs = new Date(dataArray[dataArray.length - 1].timestamp);
                     console.log(`📅 API data range: ${firstTs.toISOString()} to ${lastTs.toISOString()}`);
                     console.log(`⏰ Current time: ${new Date().toISOString()}`);
                 }
-                
+
                 // Map to internal format
-                let mappedData = result.data.map(candle => ({
+                let mappedData = dataArray.map(candle => ({
                     timestamp: new Date(candle.timestamp),
                     open: candle.open,
                     high: candle.high,
@@ -2897,14 +2907,20 @@
                 
                 // ALWAYS sort by timestamp descending (newest first) on client side
                 mappedData.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-                
+
                 // Keep only the most recent 1000 candles (about 16 minutes)
                 mappedData = mappedData.slice(0, 1000);
-                
+
                 console.log(`📊 After client-side sort and limit: ${mappedData.length} candles`);
                 if (mappedData.length > 0) {
                     console.log(`   Newest: ${mappedData[0].timestamp.toISOString()}`);
                     console.log(`   Oldest: ${mappedData[mappedData.length - 1].timestamp.toISOString()}`);
+                    console.log(`   📊 SENTIMENT DATA CHECK:`, {
+                        sentiment: mappedData[0].sentiment,
+                        news: mappedData[0].news,
+                        indicators: mappedData[0].indicators,
+                        raw_api_data: result.data[0]
+                    });
                 }
                 
                 // ALWAYS replace the dataset with the freshest data
