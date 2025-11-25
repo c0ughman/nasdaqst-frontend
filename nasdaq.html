@@ -3720,8 +3720,8 @@
                 // scrollPos = 0 means endTime = marketOpenTime + window size
                 const windowSizeMs = config.minutes * 60 * 1000;
                 
-                // If using granular seconds, ensure we respect strict 1s candles for 1m, 5m, 15m
-                if (usingGranularData && granularDataType === 'second' && (timeframe === '1m' || timeframe === '5m' || timeframe === '15m')) {
+                // If using granular seconds, ensure we respect proper window calculation for all granular timeframes
+                if (usingGranularData && granularDataType === 'second' && (timeframe === '1m' || timeframe === '5m' || timeframe === '15m' || timeframe === '30m' || timeframe === '1h')) {
                     // CRITICAL: Use raw dataset timestamp, not aggregated dataset!
                     // The aggregated dataset may have older timestamps due to aggregation boundaries
                     const latestDataTime = rawGranularDataset && rawGranularDataset.length > 0
