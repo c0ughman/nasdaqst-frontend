@@ -2908,11 +2908,45 @@
                 // ALWAYS sort by timestamp descending (newest first) on client side
                 mappedData.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
-                // Keep only the most recent 4000 candles (about 66 minutes of 1-second data)
-                // This ensures we have enough data for 1-hour timeframe with 30s aggregation
-                mappedData = mappedData.slice(0, 4000);
+                // If market is closed, filter to show the last hour of trading (3pm-4pm ET)
+                if (!isMarketOpen && mappedData.length > 0) {
+                    // Get today's date in ET timezone
+                    const now = new Date();
+                    const etFormatter = new Intl.DateTimeFormat('en-US', {
+                        timeZone: 'America/New_York',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    });
+                    const etParts = etFormatter.formatToParts(now);
+                    const etYear = parseInt(etParts.find(p => p.type === 'year').value);
+                    const etMonth = parseInt(etParts.find(p => p.type === 'month').value) - 1;
+                    const etDay = parseInt(etParts.find(p => p.type === 'day').value);
 
-                console.log(`📊 After client-side sort and limit: ${mappedData.length} candles`);
+                    // Helper to convert ET to UTC
+                    const etToUTC = (year, month, day, hour, minute) => {
+                        const isoStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+                        let testUTC = new Date(isoStr + '-05:00');
+                        return testUTC;
+                    };
+
+                    // Market close at 4pm ET, last hour is 3pm-4pm ET
+                    const marketCloseTime = etToUTC(etYear, etMonth, etDay, 16, 0);
+                    const lastHourStartTime = etToUTC(etYear, etMonth, etDay, 15, 0);
+
+                    console.log(`🕒 Market closed - filtering for last trading hour: ${lastHourStartTime.toISOString()} to ${marketCloseTime.toISOString()}`);
+
+                    // Filter data to show only the last hour of trading
+                    mappedData = mappedData.filter(candle => {
+                        return candle.timestamp >= lastHourStartTime && candle.timestamp <= marketCloseTime;
+                    });
+
+                    console.log(`📊 Filtered to last trading hour: ${mappedData.length} candles`);
+                } else {
+                    // Market is open - keep only the most recent 4000 candles (about 66 minutes of 1-second data)
+                    mappedData = mappedData.slice(0, 4000);
+                    console.log(`📊 After client-side sort and limit: ${mappedData.length} candles`);
+                }
                 if (mappedData.length > 0) {
                     console.log(`   Newest: ${mappedData[0].timestamp.toISOString()}`);
                     console.log(`   Oldest: ${mappedData[mappedData.length - 1].timestamp.toISOString()}`);
