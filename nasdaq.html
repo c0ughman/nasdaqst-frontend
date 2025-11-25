@@ -1681,7 +1681,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(0, 0, 0, 0.50);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             z-index: 99999;
@@ -1731,24 +1731,45 @@
             height: 32px;
         }
 
+        /* Level 1: Enter Button Screen */
+        .disclaimer-modal-level-1 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            padding: 48px;
+        }
+
+        .disclaimer-modal-level-1 .disclaimer-modal-content {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 48px;
+        }
+
         .disclaimer-enter-button {
             width: 100%;
-            padding: 14px 32px;
+            min-height: 200px;
+            padding: 48px;
             background: #ffffff;
             color: #000000;
             border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 24px;
+            font-size: 48px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             font-family: inherit;
-            margin-bottom: 24px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            box-shadow: 0 8px 32px rgba(255, 255, 255, 0.2);
         }
 
         .disclaimer-enter-button:hover {
             background: #e0e0e0;
-            transform: translateY(-1px);
+            transform: scale(1.05);
+            box-shadow: 0 12px 48px rgba(255, 255, 255, 0.3);
         }
 
         .disclaimer-enter-button:disabled {
@@ -1756,10 +1777,17 @@
             color: #666;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .disclaimer-enter-button:disabled:hover {
             background: #2a2a2a;
+            transform: none;
+        }
+
+        /* Level 2: Disclaimer Content */
+        .disclaimer-modal-level-2 {
+            display: none;
         }
 
         .disclaimer-modal-button {
@@ -1800,6 +1828,22 @@
             .disclaimer-modal-title {
                 font-size: 24px;
             }
+
+            .disclaimer-modal-level-1 {
+                min-height: 300px;
+                padding: 32px;
+            }
+
+            .disclaimer-modal-level-1 .disclaimer-modal-content {
+                gap: 32px;
+            }
+
+            .disclaimer-enter-button {
+                min-height: 150px;
+                padding: 32px;
+                font-size: 36px;
+                letter-spacing: 3px;
+            }
         }
     </style>
     <!-- Disclaimer Modal Script -->
@@ -1809,27 +1853,36 @@
     <!-- Legal Disclaimer Modal - Shows on every page load -->
     <div class="disclaimer-modal-overlay" id="disclaimer-modal-overlay">
         <div class="disclaimer-modal">
-            <div class="disclaimer-modal-content">
-                <h2 class="disclaimer-modal-title">
-                    <img src="favicon.ico" alt="Sentiment Tracker">
-                    <span>Sentiment Tracker</span>
-                </h2>
-                <button id="disclaimer-enter-button" class="disclaimer-enter-button">Enter</button>
-                <div class="disclaimer-content">
-                    <div class="disclaimer-section">
-                        <h3 class="disclaimer-heading">
-                            <span>⚠️</span>
-                            <span data-i18n="onboarding.disclaimer.heading">Risk Warning</span>
-                        </h3>
-                        <div class="disclaimer-text">
-                            <p data-i18n="onboarding.disclaimer.text">Trading Futures, Forex, CFDs and Stocks involves a risk of loss. Please consider carefully if such trading is appropriate for you. Past performance is not indicative of future results. Any and all signals or educational advice provided by PhoenixBinary and/or Phoenix Algo, LLC and/or any indicators provided by aforementioned are for educational purposes only and do not constitute investment recommendations or advice.</p>
+            <!-- Level 1: Title and Enter Button -->
+            <div class="disclaimer-modal-level-1" id="disclaimer-level-1">
+                <div class="disclaimer-modal-content">
+                    <h2 class="disclaimer-modal-title">
+                        <img src="favicon.ico" alt="Sentiment Tracker">
+                        <span>Sentiment Tracker</span>
+                    </h2>
+                    <button id="disclaimer-enter-button" class="disclaimer-enter-button">ENTER</button>
+                </div>
+            </div>
+
+            <!-- Level 2: Disclaimer Content (hidden initially) -->
+            <div class="disclaimer-modal-level-2" id="disclaimer-level-2" style="display: none;">
+                <div class="disclaimer-modal-content">
+                    <div class="disclaimer-content">
+                        <div class="disclaimer-section">
+                            <h3 class="disclaimer-heading">
+                                <span>⚠️</span>
+                                <span data-i18n="onboarding.disclaimer.heading">Risk Warning</span>
+                            </h3>
+                            <div class="disclaimer-text">
+                                <p data-i18n="onboarding.disclaimer.text">Trading Futures, Forex, CFDs and Stocks involves a risk of loss. Please consider carefully if such trading is appropriate for you. Past performance is not indicative of future results. Any and all signals or educational advice provided by PhoenixBinary and/or Phoenix Algo, LLC and/or any indicators provided by aforementioned are for educational purposes only and do not constitute investment recommendations or advice.</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="disclaimer-checkbox-container">
-                        <label class="disclaimer-checkbox-label">
-                            <input type="checkbox" id="disclaimer-modal-checkbox" class="disclaimer-checkbox">
-                            <span data-i18n="onboarding.disclaimer.checkbox">I understand and acknowledge the risks associated with trading</span>
-                        </label>
+                        <div class="disclaimer-checkbox-container">
+                            <label class="disclaimer-checkbox-label">
+                                <input type="checkbox" id="disclaimer-modal-checkbox" class="disclaimer-checkbox">
+                                <span data-i18n="onboarding.disclaimer.checkbox">I understand and acknowledge the risks associated with trading</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3419,35 +3472,45 @@
                 labelCount: 5,
                 label: '1min',
                 dataset: 'sentimentDataset',
-                supportsGranular: true  // Can use granular data if toggle is enabled
+                supportsGranular: true,  // Can use granular data if toggle is enabled
+                candleSize: 1,  // 1-second candles
+                updateInterval: 1000  // Update every 1 second (1000ms)
             },
             '5m': {
                 minutes: 5,   // Show last 5 minutes of data
                 labelCount: 5,
                 label: '5min',
                 dataset: 'sentimentDataset',
-                supportsGranular: true
+                supportsGranular: true,
+                candleSize: 5,  // 5-second candles
+                updateInterval: 5000  // Update every 5 seconds (5000ms)
             },
             '15m': {
                 minutes: 15,  // Show last 15 minutes
                 labelCount: 5,
                 label: '15min',
                 dataset: 'sentimentDataset',
-                supportsGranular: true
+                supportsGranular: true,
+                candleSize: 5,  // 5-second candles
+                updateInterval: 5000  // Update every 5 seconds (5000ms)
             },
             '30m': {
                 minutes: 30,  // Show last 30 minutes
                 labelCount: 6,
                 label: '30min',
                 dataset: 'sentimentDataset',
-                supportsGranular: true
+                supportsGranular: true,
+                candleSize: 30,  // 30-second candles
+                updateInterval: 30000  // Update every 30 seconds (30000ms)
             },
             '1h': {
                 minutes: 60,  // Show last 1 hour
                 labelCount: 5,
                 label: '1hr',
                 dataset: 'sentimentDataset',
-                supportsGranular: true
+                supportsGranular: true,
+                candleSize: 30,  // 30-second candles
+                updateInterval: 30000  // Update every 30 seconds (30000ms)
             },
             '2h': {
                 minutes: 120, // Show last 2 hours
@@ -3505,20 +3568,24 @@
                     
                     // Aggregate for longer timeframes to reduce point count
                     if (granularDataType === 'second') {
-                        if (timeframe === '1h' && activeDataset.length > 120) {
+                        if (timeframe === '1h') {
+                            // 1-hour timeframe: use 30-second candles
                             activeDataset = aggregateCandles(activeDataset, 30);
                             console.log(`📊 Aggregated to 30s candles: ${activeDataset.length} points`);
-                        } else if (timeframe === '30m' && activeDataset.length > 120) {
+                        } else if (timeframe === '30m') {
+                            // 30-minute timeframe: use 30-second candles
                             activeDataset = aggregateCandles(activeDataset, 30);
                             console.log(`📊 Aggregated to 30s candles: ${activeDataset.length} points`);
-                        } else if (timeframe === '15m' && activeDataset.length > 180) {
+                        } else if (timeframe === '15m') {
+                            // 15-minute timeframe: use 5-second candles
                             activeDataset = aggregateCandles(activeDataset, 5);
                             console.log(`📊 Aggregated to 5s candles: ${activeDataset.length} points`);
-                        } else if (timeframe === '5m' && activeDataset.length > 60) {
+                        } else if (timeframe === '5m') {
+                            // 5-minute timeframe: use 5-second candles
                             activeDataset = aggregateCandles(activeDataset, 5);
                             console.log(`📊 Aggregated to 5s candles: ${activeDataset.length} points`);
                         }
-                        // For 1m, we want full 1-second resolution (60 candles)
+                        // For 1m, we want full 1-second resolution (no aggregation)
                     }
                 } else {
                     // Fallback to regular dataset if granular data not available
@@ -4763,77 +4830,81 @@
             }
         }
 
-        // ===== GRANULAR DATA AUTO-REFRESH (1 second) =====
-        
+        // ===== GRANULAR DATA AUTO-REFRESH (dynamic interval based on timeframe) =====
+
         function startGranularRefresh() {
             // Stop any existing interval
             stopGranularRefresh();
-            
-            console.log('🔄 Starting granular data auto-refresh (1 second interval)');
-            
+
+            // Get the update interval for the current timeframe
+            const config = timeframeConfig[currentTimeframe];
+            const updateInterval = config?.updateInterval || 1000; // Default to 1 second if not specified
+
+            console.log(`🔄 Starting granular data auto-refresh (${updateInterval}ms interval for ${currentTimeframe} timeframe)`);
+
             granularRefreshInterval = setInterval(async () => {
                 console.log(`⏱️ Auto-refresh tick (market: ${isMarketOpen ? 'OPEN' : 'CLOSED'}, scroll: ${scrollPosition}%)`);
-                
+
                 // Only refresh if market is open
                 if (!isMarketOpen) {
                     console.log('❌ Market is closed - skipping granular refresh');
                     return;
                 }
-                
+
                 // Only auto-update if viewing most recent data
                 if (scrollPosition !== 100) {
                     console.log('❌ User viewing historical data - skipping granular refresh');
                     return;
                 }
-                
+
                 console.log('✅ Proceeding with data fetch...');
-                
+
                 try {
                     // Store dataset length before fetch
-                    const beforeLength = granularDataType === 'second' 
-                        ? secondCandlesDataset.length 
+                    const beforeLength = granularDataType === 'second'
+                        ? secondCandlesDataset.length
                         : tickCandlesDataset.length;
-                    
+
                     // Fetch incremental updates
                     if (granularDataType === 'second') {
                         await fetchSecondCandles(lastGranularTimestamp);
                     } else {
                         await fetchTickCandles(lastGranularTimestamp);
                     }
-                    
+
                     // Check if dataset actually grew
-                    const afterLength = granularDataType === 'second' 
-                        ? secondCandlesDataset.length 
+                    const afterLength = granularDataType === 'second'
+                        ? secondCandlesDataset.length
                         : tickCandlesDataset.length;
-                    
+
                     if (afterLength > beforeLength) {
                         console.log(`✅ Dataset grew by ${afterLength - beforeLength} candles (${beforeLength} → ${afterLength})`);
                     } else {
                         console.log(`ℹ️ No new data added (dataset still ${afterLength} candles)`);
                     }
-                    
+
                     // Log the latest timestamp in the dataset
-                    const latestCandle = granularDataType === 'second' 
+                    const latestCandle = granularDataType === 'second'
                         ? secondCandlesDataset[secondCandlesDataset.length - 1]
                         : tickCandlesDataset[tickCandlesDataset.length - 1];
                     if (latestCandle) {
                         const dataAge = (Date.now() - latestCandle.timestamp.getTime()) / 1000;
                         console.log(`📅 Latest candle in dataset: ${latestCandle.timestamp.toISOString()} (${dataAge.toFixed(0)}s ago)`);
-                        
+
                         // Warn if data is stale (more than 10 seconds old)
                         if (dataAge > 10) {
                             console.warn(`⚠️ DATA IS STALE! Latest data is ${dataAge.toFixed(0)} seconds old. Backend may not be saving new data.`);
                         }
                     }
-                    
+
                     // ALWAYS update chart, even if no new data
                     // This ensures the sliding window moves forward with current time
                     await updateChart(currentTimeframe);
-                    
+
                 } catch (error) {
                     console.error('Error in granular auto-refresh:', error);
                 }
-            }, 1000); // 1 second
+            }, updateInterval); // Use dynamic interval based on timeframe
         }
         
         function stopGranularRefresh() {

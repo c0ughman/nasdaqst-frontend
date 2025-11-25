@@ -57,16 +57,18 @@ function initDisclaimerModal() {
         updateTranslations();
     }
 
-    // Get the Enter button
+    // Get the Enter button and modal levels
     const enterButton = document.getElementById('disclaimer-enter-button');
-    
+    const level1 = document.getElementById('disclaimer-level-1');
+    const level2 = document.getElementById('disclaimer-level-2');
+
     // Disable checkbox initially (until audio finishes)
     checkbox.disabled = true;
     checkbox.checked = false;
-    
-    // Disable Enter button initially (until audio finishes)
+
+    // Enable Enter button immediately on level 1 (no need to wait for audio)
     if (enterButton) {
-        enterButton.disabled = true;
+        enterButton.disabled = false;
     }
 
     // Create and play audio (path relative to HTML file location)
@@ -125,9 +127,6 @@ function initDisclaimerModal() {
                 if (enterButton) {
                     enterButton.disabled = false;
                 }
-                
-                // Remove interaction listeners since we're playing
-                removeInteractionListeners();
             }).catch(error => {
                 isAttemptingPlay = false;
                 // Only log real errors, not autoplay blocks (to reduce noise)
@@ -136,59 +135,31 @@ function initDisclaimerModal() {
                     // If it's a real error (not block), we might want to enable controls
                     enableControls();
                 } else {
-                    // Autoplay blocked - ENABLE ENTER BUTTON so user can click it
-                    console.log('Autoplay blocked, enabling Enter button');
-                    if (enterButton) {
-                        enterButton.disabled = false;
-                    }
+                    // Autoplay blocked - button is already enabled
+                    console.log('Autoplay blocked, user can still continue');
                 }
-                // If blocked, we keep the listeners active
             });
         } else {
             isAttemptingPlay = false;
         }
     }
     
-    // Add event listener to Enter button to play audio
+    // Add event listener to Enter button to transition to level 2 and play audio
     if (enterButton) {
         enterButton.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevent bubble to overlay
+
+            // Hide level 1 and show level 2
+            if (level1) level1.style.display = 'none';
+            if (level2) level2.style.display = 'block';
+
+            // Start audio when entering level 2
             startAudio();
         });
     }
-    
-    // Attempt to play immediately
-    startAudio();
-    
-    // Also try on various load events just in case
-    audio.addEventListener('canplay', startAudio);
-    audio.addEventListener('loadeddata', startAudio);
-    audio.addEventListener('canplaythrough', startAudio);
-    
-    // Interaction listeners
-    const handleInteraction = (e) => {
-        if (!audioStarted && overlay.classList.contains('show')) {
-            // console.log('User interaction detected (' + e.type + '), starting audio');
-            startAudio();
-        }
-    };
-    
-    function addInteractionListeners() {
-        // Listen for ANY interaction that might allow audio
-        document.addEventListener('click', handleInteraction, { capture: true, once: false });
-        document.addEventListener('touchstart', handleInteraction, { capture: true, once: false });
-        document.addEventListener('mousedown', handleInteraction, { capture: true, once: false });
-        document.addEventListener('keydown', handleInteraction, { capture: true, once: false });
-    }
-    
-    function removeInteractionListeners() {
-        document.removeEventListener('click', handleInteraction, true);
-        document.removeEventListener('touchstart', handleInteraction, true);
-        document.removeEventListener('mousedown', handleInteraction, true);
-        document.removeEventListener('keydown', handleInteraction, true);
-    }
-    
-    addInteractionListeners();
+
+    // Don't attempt to play audio immediately - wait for Enter button click
+    // Audio will start when user clicks the Enter button to go to level 2
 
     audio.addEventListener('ended', () => {
         // Audio finished playing, enable controls
