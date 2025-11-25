@@ -3625,12 +3625,12 @@
                             rawGranularDataset = granularDataset; // Store reference to raw data
                             activeDataset = aggregateCandles([...granularDataset], 5);
                             console.log(`📊 Aggregated to 5s candles: ${activeDataset.length} points`);
-                        } else if (timeframe === '1m') {
-                            // For 1m, we want full 1-second resolution (no aggregation)
+                        } else {
+                            // For 1m or any other second-based timeframe: full 1-second resolution (no aggregation)
                             // Both raw and active should point to the same data
                             rawGranularDataset = granularDataset;
                             activeDataset = granularDataset;
-                            console.log(`📊 Using 1s candles (no aggregation): ${activeDataset.length} points`);
+                            console.log(`📊 Using 1s candles (no aggregation): ${activeDataset.length} points for ${timeframe}`);
                         }
                     } else {
                         // For tick data, no aggregation needed
