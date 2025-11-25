@@ -2908,8 +2908,9 @@
                 // ALWAYS sort by timestamp descending (newest first) on client side
                 mappedData.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
-                // Keep only the most recent 1000 candles (about 16 minutes)
-                mappedData = mappedData.slice(0, 1000);
+                // Keep only the most recent 4000 candles (about 66 minutes of 1-second data)
+                // This ensures we have enough data for 1-hour timeframe with 30s aggregation
+                mappedData = mappedData.slice(0, 4000);
 
                 console.log(`📊 After client-side sort and limit: ${mappedData.length} candles`);
                 if (mappedData.length > 0) {
@@ -3863,8 +3864,11 @@
                     
                     // If we don't have enough data to fill the window, take the most recent data we have
                     if (filteredData.length < 3) {
-                        const expectedCandles = Math.min(config.minutes * 60, 300);
-                        filteredData = activeDataset.slice(-expectedCandles);
+                        // Calculate expected candles based on timeframe duration and candle size
+                        // For aggregated data, we need fewer candles (e.g., 30s candles for 1h = 120 candles)
+                        const candleSizeSeconds = config.candleSize || 1; // Default to 1-second if not specified
+                        const expectedCandles = Math.min((config.minutes * 60) / candleSizeSeconds, 300);
+                        filteredData = activeDataset.slice(-Math.ceil(expectedCandles));
                     }
                     
                     // The gap between latestTimestamp and endTime will create a visible gap on the right
