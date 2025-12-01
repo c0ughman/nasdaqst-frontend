@@ -4670,16 +4670,17 @@
                 `;
             }
 
-            // Create value to Y mapping function
+            // Create value to Y mapping function with padding to keep lines visible
             // Midpoint of range is at Y=50 (visual center)
             const valueToY = (value) => {
                 const range = maxValue - minValue;
                 if (range === 0) return 50;
 
                 const midpoint = (minValue + maxValue) / 2;
-                // Map so that midpoint is at Y=50
-                const y = 50 - ((value - midpoint) / range) * 100;
-                return Math.max(0, Math.min(100, y));
+                // Add 5% padding on top and bottom so extreme values are visible
+                // Map to Y range [5, 95] instead of [0, 100]
+                const y = 50 - ((value - midpoint) / range) * 90;
+                return Math.max(5, Math.min(95, y));
             };
 
             // Draw center line at value = 0 (may be off-screen if range doesn't include 0)
@@ -4700,9 +4701,17 @@
             const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
 
             // Calculate signal values if in signal mode
-            let signalValues = [];
+            let signalValuesMap = new Map();
             if (signalModeActive) {
-                signalValues = calculateSignalOscillator(fullTimeframeData || dataPoints);
+                const fullData = fullTimeframeData || dataPoints;
+                const signalValues = calculateSignalOscillator(fullData);
+
+                // Create a map of timestamp -> signal value for accurate matching
+                fullData.forEach((point, i) => {
+                    if (point.timestamp) {
+                        signalValuesMap.set(point.timestamp.getTime(), signalValues[i] || 0);
+                    }
+                });
             }
 
             // Define which drivers to plot and their colors
@@ -4722,10 +4731,10 @@
                 // For sentiment line in signal mode, use calculated signal values
                 let points;
                 if (driver.key === 'sentiment' && signalModeActive) {
-                    // Map signal values to data points
-                    points = dataPoints.map((p, i) => ({
+                    // Map signal values to visible data points using timestamp matching
+                    points = dataPoints.map(p => ({
                         ...p,
-                        signalValue: signalValues[i] || 0
+                        signalValue: p.timestamp ? signalValuesMap.get(p.timestamp.getTime()) || 0 : 0
                     })).filter(p => p.signalValue != null);
                 } else {
                     // Filter points that have this driver data
