@@ -4178,14 +4178,22 @@
 
                 // Attach signal values from global cache if signal mode is active
                 const signalModeActive = document.getElementById('scale-signal')?.checked || false;
+                console.log('🔍 Signal mode active:', signalModeActive);
                 if (signalModeActive) {
+                    console.log('📊 Global cache size:', globalSignalCache.size);
                     // Use pre-calculated global signal cache for consistency across ALL timeframes
                     // This ensures the same signals appear regardless of zoom level
+                    let attachedCount = 0;
                     data.dataPoints.forEach(p => {
                         if (p.timestamp) {
                             p.signalValue = globalSignalCache.get(p.timestamp.getTime()) || 0;
+                            attachedCount++;
                         }
                     });
+                    console.log(`✅ Attached signal values to ${attachedCount} data points`);
+                    if (attachedCount > 0) {
+                        console.log('Sample point with signal:', data.dataPoints[0]);
+                    }
                 }
 
                 // Draw sentiment line in oscillator chart
@@ -4789,7 +4797,11 @@
                 if (driver.key === 'sentiment' && signalModeActive) {
                     // Signal values already attached to data points from global cache
                     // This ensures consistency across all timeframes
-                    points = dataPoints.filter(p => p.signalValue != null);
+                    points = dataPoints.filter(p => p.signalValue !== undefined);
+                    console.log(`📊 Signal mode: Found ${points.length} points with signal values`);
+                    if (points.length > 0) {
+                        console.log('Sample signal point:', points[0]);
+                    }
                 } else {
                     // Filter points that have this driver data
                     points = dataPoints.filter(p => p[driver.key] != null && !isNaN(p[driver.key]));
@@ -4797,6 +4809,11 @@
 
                 if (points.length === 0) {
                     console.warn(`❌ No ${driver.label} data available`);
+                    if (driver.key === 'sentiment' && signalModeActive) {
+                        console.warn('Signal mode is active but no signal values found');
+                        console.warn('Global cache size:', globalSignalCache.size);
+                        console.warn('Sample dataPoint:', dataPoints[0]);
+                    }
                     return;
                 }
 
