@@ -4600,11 +4600,12 @@
 
         // Calculate signal-based oscillator values from historical data
         // Returns array with +100 (News UP active), -100 (Technical DOWN active), or 0 (no signal)
+        // Requires 2 opposite signals to flip from +100 to -100 or vice versa
         function calculateSignalOscillator(dataPoints) {
             if (!dataPoints || dataPoints.length === 0) return [];
 
             const signalValues = [];
-            let activeSignal = null; // { type: 'news_up' | 'technical_down', value: 100 | -100, expiresAt: timestamp }
+            let activeSignal = null; // { type: 'news_up' | 'technical_down', value: 100 | -100, expiresAt: timestamp, oppositeCount: number }
 
             for (let i = 0; i < dataPoints.length; i++) {
                 const current = dataPoints[i];
@@ -4615,17 +4616,14 @@
                     activeSignal = null; // Signal expired
                 }
 
-                let newSignal = null;
+                let newsUpDetected = false;
+                let technicalDownDetected = false;
 
                 // Detect News UP signal (news score increases by ≥5)
                 if (previous && current.news != null && previous.news != null) {
                     const newsChange = current.news - previous.news;
                     if (newsChange >= 5) {
-                        newSignal = {
-                            type: 'news_up',
-                            value: 100,
-                            expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000) // 15 minutes
-                        };
+                        newsUpDetected = true;
                     }
                 }
 
@@ -4633,24 +4631,72 @@
                 if (previous && current.indicators != null && previous.indicators != null) {
                     const technicalChange = current.indicators - previous.indicators;
                     if (technicalChange <= -10) {
-                        const technicalSignal = {
-                            type: 'technical_down',
-                            value: -100,
-                            expiresAt: new Date(current.timestamp.getTime() + 5 * 60 * 1000) // 5 minutes
-                        };
-
-                        // If both signals trigger at same timestamp, News UP wins
-                        if (newSignal && newSignal.type === 'news_up') {
-                            // Keep news signal, ignore technical
-                        } else {
-                            newSignal = technicalSignal;
-                        }
+                        technicalDownDetected = true;
                     }
                 }
 
-                // Most recent signal wins (overrides previous)
-                if (newSignal) {
-                    activeSignal = newSignal;
+                // Handle signal logic with 2-signal requirement to flip
+                if (activeSignal) {
+                    // We have an active signal - check if opposite signal can flip it
+                    if (activeSignal.type === 'news_up' && technicalDownDetected) {
+                        // At +100, need 2 technical down signals to flip to -100
+                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
+                        if (activeSignal.oppositeCount >= 2) {
+                            // Flip to technical down
+                            activeSignal = {
+                                type: 'technical_down',
+                                value: -100,
+                                expiresAt: new Date(current.timestamp.getTime() + 5 * 60 * 1000), // 5 minutes
+                                oppositeCount: 0
+                            };
+                        }
+                    } else if (activeSignal.type === 'technical_down' && newsUpDetected) {
+                        // At -100, need 2 news up signals to flip to +100
+                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
+                        if (activeSignal.oppositeCount >= 2) {
+                            // Flip to news up
+                            activeSignal = {
+                                type: 'news_up',
+                                value: 100,
+                                expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
+                                oppositeCount: 0
+                            };
+                        }
+                    } else if ((activeSignal.type === 'news_up' && newsUpDetected) || 
+                               (activeSignal.type === 'technical_down' && technicalDownDetected)) {
+                        // Same type signal - reset opposite count and extend expiration
+                        activeSignal.oppositeCount = 0;
+                        if (activeSignal.type === 'news_up') {
+                            activeSignal.expiresAt = new Date(current.timestamp.getTime() + 15 * 60 * 1000);
+                        } else {
+                            activeSignal.expiresAt = new Date(current.timestamp.getTime() + 5 * 60 * 1000);
+                        }
+                    }
+                } else {
+                    // No active signal - new signal can start
+                    if (newsUpDetected && technicalDownDetected) {
+                        // If both trigger at same timestamp, News UP wins
+                        activeSignal = {
+                            type: 'news_up',
+                            value: 100,
+                            expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
+                            oppositeCount: 0
+                        };
+                    } else if (newsUpDetected) {
+                        activeSignal = {
+                            type: 'news_up',
+                            value: 100,
+                            expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
+                            oppositeCount: 0
+                        };
+                    } else if (technicalDownDetected) {
+                        activeSignal = {
+                            type: 'technical_down',
+                            value: -100,
+                            expiresAt: new Date(current.timestamp.getTime() + 5 * 60 * 1000), // 5 minutes
+                            oppositeCount: 0
+                        };
+                    }
                 }
 
                 // Store the current signal value for this data point
