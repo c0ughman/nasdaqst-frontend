@@ -1167,14 +1167,8 @@
         /* Oscillator Scale Selector in Score Panel */
         #scale-fixed:checked + label,
         #scale-visible:checked + label,
-        #scale-full:checked + label {
-            background: rgba(255, 140, 66, 0.2) !important;
-            border-color: #ff8c42 !important;
-            color: #ff8c42 !important;
-        }
-
-        /* Signal Mode Toggle Active State */
-        #signal-mode-toggle.active {
+        #scale-full:checked + label,
+        #scale-signal:checked + label {
             background: rgba(255, 140, 66, 0.2) !important;
             border-color: #ff8c42 !important;
             color: #ff8c42 !important;
@@ -2315,14 +2309,15 @@
                                     </svg>
                                 </label>
 
-                                <!-- Signal Mode Toggle -->
-                                <button id="signal-mode-toggle" title="Toggle Signal Mode (News UP / Technical DOWN)" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease; margin-left: 3px;">
+                                <!-- Signal Mode Toggle (now part of radio group) -->
+                                <input type="radio" id="scale-signal" name="oscillator-scale" value="signal" style="display: none;">
+                                <label for="scale-signal" id="signal-mode-toggle" title="Signal Mode (News UP / Technical DOWN) - Fixed scale: -100 to +100" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease; margin-left: 3px;">
                                     <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
                                         <path d="M8 2 L8 14" stroke="currentColor" stroke-width="1.5"/>
                                         <path d="M4 6 L8 2 L12 6" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                         <path d="M4 10 L8 14 L12 10" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                     </svg>
-                                </button>
+                                </label>
                             </div>
                         </div>
                         <div class="chart-tooltip" id="oscillator-tooltip">
@@ -3256,8 +3251,8 @@
 
             let sentiment = data.composite_score;
 
-            // Check if signal mode is active and calculate signal value
-            const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
+            // Check if signal mode is active (now a radio button)
+            const signalModeActive = document.getElementById('scale-signal')?.checked || false;
             if (signalModeActive && window.currentChartData && window.currentChartData.length > 0) {
                 // Get the most recent data point's signal value
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
@@ -4174,8 +4169,8 @@
                 // Draw market gap lines
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
 
-                // Calculate and attach signal values if signal mode is active
-                const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
+                // Calculate and attach signal values if signal mode is active (now a radio button)
+                const signalModeActive = document.getElementById('scale-signal')?.checked || false;
                 if (signalModeActive) {
                     const fullData = data.fullTimeframeData || data.dataPoints;
                     const signalValues = calculateSignalOscillator(fullData);
@@ -4649,8 +4644,8 @@
             // Calculate min/max range based on scale mode
             let minValue, maxValue;
 
-            if (scaleMode === 'fixed') {
-                // Mode 1: Fixed -100 to +100
+            if (scaleMode === 'fixed' || scaleMode === 'signal') {
+                // Mode 1: Fixed -100 to +100 (also used for signal mode)
                 minValue = -100;
                 maxValue = 100;
             } else {
@@ -4727,8 +4722,8 @@
                 svg.appendChild(centerLine);
             }
 
-            // Check if signal mode is active
-            const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
+            // Check if signal mode is active (now a radio button)
+            const signalModeActive = document.getElementById('scale-signal')?.checked || false;
 
             // Calculate signal values if in signal mode
             let signalValuesMap = new Map();
@@ -4754,8 +4749,16 @@
 
             // Draw each enabled driver
             driverConfig.forEach(driver => {
+                // In signal mode, only show sentiment line (with signal values)
+                if (signalModeActive && driver.key !== 'sentiment') {
+                    return; // Skip other drivers in signal mode
+                }
+                
                 // Check if this driver should be displayed (check eye button active state)
-                const shouldDisplay = !driver.eyeBtn || driver.eyeBtn.classList.contains('active');
+                // In signal mode, always show sentiment line regardless of eye button state
+                const shouldDisplay = signalModeActive && driver.key === 'sentiment' 
+                    ? true 
+                    : (!driver.eyeBtn || driver.eyeBtn.classList.contains('active'));
                 if (!shouldDisplay) return;
 
                 // For sentiment line in signal mode, use calculated signal values
@@ -5052,7 +5055,7 @@
                     }
                 });
 
-                // Add event listeners to scale mode radio buttons
+                // Add event listeners to scale mode radio buttons (all 4 buttons are now mutually exclusive)
                 const scaleRadios = document.querySelectorAll('input[name="oscillator-scale"]');
                 scaleRadios.forEach(radio => {
                     radio.addEventListener('change', () => {
@@ -5063,20 +5066,6 @@
                         }
                     });
                 });
-
-                // Add event listener for signal mode toggle button
-                const signalModeToggle = document.getElementById('signal-mode-toggle');
-                if (signalModeToggle) {
-                    signalModeToggle.addEventListener('click', () => {
-                        signalModeToggle.classList.toggle('active');
-                        const isActive = signalModeToggle.classList.contains('active');
-                        console.log(`Signal mode ${isActive ? 'enabled' : 'disabled'}`);
-                        // Redraw oscillator with signal mode
-                        if (window.currentChartData) {
-                            drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
-                        }
-                    });
-                }
 
                 console.log('Dashboard initialized successfully');
             } catch (error) {
@@ -5355,8 +5344,8 @@
                 oscillatorTooltip.style.display = 'block';
                 mainTooltip.style.display = 'none';
 
-                // Check if signal mode is active
-                const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
+                // Check if signal mode is active (now a radio button)
+                const signalModeActive = document.getElementById('scale-signal')?.checked || false;
 
                 // Display sentiment as main value (use signal value if in signal mode)
                 let displayValue = null;
