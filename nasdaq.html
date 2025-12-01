@@ -4872,27 +4872,48 @@
                     return;
                 }
 
-                // Create smooth path
+                // Create smooth path using Catmull-Rom splines
                 if (points.length > 1) {
                     // Helper to get value (use signalValue in signal mode for sentiment)
                     const getValue = (point) => {
                         return (driver.key === 'sentiment' && signalModeActive) ? point.signalValue : point[driver.key];
                     };
 
-                    let pathD = `M ${points[0].x},${valueToY(getValue(points[0]))}`;
+                    // Helper to get point coordinates
+                    const getPoint = (point) => ({
+                        x: point.x,
+                        y: valueToY(getValue(point))
+                    });
 
-                    for (let i = 1; i < points.length; i++) {
-                        const x = points[i].x;
-                        const y = valueToY(getValue(points[i]));
+                    // Start path at first point
+                    const firstPoint = getPoint(points[0]);
+                    let pathD = `M ${firstPoint.x},${firstPoint.y}`;
 
-                        if (i === 1 && points.length === 2) {
-                            pathD += ` L ${x},${y}`;
-                        } else {
-                            const prevX = points[i - 1].x;
-                            const prevY = valueToY(getValue(points[i - 1]));
-                            const cpX = (prevX + x) / 2;
-                            const cpY = (prevY + y) / 2;
-                            pathD += ` Q ${cpX},${cpY} ${x},${y}`;
+                    if (points.length === 2) {
+                        // For just 2 points, use a simple line
+                        const secondPoint = getPoint(points[1]);
+                        pathD += ` L ${secondPoint.x},${secondPoint.y}`;
+                    } else {
+                        // Catmull-Rom spline: convert to cubic Bezier curves
+                        for (let i = 0; i < points.length - 1; i++) {
+                            // Get four points for Catmull-Rom: P0, P1, P2, P3
+                            // P1 and P2 are the current segment endpoints
+                            const p0 = i > 0 ? getPoint(points[i - 1]) : getPoint(points[i]); // Use duplicate if first
+                            const p1 = getPoint(points[i]);
+                            const p2 = getPoint(points[i + 1]);
+                            const p3 = i < points.length - 2 ? getPoint(points[i + 2]) : getPoint(points[i + 1]); // Use duplicate if last
+
+                            // Convert Catmull-Rom to cubic Bezier
+                            // Control point 1: P1 + (P2 - P0) / 6
+                            const cp1x = p1.x + (p2.x - p0.x) / 6;
+                            const cp1y = p1.y + (p2.y - p0.y) / 6;
+                            
+                            // Control point 2: P2 - (P3 - P1) / 6
+                            const cp2x = p2.x - (p3.x - p1.x) / 6;
+                            const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+                            // Add cubic Bezier curve segment
+                            pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
                         }
                     }
 
