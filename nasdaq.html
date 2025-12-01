@@ -4177,7 +4177,7 @@
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
 
                 // Attach signal values from global cache if signal mode is active
-                const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
+                const signalModeActive = document.getElementById('scale-signal')?.checked || false;
                 if (signalModeActive) {
                     // Use pre-calculated global signal cache for consistency across ALL timeframes
                     // This ensures the same signals appear regardless of zoom level
@@ -4760,7 +4760,7 @@
             }
 
             // Check if signal mode is active
-            const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
+            const signalModeActive = document.getElementById('scale-signal')?.checked || false;
 
             // Define which drivers to plot and their colors
             // Only include drivers that have historical data from the API
