@@ -4804,9 +4804,8 @@
                     path.setAttribute('d', pathD);
                     path.setAttribute('fill', 'none');
                     path.setAttribute('stroke', driver.color);
-                    // Use 0.3 width for sentiment line in signal mode, 0.08 otherwise
-                    const strokeWidth = (driver.key === 'sentiment' && signalModeActive) ? '0.3' : '0.08';
-                    path.setAttribute('stroke-width', strokeWidth);
+                    // All oscillator lines use 0.3 pixel width for visibility
+                    path.setAttribute('stroke-width', '0.3');
                     path.setAttribute('stroke-linecap', 'round');
                     path.setAttribute('stroke-linejoin', 'round');
                     path.setAttribute('opacity', '0.9');
