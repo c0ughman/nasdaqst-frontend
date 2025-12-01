@@ -4629,10 +4629,10 @@
                     }
                 }
 
-                // Detect Technical DOWN signal (technical score decreases by ≥5)
+                // Detect Technical DOWN signal (technical score decreases by ≥10)
                 if (previous && current.indicators != null && previous.indicators != null) {
                     const technicalChange = current.indicators - previous.indicators;
-                    if (technicalChange <= -5) {
+                    if (technicalChange <= -10) {
                         const technicalSignal = {
                             type: 'technical_down',
                             value: -100,
