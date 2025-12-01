@@ -4174,6 +4174,25 @@
                 // Draw market gap lines
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
 
+                // Calculate and attach signal values if signal mode is active
+                const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
+                if (signalModeActive) {
+                    const fullData = data.fullTimeframeData || data.dataPoints;
+                    const signalValues = calculateSignalOscillator(fullData);
+                    const signalValuesMap = new Map();
+                    fullData.forEach((point, i) => {
+                        if (point.timestamp) {
+                            signalValuesMap.set(point.timestamp.getTime(), signalValues[i] || 0);
+                        }
+                    });
+                    // Attach signal values to visible data points
+                    data.dataPoints.forEach(p => {
+                        if (p.timestamp) {
+                            p.signalValue = signalValuesMap.get(p.timestamp.getTime()) || 0;
+                        }
+                    });
+                }
+
                 // Draw sentiment line in oscillator chart
                 drawSentimentOscillator(data.dataPoints, data.fullTimeframeData);
 
@@ -4785,7 +4804,9 @@
                     path.setAttribute('d', pathD);
                     path.setAttribute('fill', 'none');
                     path.setAttribute('stroke', driver.color);
-                    path.setAttribute('stroke-width', '0.08');
+                    // Use 3px width for sentiment line in signal mode, 0.08 otherwise
+                    const strokeWidth = (driver.key === 'sentiment' && signalModeActive) ? '3.0' : '0.08';
+                    path.setAttribute('stroke-width', strokeWidth);
                     path.setAttribute('stroke-linecap', 'round');
                     path.setAttribute('stroke-linejoin', 'round');
                     path.setAttribute('opacity', '0.9');
