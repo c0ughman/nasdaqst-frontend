@@ -4589,10 +4589,10 @@
                     }
                 }
 
-                // Detect Technical DOWN signal (technical score decreases by ≥1)
+                // Detect Technical DOWN signal (technical score decreases by ≥5)
                 if (previous && current.indicators != null && previous.indicators != null) {
                     const technicalChange = current.indicators - previous.indicators;
-                    if (technicalChange <= -1) {
+                    if (technicalChange <= -5) {
                         const technicalSignal = {
                             type: 'technical_down',
                             value: -100,
@@ -4804,8 +4804,8 @@
                     path.setAttribute('d', pathD);
                     path.setAttribute('fill', 'none');
                     path.setAttribute('stroke', driver.color);
-                    // Use 3px width for sentiment line in signal mode, 0.08 otherwise
-                    const strokeWidth = (driver.key === 'sentiment' && signalModeActive) ? '3.0' : '0.08';
+                    // Use 0.3 width for sentiment line in signal mode, 0.08 otherwise
+                    const strokeWidth = (driver.key === 'sentiment' && signalModeActive) ? '0.3' : '0.08';
                     path.setAttribute('stroke-width', strokeWidth);
                     path.setAttribute('stroke-linecap', 'round');
                     path.setAttribute('stroke-linejoin', 'round');
