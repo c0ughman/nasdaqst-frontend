@@ -4813,6 +4813,15 @@
                         console.warn('Signal mode is active but no signal values found');
                         console.warn('Global cache size:', globalSignalCache.size);
                         console.warn('Sample dataPoint:', dataPoints[0]);
+                        console.warn('dataPoints has signalValue?', 'signalValue' in dataPoints[0], dataPoints[0].signalValue);
+                        console.warn('dataPoints has timestamp?', 'timestamp' in dataPoints[0]);
+                        if (dataPoints[0].timestamp) {
+                            const ts = dataPoints[0].timestamp.getTime();
+                            console.warn('Timestamp:', dataPoints[0].timestamp);
+                            console.warn('Looking up in cache:', ts);
+                            console.warn('Cache has this timestamp?', globalSignalCache.has(ts));
+                            console.warn('Value from cache:', globalSignalCache.get(ts));
+                        }
                     }
                     return;
                 }
