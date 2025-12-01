@@ -4599,108 +4599,82 @@
         }
 
         // Calculate signal-based oscillator values from historical data
-        // Returns array with +100 (News UP active), -100 (Technical DOWN active), or 0 (no signal)
-        // Requires 2 opposite signals to flip from +100 to -100 or vice versa
+        // Returns proportional values based on actual score changes:
+        // - News: +5 points = +100, scales proportionally (e.g., +2.5 = +50)
+        // - Technical: -10 points = -100, scales proportionally (e.g., -7 = -70)
+        // Uses whichever signal is stronger (more extreme) when both occur
         function calculateSignalOscillator(dataPoints) {
             if (!dataPoints || dataPoints.length === 0) return [];
 
             const signalValues = [];
-            let activeSignal = null; // { type: 'news_up' | 'technical_down', value: 100 | -100, expiresAt: timestamp, oppositeCount: number }
+            let activeValue = 0; // Current oscillator value (-100 to +100)
+            let activeExpiresAt = null; // When current value expires
+
+            // Baseline thresholds for scaling
+            const NEWS_BASELINE = 5; // +5 news change = +100
+            const TECHNICAL_BASELINE = -10; // -10 technical change = -100
 
             for (let i = 0; i < dataPoints.length; i++) {
                 const current = dataPoints[i];
                 const previous = i > 0 ? dataPoints[i - 1] : null;
 
-                // Check if current active signal has expired
-                if (activeSignal && current.timestamp >= activeSignal.expiresAt) {
-                    activeSignal = null; // Signal expired
+                // Check if current active value has expired
+                if (activeExpiresAt && current.timestamp >= activeExpiresAt) {
+                    activeValue = 0; // Reset to 0 when expired
+                    activeExpiresAt = null;
                 }
 
-                let newsUpDetected = false;
-                let technicalDownDetected = false;
+                let newsValue = 0;
+                let technicalValue = 0;
 
-                // Detect News UP signal (news score increases by ≥5)
+                // Calculate proportional news value (positive changes only)
                 if (previous && current.news != null && previous.news != null) {
                     const newsChange = current.news - previous.news;
-                    if (newsChange >= 5) {
-                        newsUpDetected = true;
+                    if (newsChange > 0) {
+                        // Scale proportionally: +5 = +100, so value = (change / 5) * 100
+                        newsValue = Math.min(100, (newsChange / NEWS_BASELINE) * 100);
                     }
                 }
 
-                // Detect Technical DOWN signal (technical score decreases by ≥10)
+                // Calculate proportional technical value (negative changes only)
                 if (previous && current.indicators != null && previous.indicators != null) {
                     const technicalChange = current.indicators - previous.indicators;
-                    if (technicalChange <= -10) {
-                        technicalDownDetected = true;
+                    if (technicalChange < 0) {
+                        // Scale proportionally: -10 = -100, so value = (change / -10) * 100
+                        // Since technicalChange is negative, we divide by -10 to get positive ratio
+                        technicalValue = Math.max(-100, (technicalChange / TECHNICAL_BASELINE) * 100);
                     }
                 }
 
-                // Handle signal logic with 2-signal requirement to flip
-                if (activeSignal) {
-                    // We have an active signal - check if opposite signal can flip it
-                    if (activeSignal.type === 'news_up' && technicalDownDetected) {
-                        // At +100, need 2 technical down signals to flip to -100
-                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
-                        if (activeSignal.oppositeCount >= 2) {
-                            // Flip to technical down
-                            activeSignal = {
-                                type: 'technical_down',
-                                value: -100,
-                                expiresAt: new Date(current.timestamp.getTime() + 5 * 60 * 1000), // 5 minutes
-                                oppositeCount: 0
-                            };
-                        }
-                    } else if (activeSignal.type === 'technical_down' && newsUpDetected) {
-                        // At -100, need 2 news up signals to flip to +100
-                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
-                        if (activeSignal.oppositeCount >= 2) {
-                            // Flip to news up
-                            activeSignal = {
-                                type: 'news_up',
-                                value: 100,
-                                expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
-                                oppositeCount: 0
-                            };
-                        }
-                    } else if ((activeSignal.type === 'news_up' && newsUpDetected) || 
-                               (activeSignal.type === 'technical_down' && technicalDownDetected)) {
-                        // Same type signal - reset opposite count and extend expiration
-                        activeSignal.oppositeCount = 0;
-                        if (activeSignal.type === 'news_up') {
-                            activeSignal.expiresAt = new Date(current.timestamp.getTime() + 15 * 60 * 1000);
-                        } else {
-                            activeSignal.expiresAt = new Date(current.timestamp.getTime() + 5 * 60 * 1000);
-                        }
+                // Determine which signal to use (whichever is more extreme/further from 0)
+                let newValue = 0;
+                let newExpiresAt = null;
+
+                if (newsValue > 0 && technicalValue < 0) {
+                    // Both signals present - use whichever is more extreme
+                    if (Math.abs(newsValue) >= Math.abs(technicalValue)) {
+                        newValue = newsValue;
+                        newExpiresAt = new Date(current.timestamp.getTime() + 15 * 60 * 1000); // 15 minutes
+                    } else {
+                        newValue = technicalValue;
+                        newExpiresAt = new Date(current.timestamp.getTime() + 5 * 60 * 1000); // 5 minutes
                     }
-                } else {
-                    // No active signal - new signal can start
-                    if (newsUpDetected && technicalDownDetected) {
-                        // If both trigger at same timestamp, News UP wins
-                        activeSignal = {
-                            type: 'news_up',
-                            value: 100,
-                            expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
-                            oppositeCount: 0
-                        };
-                    } else if (newsUpDetected) {
-                        activeSignal = {
-                            type: 'news_up',
-                            value: 100,
-                            expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
-                            oppositeCount: 0
-                        };
-                    } else if (technicalDownDetected) {
-                        activeSignal = {
-                            type: 'technical_down',
-                            value: -100,
-                            expiresAt: new Date(current.timestamp.getTime() + 5 * 60 * 1000), // 5 minutes
-                            oppositeCount: 0
-                        };
-                    }
+                } else if (newsValue > 0) {
+                    newValue = newsValue;
+                    newExpiresAt = new Date(current.timestamp.getTime() + 15 * 60 * 1000); // 15 minutes
+                } else if (technicalValue < 0) {
+                    newValue = technicalValue;
+                    newExpiresAt = new Date(current.timestamp.getTime() + 5 * 60 * 1000); // 5 minutes
+                }
+
+                // Update active value if we have a new signal
+                if (newValue !== 0) {
+                    activeValue = newValue;
+                    activeExpiresAt = newExpiresAt;
                 }
 
                 // Store the current signal value for this data point
-                signalValues.push(activeSignal ? activeSignal.value : 0);
+                signalValues.push(activeValue);
             }
 
             return signalValues;
@@ -4872,48 +4846,27 @@
                     return;
                 }
 
-                // Create smooth path using Catmull-Rom splines
+                // Create smooth path
                 if (points.length > 1) {
                     // Helper to get value (use signalValue in signal mode for sentiment)
                     const getValue = (point) => {
                         return (driver.key === 'sentiment' && signalModeActive) ? point.signalValue : point[driver.key];
                     };
 
-                    // Helper to get point coordinates
-                    const getPoint = (point) => ({
-                        x: point.x,
-                        y: valueToY(getValue(point))
-                    });
+                    let pathD = `M ${points[0].x},${valueToY(getValue(points[0]))}`;
 
-                    // Start path at first point
-                    const firstPoint = getPoint(points[0]);
-                    let pathD = `M ${firstPoint.x},${firstPoint.y}`;
+                    for (let i = 1; i < points.length; i++) {
+                        const x = points[i].x;
+                        const y = valueToY(getValue(points[i]));
 
-                    if (points.length === 2) {
-                        // For just 2 points, use a simple line
-                        const secondPoint = getPoint(points[1]);
-                        pathD += ` L ${secondPoint.x},${secondPoint.y}`;
-                    } else {
-                        // Catmull-Rom spline: convert to cubic Bezier curves
-                        for (let i = 0; i < points.length - 1; i++) {
-                            // Get four points for Catmull-Rom: P0, P1, P2, P3
-                            // P1 and P2 are the current segment endpoints
-                            const p0 = i > 0 ? getPoint(points[i - 1]) : getPoint(points[i]); // Use duplicate if first
-                            const p1 = getPoint(points[i]);
-                            const p2 = getPoint(points[i + 1]);
-                            const p3 = i < points.length - 2 ? getPoint(points[i + 2]) : getPoint(points[i + 1]); // Use duplicate if last
-
-                            // Convert Catmull-Rom to cubic Bezier
-                            // Control point 1: P1 + (P2 - P0) / 6
-                            const cp1x = p1.x + (p2.x - p0.x) / 6;
-                            const cp1y = p1.y + (p2.y - p0.y) / 6;
-                            
-                            // Control point 2: P2 - (P3 - P1) / 6
-                            const cp2x = p2.x - (p3.x - p1.x) / 6;
-                            const cp2y = p2.y - (p3.y - p1.y) / 6;
-
-                            // Add cubic Bezier curve segment
-                            pathD += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+                        if (i === 1 && points.length === 2) {
+                            pathD += ` L ${x},${y}`;
+                        } else {
+                            const prevX = points[i - 1].x;
+                            const prevY = valueToY(getValue(points[i - 1]));
+                            const cpX = (prevX + x) / 2;
+                            const cpY = (prevY + y) / 2;
+                            pathD += ` Q ${cpX},${cpY} ${x},${y}`;
                         }
                     }
 
