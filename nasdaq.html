@@ -1173,6 +1173,13 @@
             color: #ff8c42 !important;
         }
 
+        /* Signal Mode Toggle Active State */
+        #signal-mode-toggle.active {
+            background: rgba(255, 140, 66, 0.2) !important;
+            border-color: #ff8c42 !important;
+            color: #ff8c42 !important;
+        }
+
         .oscillator-score-panel label:hover {
             background: rgba(255, 140, 66, 0.1) !important;
             border-color: #666 !important;
@@ -2307,6 +2314,15 @@
                                         <path d="M2 8 L5 5 L8 10 L11 4 L14 9" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                     </svg>
                                 </label>
+
+                                <!-- Signal Mode Toggle -->
+                                <button id="signal-mode-toggle" title="Toggle Signal Mode (News UP / Technical DOWN)" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease; margin-left: 3px;">
+                                    <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
+                                        <path d="M8 2 L8 14" stroke="currentColor" stroke-width="1.5"/>
+                                        <path d="M4 6 L8 2 L12 6" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                        <path d="M4 10 L8 14 L12 10" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                         <div class="chart-tooltip" id="oscillator-tooltip">
@@ -4512,6 +4528,68 @@
             yAxis.innerHTML = labels.join('');
         }
 
+        // Calculate signal-based oscillator values from historical data
+        // Returns array with +100 (News UP active), -100 (Technical DOWN active), or 0 (no signal)
+        function calculateSignalOscillator(dataPoints) {
+            if (!dataPoints || dataPoints.length === 0) return [];
+
+            const signalValues = [];
+            let activeSignal = null; // { type: 'news_up' | 'technical_down', value: 100 | -100, expiresAt: timestamp }
+
+            for (let i = 0; i < dataPoints.length; i++) {
+                const current = dataPoints[i];
+                const previous = i > 0 ? dataPoints[i - 1] : null;
+
+                // Check if current active signal has expired
+                if (activeSignal && current.timestamp >= activeSignal.expiresAt) {
+                    activeSignal = null; // Signal expired
+                }
+
+                let newSignal = null;
+
+                // Detect News UP signal (news score increases by ≥5)
+                if (previous && current.news != null && previous.news != null) {
+                    const newsChange = current.news - previous.news;
+                    if (newsChange >= 5) {
+                        newSignal = {
+                            type: 'news_up',
+                            value: 100,
+                            expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000) // 15 minutes
+                        };
+                    }
+                }
+
+                // Detect Technical DOWN signal (technical score decreases by ≥1)
+                if (previous && current.indicators != null && previous.indicators != null) {
+                    const technicalChange = current.indicators - previous.indicators;
+                    if (technicalChange <= -1) {
+                        const technicalSignal = {
+                            type: 'technical_down',
+                            value: -100,
+                            expiresAt: new Date(current.timestamp.getTime() + 5 * 60 * 1000) // 5 minutes
+                        };
+
+                        // If both signals trigger at same timestamp, News UP wins
+                        if (newSignal && newSignal.type === 'news_up') {
+                            // Keep news signal, ignore technical
+                        } else {
+                            newSignal = technicalSignal;
+                        }
+                    }
+                }
+
+                // Most recent signal wins (overrides previous)
+                if (newSignal) {
+                    activeSignal = newSignal;
+                }
+
+                // Store the current signal value for this data point
+                signalValues.push(activeSignal ? activeSignal.value : 0);
+            }
+
+            return signalValues;
+        }
+
         // Draw sentiment line in oscillator chart with optional driver overlays
         function drawSentimentOscillator(dataPoints, fullTimeframeData) {
             const oscillatorDiv = document.getElementById('chart-oscillator');
@@ -4618,6 +4696,15 @@
                 svg.appendChild(centerLine);
             }
 
+            // Check if signal mode is active
+            const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
+
+            // Calculate signal values if in signal mode
+            let signalValues = [];
+            if (signalModeActive) {
+                signalValues = calculateSignalOscillator(fullTimeframeData || dataPoints);
+            }
+
             // Define which drivers to plot and their colors
             // Only include drivers that have historical data from the API
             const driverConfig = [
@@ -4632,8 +4719,18 @@
                 const shouldDisplay = !driver.eyeBtn || driver.eyeBtn.classList.contains('active');
                 if (!shouldDisplay) return;
 
-                // Filter points that have this driver data
-                const points = dataPoints.filter(p => p[driver.key] != null && !isNaN(p[driver.key]));
+                // For sentiment line in signal mode, use calculated signal values
+                let points;
+                if (driver.key === 'sentiment' && signalModeActive) {
+                    // Map signal values to data points
+                    points = dataPoints.map((p, i) => ({
+                        ...p,
+                        signalValue: signalValues[i] || 0
+                    })).filter(p => p.signalValue != null);
+                } else {
+                    // Filter points that have this driver data
+                    points = dataPoints.filter(p => p[driver.key] != null && !isNaN(p[driver.key]));
+                }
 
                 if (points.length === 0) {
                     console.warn(`❌ No ${driver.label} data available`);
@@ -4642,17 +4739,22 @@
 
                 // Create smooth path
                 if (points.length > 1) {
-                    let pathD = `M ${points[0].x},${valueToY(points[0][driver.key])}`;
+                    // Helper to get value (use signalValue in signal mode for sentiment)
+                    const getValue = (point) => {
+                        return (driver.key === 'sentiment' && signalModeActive) ? point.signalValue : point[driver.key];
+                    };
+
+                    let pathD = `M ${points[0].x},${valueToY(getValue(points[0]))}`;
 
                     for (let i = 1; i < points.length; i++) {
                         const x = points[i].x;
-                        const y = valueToY(points[i][driver.key]);
+                        const y = valueToY(getValue(points[i]));
 
                         if (i === 1 && points.length === 2) {
                             pathD += ` L ${x},${y}`;
                         } else {
                             const prevX = points[i - 1].x;
-                            const prevY = valueToY(points[i - 1][driver.key]);
+                            const prevY = valueToY(getValue(points[i - 1]));
                             const cpX = (prevX + x) / 2;
                             const cpY = (prevY + y) / 2;
                             pathD += ` Q ${cpX},${cpY} ${x},${y}`;
@@ -4921,6 +5023,20 @@
                         }
                     });
                 });
+
+                // Add event listener for signal mode toggle button
+                const signalModeToggle = document.getElementById('signal-mode-toggle');
+                if (signalModeToggle) {
+                    signalModeToggle.addEventListener('click', () => {
+                        signalModeToggle.classList.toggle('active');
+                        const isActive = signalModeToggle.classList.contains('active');
+                        console.log(`Signal mode ${isActive ? 'enabled' : 'disabled'}`);
+                        // Redraw oscillator with signal mode
+                        if (window.currentChartData) {
+                            drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
+                        }
+                    });
+                }
 
                 console.log('Dashboard initialized successfully');
             } catch (error) {
