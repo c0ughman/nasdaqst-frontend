@@ -3254,7 +3254,18 @@
         function updateSentimentDisplay(data) {
             console.log('updateSentimentDisplay called with data:', data);
 
-            const sentiment = data.composite_score;
+            let sentiment = data.composite_score;
+
+            // Check if signal mode is active and calculate signal value
+            const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
+            if (signalModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                // Get the most recent data point's signal value
+                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                if (lastPoint && lastPoint.signalValue != null) {
+                    sentiment = lastPoint.signalValue;
+                }
+            }
+
             console.log('Composite score value:', sentiment);
             const sentimentDisplay = sentiment > 0 ? `+${sentiment.toFixed(1)}` : sentiment.toFixed(1);
             console.log('Formatted sentiment display:', sentimentDisplay);
@@ -4691,9 +4702,9 @@
                 centerLine.setAttribute('y1', zeroY.toString());
                 centerLine.setAttribute('x2', '98');
                 centerLine.setAttribute('y2', zeroY.toString());
-                centerLine.setAttribute('stroke', 'rgba(136, 136, 136, 0.3)');
-                centerLine.setAttribute('stroke-width', '0.5');
-                centerLine.setAttribute('stroke-dasharray', '1,1');
+                centerLine.setAttribute('stroke', 'rgba(136, 136, 136, 0.5)');
+                centerLine.setAttribute('stroke-width', '1.0');
+                centerLine.setAttribute('stroke-dasharray', '2,2');
                 svg.appendChild(centerLine);
             }
 
@@ -5216,8 +5227,14 @@
                 sentiment = after.sentiment;
             }
 
-            // Use the closest data point's time
+            // Get signal value if in signal mode (no interpolation for binary values)
+            let signalValue = null;
             const closestPoint = ratio < 0.5 ? before : after;
+            if (closestPoint.signalValue != null) {
+                signalValue = closestPoint.signalValue;
+            }
+
+            // Use the closest data point's time
             const time = closestPoint.timeLabel || closestPoint.timestamp?.toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -5225,7 +5242,7 @@
                 hour12: false
             }) || 'N/A';
 
-            return { price: price, sentiment: sentiment, time: time, timestamp: closestPoint.timestamp };
+            return { price: price, sentiment: sentiment, signalValue: signalValue, time: time, timestamp: closestPoint.timestamp };
         }
 
         // Unified hover handler for both charts
@@ -5318,9 +5335,19 @@
                 oscillatorTooltip.style.display = 'block';
                 mainTooltip.style.display = 'none';
 
-                // Display sentiment as main value
-                if (result.sentiment != null) {
-                    const sentimentDisplay = result.sentiment > 0 ? `+${Math.round(result.sentiment)}` : Math.round(result.sentiment);
+                // Check if signal mode is active
+                const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
+
+                // Display sentiment as main value (use signal value if in signal mode)
+                let displayValue = null;
+                if (signalModeActive && result.signalValue != null) {
+                    displayValue = result.signalValue; // Use binary signal value
+                } else if (result.sentiment != null) {
+                    displayValue = result.sentiment; // Use regular sentiment
+                }
+
+                if (displayValue != null) {
+                    const sentimentDisplay = displayValue > 0 ? `+${Math.round(displayValue)}` : Math.round(displayValue);
                     oscillatorTooltipValue.textContent = sentimentDisplay;
                 } else {
                     oscillatorTooltipValue.textContent = 'N/A';
