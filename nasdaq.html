@@ -2721,6 +2721,10 @@
         let sentimentDataset2d = [];
         let sentimentDataset3d = [];
         let currentCompositeScore = 0;
+
+        // Global signal state cache - maps timestamp to signal value (+100, 0, -100)
+        // Calculated once from complete dataset for consistency across all timeframes
+        let globalSignalCache = new Map();
         
         // ===== GRANULAR DATA (SECOND & TICK CANDLES) =====
         let secondCandlesDataset = [];
@@ -2838,6 +2842,9 @@
                     console.warn('⚠️  No 3-day historical data in API response');
                     sentimentDataset3d = [];
                 }
+
+                // Build global signal cache from complete dataset for consistency across all timeframes
+                buildGlobalSignalCache();
 
                 // Update market status AFTER datasets are populated so we can use latest timestamp
                 updateMarketStatus(data.market_status);
@@ -4169,21 +4176,14 @@
                 // Draw market gap lines
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
 
-                // Calculate and attach signal values if signal mode is active (now a radio button)
-                const signalModeActive = document.getElementById('scale-signal')?.checked || false;
+                // Attach signal values from global cache if signal mode is active
+                const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
                 if (signalModeActive) {
-                    const fullData = data.fullTimeframeData || data.dataPoints;
-                    const signalValues = calculateSignalOscillator(fullData);
-                    const signalValuesMap = new Map();
-                    fullData.forEach((point, i) => {
-                        if (point.timestamp) {
-                            signalValuesMap.set(point.timestamp.getTime(), signalValues[i] || 0);
-                        }
-                    });
-                    // Attach signal values to visible data points
+                    // Use pre-calculated global signal cache for consistency across ALL timeframes
+                    // This ensures the same signals appear regardless of zoom level
                     data.dataPoints.forEach(p => {
                         if (p.timestamp) {
-                            p.signalValue = signalValuesMap.get(p.timestamp.getTime()) || 0;
+                            p.signalValue = globalSignalCache.get(p.timestamp.getTime()) || 0;
                         }
                     });
                 }
@@ -4553,6 +4553,43 @@
             yAxis.innerHTML = labels.join('');
         }
 
+        // Build global signal cache from complete dataset (all timeframes merged)
+        // This ensures signals are consistent across all chart timeframes
+        function buildGlobalSignalCache() {
+            console.log('🔄 Building global signal cache...');
+            globalSignalCache.clear();
+
+            // Merge all datasets and sort by timestamp
+            const allData = [
+                ...sentimentDataset,
+                ...sentimentDataset2d,
+                ...sentimentDataset3d
+            ].sort((a, b) => a.timestamp - b.timestamp);
+
+            // Remove duplicates by timestamp
+            const uniqueData = [];
+            const seenTimestamps = new Set();
+            for (const point of allData) {
+                const ts = point.timestamp.getTime();
+                if (!seenTimestamps.has(ts)) {
+                    seenTimestamps.add(ts);
+                    uniqueData.push(point);
+                }
+            }
+
+            console.log(`📊 Processing ${uniqueData.length} unique data points for signal detection`);
+
+            // Calculate signals from the complete dataset
+            const signalValues = calculateSignalOscillator(uniqueData);
+
+            // Build timestamp -> signal value map
+            uniqueData.forEach((point, i) => {
+                globalSignalCache.set(point.timestamp.getTime(), signalValues[i] || 0);
+            });
+
+            console.log(`✅ Signal cache built with ${globalSignalCache.size} entries`);
+        }
+
         // Calculate signal-based oscillator values from historical data
         // Returns array with +100 (News UP active), -100 (Technical DOWN active), or 0 (no signal)
         function calculateSignalOscillator(dataPoints) {
@@ -4722,22 +4759,8 @@
                 svg.appendChild(centerLine);
             }
 
-            // Check if signal mode is active (now a radio button)
-            const signalModeActive = document.getElementById('scale-signal')?.checked || false;
-
-            // Calculate signal values if in signal mode
-            let signalValuesMap = new Map();
-            if (signalModeActive) {
-                const fullData = fullTimeframeData || dataPoints;
-                const signalValues = calculateSignalOscillator(fullData);
-
-                // Create a map of timestamp -> signal value for accurate matching
-                fullData.forEach((point, i) => {
-                    if (point.timestamp) {
-                        signalValuesMap.set(point.timestamp.getTime(), signalValues[i] || 0);
-                    }
-                });
-            }
+            // Check if signal mode is active
+            const signalModeActive = document.getElementById('signal-mode-toggle')?.classList.contains('active') || false;
 
             // Define which drivers to plot and their colors
             // Only include drivers that have historical data from the API
@@ -4761,14 +4784,12 @@
                     : (!driver.eyeBtn || driver.eyeBtn.classList.contains('active'));
                 if (!shouldDisplay) return;
 
-                // For sentiment line in signal mode, use calculated signal values
+                // For sentiment line in signal mode, use pre-attached signal values from global cache
                 let points;
                 if (driver.key === 'sentiment' && signalModeActive) {
-                    // Map signal values to visible data points using timestamp matching
-                    points = dataPoints.map(p => ({
-                        ...p,
-                        signalValue: p.timestamp ? signalValuesMap.get(p.timestamp.getTime()) || 0 : 0
-                    })).filter(p => p.signalValue != null);
+                    // Signal values already attached to data points from global cache
+                    // This ensures consistency across all timeframes
+                    points = dataPoints.filter(p => p.signalValue != null);
                 } else {
                     // Filter points that have this driver data
                     points = dataPoints.filter(p => p[driver.key] != null && !isNaN(p[driver.key]));
