@@ -4316,7 +4316,7 @@
                     // Thresholds: Technical ±1 (15s), News +5 (1min)
                     console.log(`   Using granular signal calculator with thresholds:`);
                     console.log(`     - Technical DOWN: ≥1 point → -100 (15s)`);
-                    console.log(`     - Technical UP: ≥1 point → +100 (15s)`);
+                    console.log(`     - Technical UP: ≥3 points → +100 (15s)`);
                     console.log(`     - News UP: ≥5 points → +100 (1min)`);
                     console.log(`     - Flip rules: 2 opposite signals required`);
                     
@@ -5009,7 +5009,7 @@
         // Uses different thresholds and shorter durations than minute-level signals
         // Thresholds:
         //   - Technical DOWN: ≥1 point decrease → -100 for 15 seconds
-        //   - Technical UP: ≥1 point increase → +100 for 15 seconds
+        //   - Technical UP: ≥3 points increase → +100 for 15 seconds
         //   - News UP: ≥5 points increase → +100 for 1 minute
         // Flip rules: Same as minute-level (2 opposite signals to flip)
         // Optionally inherits initial signal state from minute-level data
@@ -5049,10 +5049,10 @@
                     }
                 }
 
-                // Detect Technical UP signal (technical score increases by ≥1)
+                // Detect Technical UP signal (technical score increases by ≥3)
                 if (previous && current.indicators != null && previous.indicators != null) {
                     const technicalChange = current.indicators - previous.indicators;
-                    if (technicalChange >= 1) {
+                    if (technicalChange >= 3) {
                         technicalUpDetected = true;
                     }
                 }
