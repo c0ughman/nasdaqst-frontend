@@ -4269,15 +4269,19 @@
                         }
                         
                         // During hold period, ONLY detect movements if new value is significantly HIGHER than current peak
-                        // During decay period, detect if new value is significantly different (higher or lower) from decayed value
+                        // During decay period, be more strict - only detect if new value would create a NEW peak (higher than original peak for upward, lower for downward)
                         let isNewMovement = false;
                         if (timeSincePeak < HOLD_DURATION_MS) {
                             // During hold: only detect if new value is significantly HIGHER (new peak)
                             isNewMovement = originalNewsValue > currentPeakValue + MOVEMENT_THRESHOLD;
                         } else {
-                            // During exponential decay: detect if new value is significantly different from decayed value
-                            // or if decayed value is near zero and new value is significant
-                            isNewMovement = Math.abs(originalNewsValue - currentDisplayValue) > MOVEMENT_THRESHOLD;
+                            // During exponential decay: only detect movements if they would create a NEW peak
+                            // For upward movements: new value must be significantly higher than the ORIGINAL peak
+                            // For downward movements: new value must be significantly lower than the ORIGINAL peak
+                            // This allows decay to be visible while still catching significant new movements
+                            const upwardMovement = originalNewsValue > currentPeakValue + MOVEMENT_THRESHOLD;
+                            const downwardMovement = originalNewsValue < currentPeakValue - MOVEMENT_THRESHOLD;
+                            isNewMovement = upwardMovement || downwardMovement;
                         }
                         
                         if (isNewMovement) {
