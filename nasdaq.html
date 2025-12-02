@@ -5040,26 +5040,26 @@
                 let technicalDownDetected = false;
                 let technicalUpDetected = false;
 
-                // Detect News UP signal (news score increases by ≥5)
+                // Detect News UP signal (news score increases by ≥2) - LOWERED for more movement
                 if (previous && current.news != null && previous.news != null) {
                     const newsChange = current.news - previous.news;
-                    if (newsChange >= 5) {
+                    if (newsChange >= 2) {
                         newsUpDetected = true;
                     }
                 }
 
-                // Detect Technical DOWN signal (technical score decreases by ≥1)
+                // Detect Technical DOWN signal (technical score decreases by ≥0.5) - LOWERED for more movement
                 if (previous && current.indicators != null && previous.indicators != null) {
                     const technicalChange = current.indicators - previous.indicators;
-                    if (technicalChange <= -1) {
+                    if (technicalChange <= -0.5) {
                         technicalDownDetected = true;
                     }
                 }
 
-                // Detect Technical UP signal (technical score increases by ≥3)
+                // Detect Technical UP signal (technical score increases by ≥1) - LOWERED from 3 for more movement
                 if (previous && current.indicators != null && previous.indicators != null) {
                     const technicalChange = current.indicators - previous.indicators;
-                    if (technicalChange >= 3) {
+                    if (technicalChange >= 1) {
                         technicalUpDetected = true;
                     }
                 }
