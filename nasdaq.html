@@ -4892,17 +4892,20 @@
                             pathD += ` L ${x},${y}`;
                         } else {
                             // Use cubic Bezier with ease-in-out control points
-                            // Control points are positioned to create S-curve effect
+                            // Control points create S-curve for both horizontal AND vertical transitions
                             const dx = x - prevX;
+                            const dy = y - prevY;
                             const tension = 0.4; // Controls curve smoothness (0 = linear, 0.5 = very curved)
 
-                            // First control point: ease-out from previous point (slow start)
+                            // First control point: ease-out from previous point
+                            // Moves mostly in X direction first (slow vertical start)
                             const cp1X = prevX + dx * tension;
-                            const cp1Y = prevY;
+                            const cp1Y = prevY + dy * (tension * 0.2); // Minimal Y movement at start
 
-                            // Second control point: ease-in to current point (slow end)
+                            // Second control point: ease-in to current point
+                            // Completes Y transition near the end (slow vertical finish)
                             const cp2X = x - dx * tension;
-                            const cp2Y = y;
+                            const cp2Y = y - dy * (tension * 0.2); // Complete Y movement near end
 
                             pathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
                         }
