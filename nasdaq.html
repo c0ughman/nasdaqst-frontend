@@ -3300,10 +3300,10 @@
                     sentiment = lastPoint.signalValue;
                 }
             } else if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
-                // Get the most recent data point's news value
+                // Get the most recent data point's news value (use processed if available)
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
-                if (lastPoint && lastPoint.news != null) {
-                    sentiment = lastPoint.news;
+                if (lastPoint) {
+                    sentiment = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
                 }
             }
 
@@ -4157,6 +4157,119 @@
             };
         }
         
+        // Process news scores with hold/decay logic for news mode
+        // When news score changes (up or down), hold at that level for 15 minutes,
+        // then decay to zero over 5 minutes. If a new movement occurs during hold or decay,
+        // jump to the new value and restart the 15-minute timer.
+        function processNewsScoresWithHoldDecay(dataPoints) {
+            if (!dataPoints || dataPoints.length === 0) return dataPoints;
+            
+            // Sort points by timestamp (oldest to newest) to process chronologically
+            const sortedPoints = [...dataPoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+            
+            // Track the current peak state
+            let currentPeakValue = null;
+            let peakTimestamp = null;
+            let lastOriginalValue = null; // Track last ORIGINAL news value to detect movements
+            let processedPoints = [];
+            
+            const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+            const DECAY_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+            const TOTAL_DURATION_MS = HOLD_DURATION_MS + DECAY_DURATION_MS; // 20 minutes total
+            const MOVEMENT_THRESHOLD = 0.01; // Minimum change to consider a movement
+            
+            for (let i = 0; i < sortedPoints.length; i++) {
+                const point = sortedPoints[i];
+                const pointTime = point.timestamp.getTime();
+                const originalNewsValue = point.news;
+                
+                // Skip points without news data
+                if (originalNewsValue == null || isNaN(originalNewsValue)) {
+                    processedPoints.push({ ...point, processedNews: originalNewsValue });
+                    lastOriginalValue = originalNewsValue;
+                    continue;
+                }
+                
+                // Check if we have an active peak
+                if (currentPeakValue !== null && peakTimestamp !== null) {
+                    const timeSincePeak = pointTime - peakTimestamp;
+                    
+                    // Check if a new movement occurred by comparing with last ORIGINAL value
+                    // A movement can be upward (increase) or downward (decrease)
+                    const isNewMovement = lastOriginalValue !== null && 
+                        Math.abs(originalNewsValue - lastOriginalValue) > MOVEMENT_THRESHOLD;
+                    
+                    if (isNewMovement) {
+                        // New movement detected - jump to it and restart timer
+                        currentPeakValue = originalNewsValue;
+                        peakTimestamp = pointTime;
+                        processedPoints.push({ ...point, processedNews: originalNewsValue });
+                        lastOriginalValue = originalNewsValue;
+                        continue;
+                    }
+                    
+                    // No new movement - apply hold/decay logic
+                    if (timeSincePeak < HOLD_DURATION_MS) {
+                        // Still in hold period - maintain peak value
+                        processedPoints.push({ ...point, processedNews: currentPeakValue });
+                        lastOriginalValue = originalNewsValue; // Track original, not processed
+                    } else if (timeSincePeak < TOTAL_DURATION_MS) {
+                        // In decay period - linear decay to zero
+                        const decayProgress = (timeSincePeak - HOLD_DURATION_MS) / DECAY_DURATION_MS;
+                        const decayedValue = currentPeakValue * (1 - decayProgress);
+                        processedPoints.push({ ...point, processedNews: decayedValue });
+                        lastOriginalValue = originalNewsValue; // Track original, not processed
+                    } else {
+                        // Past decay period - value is zero (or very close to it)
+                        processedPoints.push({ ...point, processedNews: 0 });
+                        lastOriginalValue = originalNewsValue; // Track original, not processed
+                        // Reset peak state if we're significantly past the decay period
+                        // (to allow new peaks to be detected)
+                        if (timeSincePeak > TOTAL_DURATION_MS + 60000) { // 1 minute buffer
+                            currentPeakValue = null;
+                            peakTimestamp = null;
+                        }
+                    }
+                } else {
+                    // No active peak - check if this is a new movement
+                    // Compare with previous point's original value to detect movement
+                    if (i > 0 && lastOriginalValue !== null && !isNaN(lastOriginalValue)) {
+                        const movement = Math.abs(originalNewsValue - lastOriginalValue);
+                        if (movement > MOVEMENT_THRESHOLD) {
+                            // Movement detected - start holding at this value
+                            currentPeakValue = originalNewsValue;
+                            peakTimestamp = pointTime;
+                            processedPoints.push({ ...point, processedNews: originalNewsValue });
+                            lastOriginalValue = originalNewsValue;
+                            continue;
+                        }
+                    }
+                    
+                    // No movement detected - keep original value
+                    processedPoints.push({ ...point, processedNews: originalNewsValue });
+                    lastOriginalValue = originalNewsValue;
+                }
+            }
+            
+            // Create a map of processed news values by timestamp for quick lookup
+            const processedMap = new Map();
+            processedPoints.forEach(p => {
+                if (p.timestamp) {
+                    processedMap.set(p.timestamp.getTime(), p.processedNews);
+                }
+            });
+            
+            // Update original dataPoints array with processed news values
+            // Preserve original order of dataPoints
+            dataPoints.forEach(point => {
+                if (point.timestamp && processedMap.has(point.timestamp.getTime())) {
+                    point.processedNews = processedMap.get(point.timestamp.getTime());
+                }
+            });
+            
+            return dataPoints;
+        }
+        
         async function updateChart(timeframe) {
             try {
                 console.log('=== UPDATE CHART START ===');
@@ -4446,6 +4559,13 @@
                     }
                 }
 
+                // Process news scores with hold/decay logic if news mode is active
+                const newsModeActive = document.getElementById('scale-news')?.checked || false;
+                if (newsModeActive && data.dataPoints && data.dataPoints.length > 0) {
+                    console.log('📰 News mode active - applying hold/decay logic to news scores');
+                    processNewsScoresWithHoldDecay(data.dataPoints);
+                }
+
                 // Store current data points for hover functionality
                 window.currentChartData = data.dataPoints;
                 window.currentFullTimeframeData = data.fullTimeframeData;
@@ -4466,9 +4586,9 @@
                     if (signalModeActive && lastPoint.signalValue != null) {
                         // In signal mode, use signal value
                         displayValue = lastPoint.signalValue;
-                    } else if (newsModeActive && lastPoint.news != null) {
-                        // In news mode, use news score
-                        displayValue = lastPoint.news;
+                    } else if (newsModeActive) {
+                        // In news mode, use processed news score if available, otherwise raw news score
+                        displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
                     } else {
                         // In regular mode, use sentiment value
                         displayValue = lastPoint.sentiment ?? data.composite_score ?? 0;
@@ -5337,6 +5457,12 @@
                     if (points.length > 0) {
                         console.log('Sample signal point:', points[0]);
                     }
+                } else if (driver.key === 'news' && newsModeActive) {
+                    // In news mode, use processed news values if available
+                    points = dataPoints.filter(p => {
+                        const newsValue = p.processedNews != null ? p.processedNews : p.news;
+                        return newsValue != null && !isNaN(newsValue);
+                    });
                 } else {
                     // Filter points that have this driver data
                     points = dataPoints.filter(p => p[driver.key] != null && !isNaN(p[driver.key]));
@@ -5363,9 +5489,15 @@
 
                 // Create smooth path with ease-in-out curves
                 if (points.length > 1) {
-                    // Helper to get value (use signalValue in signal mode for sentiment)
+                    // Helper to get value (use signalValue in signal mode for sentiment, processedNews in news mode)
                     const getValue = (point) => {
-                        return (driver.key === 'sentiment' && signalModeActive) ? point.signalValue : point[driver.key];
+                        if (driver.key === 'sentiment' && signalModeActive) {
+                            return point.signalValue;
+                        } else if (driver.key === 'news' && newsModeActive) {
+                            return point.processedNews != null ? point.processedNews : point.news;
+                        } else {
+                            return point[driver.key];
+                        }
                     };
 
                     let pathD = `M ${points[0].x},${valueToY(getValue(points[0]))}`;
@@ -5738,6 +5870,13 @@
                     radio.addEventListener('change', () => {
                         console.log(`Scale mode changed to: ${radio.value}`);
 
+                        // Process news scores if news mode is activated
+                        const newsModeActive = radio.value === 'news';
+                        if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                            console.log('📰 News mode activated - processing news scores with hold/decay logic');
+                            processNewsScoresWithHoldDecay(window.currentChartData);
+                        }
+
                         // Signal values are already attached in updateChart(), so no need to attach here
                         // Redraw oscillator with new scale mode
                         if (window.currentChartData) {
@@ -5748,16 +5887,15 @@
                         // This ensures the score box shows the correct value based on the current mode
                         if (window.currentChartData && window.currentChartData.length > 0) {
                             const signalModeActive = radio.value === 'signal';
-                            const newsModeActive = radio.value === 'news';
                             const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                             let displayValue;
                             
                             if (signalModeActive && lastPoint.signalValue != null) {
                                 // In signal mode, use signal value
                                 displayValue = lastPoint.signalValue;
-                            } else if (newsModeActive && lastPoint.news != null) {
-                                // In news mode, use news score
-                                displayValue = lastPoint.news;
+                            } else if (newsModeActive) {
+                                // In news mode, use processed news score if available, otherwise raw news score
+                                displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
                             } else {
                                 // In regular mode, use sentiment value
                                 displayValue = lastPoint.sentiment ?? currentCompositeScore ?? 0;
