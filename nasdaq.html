@@ -5234,20 +5234,6 @@
                 return Math.max(5, Math.min(95, y));
             };
 
-            // Draw center line at value = 0 (may be off-screen if range doesn't include 0)
-            const zeroY = valueToY(0);
-            if (zeroY >= 0 && zeroY <= 100) {
-                const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                centerLine.setAttribute('x1', '2');
-                centerLine.setAttribute('y1', zeroY.toString());
-                centerLine.setAttribute('x2', '98');
-                centerLine.setAttribute('y2', zeroY.toString());
-                centerLine.setAttribute('stroke', 'rgba(136, 136, 136, 0.5)');
-                centerLine.setAttribute('stroke-width', '1.0');
-                centerLine.setAttribute('stroke-dasharray', '2,2');
-                svg.appendChild(centerLine);
-            }
-
             // Check if signal mode is active
             const signalModeActive = document.getElementById('scale-signal')?.checked || false;
 
