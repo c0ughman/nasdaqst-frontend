@@ -4162,112 +4162,166 @@
         // then decay to zero over 5 minutes. If a new movement occurs during hold or decay,
         // jump to the new value and restart the 15-minute timer.
         function processNewsScoresWithHoldDecay(dataPoints) {
-            if (!dataPoints || dataPoints.length === 0) return dataPoints;
-            
-            // Sort points by timestamp (oldest to newest) to process chronologically
-            const sortedPoints = [...dataPoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-            
-            // Track the current peak state
-            let currentPeakValue = null;
-            let peakTimestamp = null;
-            let lastOriginalValue = null; // Track last ORIGINAL news value to detect movements
-            let processedPoints = [];
-            
-            const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-            const DECAY_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-            const TOTAL_DURATION_MS = HOLD_DURATION_MS + DECAY_DURATION_MS; // 20 minutes total
-            const MOVEMENT_THRESHOLD = 0.01; // Minimum change to consider a movement
-            
-            for (let i = 0; i < sortedPoints.length; i++) {
-                const point = sortedPoints[i];
-                const pointTime = point.timestamp.getTime();
-                const originalNewsValue = point.news;
-                
-                // Skip points without news data
-                if (originalNewsValue == null || isNaN(originalNewsValue)) {
-                    processedPoints.push({ ...point, processedNews: originalNewsValue });
-                    lastOriginalValue = originalNewsValue;
-                    continue;
+            try {
+                if (!dataPoints || dataPoints.length === 0) {
+                    console.warn('⚠️ processNewsScoresWithHoldDecay: No data points provided');
+                    return dataPoints;
                 }
                 
-                // Check if we have an active peak
-                if (currentPeakValue !== null && peakTimestamp !== null) {
-                    const timeSincePeak = pointTime - peakTimestamp;
+                console.log('🔄 Processing news scores with hold/decay logic...');
+                console.log(`   Total data points: ${dataPoints.length}`);
+                
+                // Check how many points have news data
+                const pointsWithNews = dataPoints.filter(p => p.news != null && !isNaN(p.news));
+                console.log(`   Points with news data: ${pointsWithNews.length}`);
+                
+                if (pointsWithNews.length === 0) {
+                    console.warn('⚠️ No points with news data found - cannot process');
+                    return dataPoints;
+                }
+                
+                // Sort points by timestamp (oldest to newest) to process chronologically
+                const sortedPoints = [...dataPoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                
+                // Track the current peak state
+                let currentPeakValue = null;
+                let peakTimestamp = null;
+                let processedPoints = [];
+                
+                const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+                const DECAY_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+                const TOTAL_DURATION_MS = HOLD_DURATION_MS + DECAY_DURATION_MS; // 20 minutes total
+                const MOVEMENT_THRESHOLD = 0.001; // Minimum change to consider a movement (lowered to catch smaller changes)
+                
+                // Sample a few points to see what we're working with
+                const samplePoints = sortedPoints.filter(p => p.news != null && !isNaN(p.news)).slice(0, 5);
+                if (samplePoints.length > 0) {
+                    console.log('   Sample news values:', samplePoints.map(p => ({
+                        time: new Date(p.timestamp.getTime()).toISOString(),
+                        news: p.news
+                    })));
+                }
+                
+                let movementsDetected = 0;
+                
+                // Track the last original news value to detect movements
+                let lastOriginalNewsValue = null;
+                
+                for (let i = 0; i < sortedPoints.length; i++) {
+                    const point = sortedPoints[i];
+                    const pointTime = point.timestamp.getTime();
+                    const originalNewsValue = point.news;
                     
-                    // Check if a new movement occurred by comparing with last ORIGINAL value
-                    // A movement can be upward (increase) or downward (decrease)
-                    const isNewMovement = lastOriginalValue !== null && 
-                        Math.abs(originalNewsValue - lastOriginalValue) > MOVEMENT_THRESHOLD;
-                    
-                    if (isNewMovement) {
-                        // New movement detected - jump to it and restart timer
-                        currentPeakValue = originalNewsValue;
-                        peakTimestamp = pointTime;
+                    // Skip points without news data
+                    if (originalNewsValue == null || isNaN(originalNewsValue)) {
                         processedPoints.push({ ...point, processedNews: originalNewsValue });
-                        lastOriginalValue = originalNewsValue;
+                        lastOriginalNewsValue = originalNewsValue;
                         continue;
                     }
                     
-                    // No new movement - apply hold/decay logic
-                    if (timeSincePeak < HOLD_DURATION_MS) {
-                        // Still in hold period - maintain peak value
-                        processedPoints.push({ ...point, processedNews: currentPeakValue });
-                        lastOriginalValue = originalNewsValue; // Track original, not processed
-                    } else if (timeSincePeak < TOTAL_DURATION_MS) {
-                        // In decay period - linear decay to zero
-                        const decayProgress = (timeSincePeak - HOLD_DURATION_MS) / DECAY_DURATION_MS;
-                        const decayedValue = currentPeakValue * (1 - decayProgress);
-                        processedPoints.push({ ...point, processedNews: decayedValue });
-                        lastOriginalValue = originalNewsValue; // Track original, not processed
-                    } else {
-                        // Past decay period - value is zero (or very close to it)
-                        processedPoints.push({ ...point, processedNews: 0 });
-                        lastOriginalValue = originalNewsValue; // Track original, not processed
-                        // Reset peak state if we're significantly past the decay period
-                        // (to allow new peaks to be detected)
-                        if (timeSincePeak > TOTAL_DURATION_MS + 60000) { // 1 minute buffer
-                            currentPeakValue = null;
-                            peakTimestamp = null;
-                        }
-                    }
-                } else {
-                    // No active peak - check if this is a new movement
-                    // Compare with previous point's original value to detect movement
-                    if (i > 0 && lastOriginalValue !== null && !isNaN(lastOriginalValue)) {
-                        const movement = Math.abs(originalNewsValue - lastOriginalValue);
-                        if (movement > MOVEMENT_THRESHOLD) {
-                            // Movement detected - start holding at this value
+                    // Check if we have an active peak
+                    if (currentPeakValue !== null && peakTimestamp !== null) {
+                        const timeSincePeak = pointTime - peakTimestamp;
+                        
+                        // Check if a new movement occurred by comparing with last ORIGINAL news value
+                        // A movement is detected if the current original value differs significantly from the last original value
+                        const isNewMovement = lastOriginalNewsValue !== null && 
+                            Math.abs(originalNewsValue - lastOriginalNewsValue) > MOVEMENT_THRESHOLD;
+                        
+                        if (isNewMovement) {
+                            // New movement detected - jump to it and restart timer
+                            movementsDetected++;
+                            console.log(`   📈 Movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue.toFixed(2)} → ${originalNewsValue.toFixed(2)}`);
                             currentPeakValue = originalNewsValue;
                             peakTimestamp = pointTime;
                             processedPoints.push({ ...point, processedNews: originalNewsValue });
-                            lastOriginalValue = originalNewsValue;
+                            lastOriginalNewsValue = originalNewsValue;
                             continue;
                         }
+                        
+                        // No new movement - apply hold/decay logic
+                        if (timeSincePeak < HOLD_DURATION_MS) {
+                            // Still in hold period - maintain peak value
+                            processedPoints.push({ ...point, processedNews: currentPeakValue });
+                            lastOriginalNewsValue = originalNewsValue; // Track original value for movement detection
+                        } else if (timeSincePeak < TOTAL_DURATION_MS) {
+                            // In decay period - linear decay to zero
+                            const decayProgress = (timeSincePeak - HOLD_DURATION_MS) / DECAY_DURATION_MS;
+                            const decayedValue = currentPeakValue * (1 - decayProgress);
+                            processedPoints.push({ ...point, processedNews: decayedValue });
+                            lastOriginalNewsValue = originalNewsValue; // Track original value for movement detection
+                        } else {
+                            // Past decay period - value is zero (or very close to it)
+                            processedPoints.push({ ...point, processedNews: 0 });
+                            lastOriginalNewsValue = originalNewsValue; // Track original value for movement detection
+                            // Reset peak state if we're significantly past the decay period
+                            // (to allow new peaks to be detected)
+                            if (timeSincePeak > TOTAL_DURATION_MS + 60000) { // 1 minute buffer
+                                currentPeakValue = null;
+                                peakTimestamp = null;
+                            }
+                        }
+                    } else {
+                        // No active peak - check if this is a new movement
+                        // Compare with previous point's original value to detect movement
+                        if (i > 0 && lastOriginalNewsValue !== null && !isNaN(lastOriginalNewsValue)) {
+                            const movement = Math.abs(originalNewsValue - lastOriginalNewsValue);
+                            if (movement > MOVEMENT_THRESHOLD) {
+                                // Movement detected - start holding at this value
+                                movementsDetected++;
+                                console.log(`   📈 Initial movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue.toFixed(2)} → ${originalNewsValue.toFixed(2)}`);
+                                currentPeakValue = originalNewsValue;
+                                peakTimestamp = pointTime;
+                                processedPoints.push({ ...point, processedNews: originalNewsValue });
+                                lastOriginalNewsValue = originalNewsValue;
+                                continue;
+                            }
+                        }
+                        
+                        // No movement detected - keep original value
+                        processedPoints.push({ ...point, processedNews: originalNewsValue });
+                        lastOriginalNewsValue = originalNewsValue;
                     }
-                    
-                    // No movement detected - keep original value
-                    processedPoints.push({ ...point, processedNews: originalNewsValue });
-                    lastOriginalValue = originalNewsValue;
                 }
+                
+                console.log(`   ✅ Processing complete. Detected ${movementsDetected} movements.`);
+                
+                // Create a map of processed news values by timestamp for quick lookup
+                const processedMap = new Map();
+                processedPoints.forEach(p => {
+                    if (p.timestamp) {
+                        processedMap.set(p.timestamp.getTime(), p.processedNews);
+                    }
+                });
+                
+                // Update original dataPoints array with processed news values
+                // Preserve original order of dataPoints
+                let valuesChanged = 0;
+                dataPoints.forEach(point => {
+                    if (point.timestamp && processedMap.has(point.timestamp.getTime())) {
+                        const processedValue = processedMap.get(point.timestamp.getTime());
+                        const originalValue = point.news;
+                        point.processedNews = processedValue;
+                        
+                        // Check if value actually changed
+                        if (originalValue != null && processedValue != null && 
+                            Math.abs(originalValue - processedValue) > 0.001) {
+                            valuesChanged++;
+                        }
+                    }
+                });
+                
+                console.log(`   📊 Values changed: ${valuesChanged} out of ${dataPoints.length} points`);
+                if (valuesChanged === 0 && movementsDetected > 0) {
+                    console.warn('   ⚠️ Warning: Movements detected but no values changed. This might indicate a bug.');
+                }
+                
+                return dataPoints;
+            } catch (error) {
+                console.error('❌ Error in processNewsScoresWithHoldDecay:', error);
+                console.error('Stack trace:', error.stack);
+                return dataPoints; // Return original data on error
             }
-            
-            // Create a map of processed news values by timestamp for quick lookup
-            const processedMap = new Map();
-            processedPoints.forEach(p => {
-                if (p.timestamp) {
-                    processedMap.set(p.timestamp.getTime(), p.processedNews);
-                }
-            });
-            
-            // Update original dataPoints array with processed news values
-            // Preserve original order of dataPoints
-            dataPoints.forEach(point => {
-                if (point.timestamp && processedMap.has(point.timestamp.getTime())) {
-                    point.processedNews = processedMap.get(point.timestamp.getTime());
-                }
-            });
-            
-            return dataPoints;
         }
         
         async function updateChart(timeframe) {
@@ -4563,7 +4617,24 @@
                 const newsModeActive = document.getElementById('scale-news')?.checked || false;
                 if (newsModeActive && data.dataPoints && data.dataPoints.length > 0) {
                     console.log('📰 News mode active - applying hold/decay logic to news scores');
+                    console.log(`   Data points before processing: ${data.dataPoints.length}`);
+                    const pointsWithNews = data.dataPoints.filter(p => p.news != null && !isNaN(p.news));
+                    console.log(`   Points with news data: ${pointsWithNews.length}`);
+                    if (pointsWithNews.length > 0) {
+                        console.log(`   Sample news values: ${pointsWithNews.slice(0, 3).map(p => p.news).join(', ')}`);
+                    }
                     processNewsScoresWithHoldDecay(data.dataPoints);
+                    // Verify processing worked
+                    const pointsWithProcessed = data.dataPoints.filter(p => p.processedNews != null);
+                    console.log(`   Points with processed news after: ${pointsWithProcessed.length}`);
+                    if (pointsWithProcessed.length > 0) {
+                        const sample = pointsWithProcessed.slice(0, 3);
+                        console.log(`   Sample processed values:`, sample.map(p => ({
+                            time: p.timestamp.toISOString(),
+                            original: p.news,
+                            processed: p.processedNews
+                        })));
+                    }
                 }
 
                 // Store current data points for hover functionality
@@ -5867,7 +5938,7 @@
                 // Add event listeners to scale mode radio buttons (all 5 buttons are now mutually exclusive)
                 const scaleRadios = document.querySelectorAll('input[name="oscillator-scale"]');
                 scaleRadios.forEach(radio => {
-                    radio.addEventListener('change', () => {
+                    radio.addEventListener('change', async () => {
                         console.log(`Scale mode changed to: ${radio.value}`);
 
                         // Process news scores if news mode is activated
@@ -5875,6 +5946,16 @@
                         if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
                             console.log('📰 News mode activated - processing news scores with hold/decay logic');
                             processNewsScoresWithHoldDecay(window.currentChartData);
+                            
+                            // Verify processing worked - log a sample
+                            const sample = window.currentChartData.filter(p => p.news != null).slice(0, 3);
+                            if (sample.length > 0) {
+                                console.log('   Sample processed values:', sample.map(p => ({
+                                    time: p.timestamp.toISOString(),
+                                    original: p.news,
+                                    processed: p.processedNews
+                                })));
+                            }
                         }
 
                         // Signal values are already attached in updateChart(), so no need to attach here
