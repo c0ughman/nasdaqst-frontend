@@ -4679,18 +4679,72 @@
                 const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
                 if (weightedModeActive && data.dataPoints && data.dataPoints.length > 0) {
                     console.log('⚖️ Weighted mode active - calculating weighted average of signal and sentiment');
-                    data.dataPoints.forEach(point => {
-                        const signalValue = point.signalValue != null ? point.signalValue : 0;
+                    
+                    // Sort points by timestamp for processing
+                    const sortedPoints = [...data.dataPoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                    
+                    // Smooth signal transitions over 5 candles
+                    const SMOOTH_CANDLES = 5;
+                    let smoothedSignals = [];
+                    let transitionStartIndex = -1;
+                    let transitionStartValue = 0;
+                    let transitionTargetValue = 0;
+                    
+                    for (let i = 0; i < sortedPoints.length; i++) {
+                        const point = sortedPoints[i];
+                        const currentSignal = point.signalValue != null ? point.signalValue : 0;
+                        
+                        if (i === 0) {
+                            // First point - no smoothing needed
+                            smoothedSignals.push(currentSignal);
+                            transitionStartValue = currentSignal;
+                            transitionTargetValue = currentSignal;
+                        } else {
+                            const prevSignal = sortedPoints[i - 1].signalValue != null ? sortedPoints[i - 1].signalValue : 0;
+                            const prevSmoothedSignal = smoothedSignals[i - 1];
+                            
+                            // Check if signal changed
+                            if (currentSignal !== prevSignal) {
+                                // Signal changed - start new transition over 5 candles
+                                transitionStartIndex = i;
+                                transitionStartValue = prevSmoothedSignal;
+                                transitionTargetValue = currentSignal;
+                                const candlesIntoTransition = 1;
+                                const progress = candlesIntoTransition / SMOOTH_CANDLES;
+                                const smoothedSignal = transitionStartValue + (transitionTargetValue - transitionStartValue) * progress;
+                                smoothedSignals.push(smoothedSignal);
+                            } else {
+                                // Check if we're in the middle of a transition
+                                const candlesSinceTransitionStart = i - transitionStartIndex;
+                                
+                                if (transitionStartIndex >= 0 && candlesSinceTransitionStart < SMOOTH_CANDLES) {
+                                    // Still transitioning - continue smoothing
+                                    const progress = candlesSinceTransitionStart / SMOOTH_CANDLES;
+                                    const smoothedSignal = transitionStartValue + (transitionTargetValue - transitionStartValue) * progress;
+                                    smoothedSignals.push(smoothedSignal);
+                                } else {
+                                    // Transition complete or no transition - use target value
+                                    smoothedSignals.push(currentSignal);
+                                    transitionStartValue = currentSignal;
+                                    transitionTargetValue = currentSignal;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Now calculate weighted average with smoothed signals
+                    sortedPoints.forEach((point, index) => {
+                        const smoothedSignal = smoothedSignals[index];
                         const sentimentValue = point.sentiment != null ? point.sentiment : 0;
                         
-                        // Normalize signal value from -100/+100/0 to -1/+1/0 for averaging
-                        const normalizedSignal = signalValue / 100;
+                        // Normalize smoothed signal value from -100/+100/0 to -1/+1/0 for averaging
+                        const normalizedSignal = smoothedSignal / 100;
                         
                         // Normalize sentiment value to -1 to +1 range (assuming sentiment is typically -100 to +100)
                         const normalizedSentiment = Math.max(-1, Math.min(1, sentimentValue / 100));
                         
-                        // Weighted average: 50% signal, 50% sentiment
-                        const weightedAverage = (normalizedSignal * 0.5) + (normalizedSentiment * 0.5);
+                        // Weighted average: 70% signal, 30% sentiment
+                        const weightedAverage = (normalizedSignal * 0.7) + (normalizedSentiment * 0.3);
                         
                         // Convert back to -100 to +100 scale
                         point.weightedValue = weightedAverage * 100;
@@ -6062,20 +6116,67 @@
                         const weightedModeActive = radio.value === 'weighted';
                         if (weightedModeActive && window.currentChartData && window.currentChartData.length > 0) {
                             console.log('⚖️ Weighted mode activated - calculating weighted average');
-                            window.currentChartData.forEach(point => {
-                                const signalValue = point.signalValue != null ? point.signalValue : 0;
+                            
+                            // Sort points by timestamp for processing
+                            const sortedPoints = [...window.currentChartData].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+                            
+                            // Smooth signal transitions over 5 candles
+                            const SMOOTH_CANDLES = 5;
+                            let smoothedSignals = [];
+                            let transitionStartIndex = -1;
+                            let transitionStartValue = 0;
+                            let transitionTargetValue = 0;
+                            
+                            for (let i = 0; i < sortedPoints.length; i++) {
+                                const point = sortedPoints[i];
+                                const currentSignal = point.signalValue != null ? point.signalValue : 0;
+                                
+                                if (i === 0) {
+                                    smoothedSignals.push(currentSignal);
+                                    transitionStartValue = currentSignal;
+                                    transitionTargetValue = currentSignal;
+                                } else {
+                                    const prevSignal = sortedPoints[i - 1].signalValue != null ? sortedPoints[i - 1].signalValue : 0;
+                                    const prevSmoothedSignal = smoothedSignals[i - 1];
+                                    
+                                    if (currentSignal !== prevSignal) {
+                                        // Signal changed - start new transition over 5 candles
+                                        transitionStartIndex = i;
+                                        transitionStartValue = prevSmoothedSignal;
+                                        transitionTargetValue = currentSignal;
+                                        const candlesIntoTransition = 1;
+                                        const progress = candlesIntoTransition / SMOOTH_CANDLES;
+                                        const smoothedSignal = transitionStartValue + (transitionTargetValue - transitionStartValue) * progress;
+                                        smoothedSignals.push(smoothedSignal);
+                                    } else {
+                                        // Check if we're in the middle of a transition
+                                        const candlesSinceTransitionStart = i - transitionStartIndex;
+                                        
+                                        if (transitionStartIndex >= 0 && candlesSinceTransitionStart < SMOOTH_CANDLES) {
+                                            // Still transitioning - continue smoothing
+                                            const progress = candlesSinceTransitionStart / SMOOTH_CANDLES;
+                                            const smoothedSignal = transitionStartValue + (transitionTargetValue - transitionStartValue) * progress;
+                                            smoothedSignals.push(smoothedSignal);
+                                        } else {
+                                            // Transition complete or no transition - use target value
+                                            smoothedSignals.push(currentSignal);
+                                            transitionStartValue = currentSignal;
+                                            transitionTargetValue = currentSignal;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Calculate weighted average with smoothed signals
+                            sortedPoints.forEach((point, index) => {
+                                const smoothedSignal = smoothedSignals[index];
                                 const sentimentValue = point.sentiment != null ? point.sentiment : 0;
                                 
-                                // Normalize signal value from -100/+100/0 to -1/+1/0 for averaging
-                                const normalizedSignal = signalValue / 100;
-                                
-                                // Normalize sentiment value to -1 to +1 range
+                                const normalizedSignal = smoothedSignal / 100;
                                 const normalizedSentiment = Math.max(-1, Math.min(1, sentimentValue / 100));
                                 
-                                // Weighted average: 50% signal, 50% sentiment
-                                const weightedAverage = (normalizedSignal * 0.5) + (normalizedSentiment * 0.5);
-                                
-                                // Convert back to -100 to +100 scale
+                                // Weighted average: 70% signal, 30% sentiment
+                                const weightedAverage = (normalizedSignal * 0.7) + (normalizedSentiment * 0.3);
                                 point.weightedValue = weightedAverage * 100;
                             });
                         }
