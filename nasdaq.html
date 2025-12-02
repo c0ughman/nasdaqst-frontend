@@ -4191,7 +4191,10 @@
                 const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes
                 const DECAY_DURATION_MS = 5 * 60 * 1000; // 5 minutes
                 const TOTAL_DURATION_MS = HOLD_DURATION_MS + DECAY_DURATION_MS; // 20 minutes total
-                const MOVEMENT_THRESHOLD = 2.0; // Minimum change to consider a movement (increased to avoid detecting every tiny fluctuation)
+                const MOVEMENT_THRESHOLD = 5.0; // Minimum change to consider a movement (increased significantly)
+                
+                // Track the last few original values to detect directional changes
+                let recentOriginalValues = [];
                 
                 // Sample a few points to see what we're working with
                 const samplePoints = sortedPoints.filter(p => p.news != null && !isNaN(p.news)).slice(0, 5);
@@ -4219,6 +4222,12 @@
                         continue;
                     }
                     
+                    // Track recent original values (keep last 3 for trend detection)
+                    recentOriginalValues.push(originalNewsValue);
+                    if (recentOriginalValues.length > 3) {
+                        recentOriginalValues.shift();
+                    }
+                    
                     // Check if we have an active peak
                     if (currentPeakValue !== null && peakTimestamp !== null) {
                         const timeSincePeak = pointTime - peakTimestamp;
@@ -4230,39 +4239,48 @@
                                 ? currentPeakValue * (1 - (timeSincePeak - HOLD_DURATION_MS) / DECAY_DURATION_MS)
                                 : 0);
                         
-                        // Only detect a new movement if the original value is significantly different from what we're DISPLAYING
-                        // This prevents detecting movements during hold/decay periods when values naturally change
-                        const changeFromDisplay = Math.abs(originalNewsValue - currentDisplayValue);
-                        const isNewMovement = changeFromDisplay > MOVEMENT_THRESHOLD;
+                        // During hold period, ONLY detect movements if new value is significantly HIGHER than current peak
+                        // During decay period, detect if new value is significantly different (higher or lower) from decayed value
+                        let isNewMovement = false;
+                        if (timeSincePeak < HOLD_DURATION_MS) {
+                            // During hold: only detect if new value is significantly HIGHER (new peak)
+                            isNewMovement = originalNewsValue > currentPeakValue + MOVEMENT_THRESHOLD;
+                        } else if (timeSincePeak < TOTAL_DURATION_MS) {
+                            // During decay: detect if new value is significantly different from decayed value
+                            isNewMovement = Math.abs(originalNewsValue - currentDisplayValue) > MOVEMENT_THRESHOLD;
+                        } else {
+                            // Past decay: detect if new value is significant (above threshold)
+                            isNewMovement = Math.abs(originalNewsValue) > MOVEMENT_THRESHOLD;
+                        }
                         
                         if (isNewMovement) {
                             // New movement detected - jump to it and restart timer
                             movementsDetected++;
-                            console.log(`   📈 Movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: displaying ${currentDisplayValue.toFixed(2)} → new value ${originalNewsValue.toFixed(2)} (change: ${changeFromDisplay.toFixed(2)})`);
+                            console.log(`   📈 Movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: displaying ${currentDisplayValue.toFixed(2)} → new value ${originalNewsValue.toFixed(2)}`);
                             currentPeakValue = originalNewsValue;
                             peakTimestamp = pointTime;
                             processedPoints.push({ ...point, processedNews: originalNewsValue });
                             lastOriginalNewsValue = originalNewsValue;
+                            recentOriginalValues = [originalNewsValue]; // Reset tracking
                             continue;
                         }
                         
                         // No new movement - apply hold/decay logic
                         if (timeSincePeak < HOLD_DURATION_MS) {
-                            // Still in hold period - maintain peak value
+                            // Still in hold period - maintain peak value (FLAT LINE)
                             processedPoints.push({ ...point, processedNews: currentPeakValue });
-                            lastOriginalNewsValue = originalNewsValue; // Track original value for movement detection
+                            lastOriginalNewsValue = originalNewsValue; // Track original value for reference
                         } else if (timeSincePeak < TOTAL_DURATION_MS) {
                             // In decay period - linear decay to zero
                             const decayProgress = (timeSincePeak - HOLD_DURATION_MS) / DECAY_DURATION_MS;
                             const decayedValue = currentPeakValue * (1 - decayProgress);
                             processedPoints.push({ ...point, processedNews: decayedValue });
-                            lastOriginalNewsValue = originalNewsValue; // Track original value for movement detection
+                            lastOriginalNewsValue = originalNewsValue; // Track original value for reference
                         } else {
                             // Past decay period - value is zero (or very close to it)
                             processedPoints.push({ ...point, processedNews: 0 });
-                            lastOriginalNewsValue = originalNewsValue; // Track original value for movement detection
+                            lastOriginalNewsValue = originalNewsValue; // Track original value for reference
                             // Reset peak state if we're significantly past the decay period
-                            // (to allow new peaks to be detected)
                             if (timeSincePeak > TOTAL_DURATION_MS + 60000) { // 1 minute buffer
                                 currentPeakValue = null;
                                 peakTimestamp = null;
@@ -4270,7 +4288,7 @@
                         }
                     } else {
                         // No active peak - check if this is a new movement
-                        // Compare with previous point's original value to detect movement
+                        // Compare with previous point's original value to detect significant movement
                         if (i > 0 && lastOriginalNewsValue !== null && !isNaN(lastOriginalNewsValue)) {
                             const movement = Math.abs(originalNewsValue - lastOriginalNewsValue);
                             if (movement > MOVEMENT_THRESHOLD) {
@@ -4281,6 +4299,7 @@
                                 peakTimestamp = pointTime;
                                 processedPoints.push({ ...point, processedNews: originalNewsValue });
                                 lastOriginalNewsValue = originalNewsValue;
+                                recentOriginalValues = [originalNewsValue]; // Reset tracking
                                 continue;
                             }
                         }
