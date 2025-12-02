@@ -4872,7 +4872,7 @@
                     return;
                 }
 
-                // Create smooth path
+                // Create smooth path with ease-in-out curves
                 if (points.length > 1) {
                     // Helper to get value (use signalValue in signal mode for sentiment)
                     const getValue = (point) => {
@@ -4884,15 +4884,27 @@
                     for (let i = 1; i < points.length; i++) {
                         const x = points[i].x;
                         const y = valueToY(getValue(points[i]));
+                        const prevX = points[i - 1].x;
+                        const prevY = valueToY(getValue(points[i - 1]));
 
                         if (i === 1 && points.length === 2) {
+                            // Just two points - simple line
                             pathD += ` L ${x},${y}`;
                         } else {
-                            const prevX = points[i - 1].x;
-                            const prevY = valueToY(getValue(points[i - 1]));
-                            const cpX = (prevX + x) / 2;
-                            const cpY = (prevY + y) / 2;
-                            pathD += ` Q ${cpX},${cpY} ${x},${y}`;
+                            // Use cubic Bezier with ease-in-out control points
+                            // Control points are positioned to create S-curve effect
+                            const dx = x - prevX;
+                            const tension = 0.4; // Controls curve smoothness (0 = linear, 0.5 = very curved)
+
+                            // First control point: ease-out from previous point (slow start)
+                            const cp1X = prevX + dx * tension;
+                            const cp1Y = prevY;
+
+                            // Second control point: ease-in to current point (slow end)
+                            const cp2X = x - dx * tension;
+                            const cp2Y = y;
+
+                            pathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
                         }
                     }
 
