@@ -4212,8 +4212,7 @@
                 let processedPoints = [];
                 
                 const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-                const DECAY_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-                const TOTAL_DURATION_MS = HOLD_DURATION_MS + DECAY_DURATION_MS; // 20 minutes total
+                const MINUTE_DECAY_RATE = 0.9617; // Exponential decay rate per minute (same as regular news: 1 - 0.0383)
                 const MOVEMENT_THRESHOLD = 5.0; // Minimum change to consider a movement (increased significantly)
                 
                 // Track the last few original values to detect directional changes
@@ -4256,11 +4255,18 @@
                         const timeSincePeak = pointTime - peakTimestamp;
                         
                         // Calculate what we're currently displaying (peak value, decayed value, or zero)
-                        const currentDisplayValue = timeSincePeak < HOLD_DURATION_MS 
-                            ? currentPeakValue 
-                            : (timeSincePeak < TOTAL_DURATION_MS 
-                                ? currentPeakValue * (1 - (timeSincePeak - HOLD_DURATION_MS) / DECAY_DURATION_MS)
-                                : 0);
+                        // After hold period, use exponential decay: news_score(t) = news_score(0) * (0.9617)^t
+                        let currentDisplayValue;
+                        if (timeSincePeak < HOLD_DURATION_MS) {
+                            // Still in hold period - use peak value
+                            currentDisplayValue = currentPeakValue;
+                        } else {
+                            // After hold period - apply exponential decay
+                            const minutesSinceDecayStart = (timeSincePeak - HOLD_DURATION_MS) / (60 * 1000);
+                            const decayedValue = currentPeakValue * Math.pow(MINUTE_DECAY_RATE, minutesSinceDecayStart);
+                            // Force to zero if below threshold (same as regular news decay)
+                            currentDisplayValue = decayedValue < 0.01 ? 0 : decayedValue;
+                        }
                         
                         // During hold period, ONLY detect movements if new value is significantly HIGHER than current peak
                         // During decay period, detect if new value is significantly different (higher or lower) from decayed value
@@ -4268,12 +4274,10 @@
                         if (timeSincePeak < HOLD_DURATION_MS) {
                             // During hold: only detect if new value is significantly HIGHER (new peak)
                             isNewMovement = originalNewsValue > currentPeakValue + MOVEMENT_THRESHOLD;
-                        } else if (timeSincePeak < TOTAL_DURATION_MS) {
-                            // During decay: detect if new value is significantly different from decayed value
-                            isNewMovement = Math.abs(originalNewsValue - currentDisplayValue) > MOVEMENT_THRESHOLD;
                         } else {
-                            // Past decay: detect if new value is significant (above threshold)
-                            isNewMovement = Math.abs(originalNewsValue) > MOVEMENT_THRESHOLD;
+                            // During exponential decay: detect if new value is significantly different from decayed value
+                            // or if decayed value is near zero and new value is significant
+                            isNewMovement = Math.abs(originalNewsValue - currentDisplayValue) > MOVEMENT_THRESHOLD;
                         }
                         
                         if (isNewMovement) {
@@ -4293,18 +4297,17 @@
                             // Still in hold period - maintain peak value (FLAT LINE)
                             processedPoints.push({ ...point, processedNews: currentPeakValue });
                             lastOriginalNewsValue = originalNewsValue; // Track original value for reference
-                        } else if (timeSincePeak < TOTAL_DURATION_MS) {
-                            // In decay period - linear decay to zero
-                            const decayProgress = (timeSincePeak - HOLD_DURATION_MS) / DECAY_DURATION_MS;
-                            const decayedValue = currentPeakValue * (1 - decayProgress);
-                            processedPoints.push({ ...point, processedNews: decayedValue });
-                            lastOriginalNewsValue = originalNewsValue; // Track original value for reference
                         } else {
-                            // Past decay period - value is zero (or very close to it)
-                            processedPoints.push({ ...point, processedNews: 0 });
+                            // After hold period - apply exponential decay
+                            const minutesSinceDecayStart = (timeSincePeak - HOLD_DURATION_MS) / (60 * 1000);
+                            const decayedValue = currentPeakValue * Math.pow(MINUTE_DECAY_RATE, minutesSinceDecayStart);
+                            // Force to zero if below threshold (same as regular news decay)
+                            const finalValue = decayedValue < 0.01 ? 0 : decayedValue;
+                            processedPoints.push({ ...point, processedNews: finalValue });
                             lastOriginalNewsValue = originalNewsValue; // Track original value for reference
-                            // Reset peak state if we're significantly past the decay period
-                            if (timeSincePeak > TOTAL_DURATION_MS + 60000) { // 1 minute buffer
+                            
+                            // Reset peak state if decayed value is effectively zero
+                            if (finalValue === 0 && minutesSinceDecayStart > 120) { // After 2 hours, decay is negligible
                                 currentPeakValue = null;
                                 peakTimestamp = null;
                             }
