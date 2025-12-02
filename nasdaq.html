@@ -5169,6 +5169,20 @@
                 scaleRadios.forEach(radio => {
                     radio.addEventListener('change', () => {
                         console.log(`Scale mode changed to: ${radio.value}`);
+
+                        // If switching to signal mode, attach signal values before drawing
+                        if (radio.value === 'signal' && window.currentChartData) {
+                            console.log('📊 Attaching signal values for signal mode...');
+                            let attachedCount = 0;
+                            window.currentChartData.forEach(p => {
+                                if (p.timestamp) {
+                                    p.signalValue = globalSignalCache.get(p.timestamp.getTime()) || 0;
+                                    attachedCount++;
+                                }
+                            });
+                            console.log(`✅ Attached signal values to ${attachedCount} data points`);
+                        }
+
                         // Redraw oscillator with new scale mode
                         if (window.currentChartData) {
                             drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
