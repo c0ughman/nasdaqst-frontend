@@ -4740,17 +4740,20 @@
                         // Normalize smoothed signal value from -100/+100/0 to -1/+1/0 for averaging
                         const normalizedSignal = smoothedSignal / 100;
                         
-                        // Normalize sentiment value to -1 to +1 range (keep normal range)
+                        // Normalize sentiment value to -1 to +1 range
                         const normalizedSentiment = Math.max(-1, Math.min(1, sentimentValue / 100));
                         
-                        // Increase sentiment's weight in the average to show more volatility
-                        // Instead of 70/30, use 30/70 to favor sentiment and amplify movements
-                        // This increases sentiment's impact without shifting the baseline
-                        const signalWeight = 0.3;  // Reduced from 0.7
-                        const sentimentWeight = 0.7;  // Increased from 0.3
+                        // Amplify sentiment's contribution to create more volatility without changing weights
+                        // Use amplification that pushes values toward extremes
+                        // This makes sentiment movements more pronounced while keeping signal at 70% weight
+                        const VOLATILITY_AMPLIFIER = 10;
+                        const amplifiedSentiment = normalizedSentiment * VOLATILITY_AMPLIFIER;
+                        // Clamp amplified sentiment to prevent extreme values from dominating
+                        const clampedSentiment = Math.max(-1, Math.min(1, amplifiedSentiment));
                         
-                        // Weighted average: 30% signal, 70% sentiment (sentiment now dominates for more volatility)
-                        const weightedAverage = (normalizedSignal * signalWeight) + (normalizedSentiment * sentimentWeight);
+                        // Weighted average: 70% signal, 30% sentiment (with amplified sentiment contribution)
+                        // The amplified sentiment creates more movement toward extremes
+                        const weightedAverage = (normalizedSignal * 0.7) + (clampedSentiment * 0.3);
                         
                         // Convert back to -100 to +100 scale
                         point.weightedValue = weightedAverage * 100;
@@ -6179,16 +6182,18 @@
                                 const sentimentValue = point.sentiment != null ? point.sentiment : 0;
                                 
                                 const normalizedSignal = smoothedSignal / 100;
-                                // Normalize sentiment value to -1 to +1 range (keep normal range to avoid baseline shift)
+                                // Normalize sentiment value to -1 to +1 range
                                 const normalizedSentiment = Math.max(-1, Math.min(1, sentimentValue / 100));
                                 
-                                // Increase sentiment's weight in the average to show more volatility
-                                // Instead of 70/30, use 30/70 to favor sentiment and amplify movements
-                                const signalWeight = 0.3;  // Reduced from 0.7
-                                const sentimentWeight = 0.7;  // Increased from 0.3
+                                // Amplify sentiment's contribution to create more volatility without changing weights
+                                // Use amplification that pushes values toward extremes
+                                const VOLATILITY_AMPLIFIER = 10;
+                                const amplifiedSentiment = normalizedSentiment * VOLATILITY_AMPLIFIER;
+                                // Clamp amplified sentiment to prevent extreme values from dominating
+                                const clampedSentiment = Math.max(-1, Math.min(1, amplifiedSentiment));
                                 
-                                // Weighted average: 30% signal, 70% sentiment (sentiment now dominates for more volatility)
-                                const weightedAverage = (normalizedSignal * signalWeight) + (normalizedSentiment * sentimentWeight);
+                                // Weighted average: 70% signal, 30% sentiment (with amplified sentiment contribution)
+                                const weightedAverage = (normalizedSignal * 0.7) + (clampedSentiment * 0.3);
                                 point.weightedValue = weightedAverage * 100;
                             });
                         }
