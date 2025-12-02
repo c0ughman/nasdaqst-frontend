@@ -4912,6 +4912,27 @@
                         }
                     }
 
+                    // In signal mode, add filled areas above/below zero
+                    if (driver.key === 'sentiment' && signalModeActive) {
+                        const zeroY = valueToY(0);
+
+                        // Create green fill area (above zero line, below signal when at +100)
+                        const greenFillPath = `${pathD} L ${points[points.length - 1].x},${zeroY} L ${points[0].x},${zeroY} Z`;
+                        const greenFill = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        greenFill.setAttribute('d', greenFillPath);
+                        greenFill.setAttribute('fill', 'rgba(34, 197, 94, 0.15)'); // Green with transparency
+                        greenFill.setAttribute('stroke', 'none');
+                        svg.appendChild(greenFill);
+
+                        // Create red fill area (below zero line, above signal when at -100)
+                        const redFillPath = `${pathD} L ${points[points.length - 1].x},${zeroY} L ${points[0].x},${zeroY} Z`;
+                        const redFill = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        redFill.setAttribute('d', redFillPath);
+                        redFill.setAttribute('fill', 'rgba(239, 68, 68, 0.15)'); // Red with transparency
+                        redFill.setAttribute('stroke', 'none');
+                        svg.appendChild(redFill);
+                    }
+
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     path.setAttribute('d', pathD);
                     path.setAttribute('fill', 'none');
