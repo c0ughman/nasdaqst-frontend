@@ -4282,9 +4282,9 @@
                         
                         // STEP 1: Calculate signals from RAW 1-second data
                         console.log(`   Calculating signals from ${rawSecondData.length} raw 1-second data points...`);
-                        console.log(`     - Technical DOWN: ≥0.5 point → -100 (15s)`);
-                        console.log(`     - Technical UP: ≥1 point → +100 (15s)`);
-                        console.log(`     - News UP: ≥2 points → +100 (1min)`);
+                        console.log(`     - Technical DOWN: ≥0.2 point → -100 (15s)`);
+                        console.log(`     - Technical UP: ≥0.3 point → +100 (15s)`);
+                        console.log(`     - News UP: ≥0.5 point → +100 (1min)`);
                         
                         const rawSignalValues = calculateGranularSignalOscillator(rawSecondData, inheritedSignalState);
                         
@@ -5014,10 +5014,10 @@
 
         // Calculate signal-based oscillator values for GRANULAR data (second-by-second)
         // Uses different thresholds and shorter durations than minute-level signals
-        // Thresholds (LOWERED for more movement):
-        //   - Technical DOWN: ≥0.5 point decrease → -100 for 15 seconds
-        //   - Technical UP: ≥1 point increase → +100 for 15 seconds
-        //   - News UP: ≥2 points increase → +100 for 1 minute
+        // Thresholds (MUCH LOWER for maximum movement):
+        //   - Technical DOWN: ≥0.2 point decrease → -100 for 15 seconds
+        //   - Technical UP: ≥0.3 point increase → +100 for 15 seconds
+        //   - News UP: ≥0.5 point increase → +100 for 1 minute
         // Flip rules: Same as minute-level (2 opposite signals to flip)
         // Optionally inherits initial signal state from minute-level data
         function calculateGranularSignalOscillator(dataPoints, initialSignalState = null) {
@@ -5040,26 +5040,26 @@
                 let technicalDownDetected = false;
                 let technicalUpDetected = false;
 
-                // Detect News UP signal (news score increases by ≥2) - LOWERED for more movement
+                // Detect News UP signal (news score increases by ≥0.5) - MUCH LOWER for maximum movement
                 if (previous && current.news != null && previous.news != null) {
                     const newsChange = current.news - previous.news;
-                    if (newsChange >= 2) {
+                    if (newsChange >= 0.5) {
                         newsUpDetected = true;
                     }
                 }
 
-                // Detect Technical DOWN signal (technical score decreases by ≥0.5) - LOWERED for more movement
+                // Detect Technical DOWN signal (technical score decreases by ≥0.2) - MUCH LOWER for maximum movement
                 if (previous && current.indicators != null && previous.indicators != null) {
                     const technicalChange = current.indicators - previous.indicators;
-                    if (technicalChange <= -0.5) {
+                    if (technicalChange <= -0.2) {
                         technicalDownDetected = true;
                     }
                 }
 
-                // Detect Technical UP signal (technical score increases by ≥1) - LOWERED from 3 for more movement
+                // Detect Technical UP signal (technical score increases by ≥0.3) - MUCH LOWER for maximum movement
                 if (previous && current.indicators != null && previous.indicators != null) {
                     const technicalChange = current.indicators - previous.indicators;
-                    if (technicalChange >= 1) {
+                    if (technicalChange >= 0.3) {
                         technicalUpDetected = true;
                     }
                 }
