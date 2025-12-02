@@ -1056,10 +1056,22 @@
             top: 0;
             left: 20px;
             right: 10%;
-            bottom: 0;
+            bottom: 20px;
             width: calc(90% - 20px);
-            height: 100%;
+            height: calc(100% - 20px);
             cursor: crosshair;
+        }
+
+        .oscillator-x-axis {
+            position: absolute;
+            left: 20px;
+            right: 10%;
+            bottom: 0;
+            height: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #fff;
         }
 
         /* Oscillator Y-axis */
@@ -1168,7 +1180,8 @@
         #scale-fixed:checked + label,
         #scale-visible:checked + label,
         #scale-full:checked + label,
-        #scale-signal:checked + label {
+        #scale-signal:checked + label,
+        #scale-news:checked + label {
             background: rgba(255, 140, 66, 0.2) !important;
             border-color: #ff8c42 !important;
             color: #ff8c42 !important;
@@ -2263,6 +2276,7 @@
                     <div class="chart-oscillator-container">
                         <div class="oscillator-y-axis" id="oscillator-y-axis"></div>
                         <div class="chart-oscillator" id="chart-oscillator"></div>
+                        <div class="oscillator-x-axis" id="oscillator-x-axis"></div>
                         <!-- Current Sentiment Score Panel -->
                         <div class="oscillator-score-panel">
                             <!-- Composite Score Eye Icon -->
@@ -2316,6 +2330,15 @@
                                         <path d="M8 2 L8 14" stroke="currentColor" stroke-width="1.5"/>
                                         <path d="M4 6 L8 2 L12 6" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                         <path d="M4 10 L8 14 L12 10" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                    </svg>
+                                </label>
+
+                                <!-- News Score Mode Toggle -->
+                                <input type="radio" id="scale-news" name="oscillator-scale" value="news" style="display: none;">
+                                <label for="scale-news" id="news-mode-toggle" title="News Score Mode - Shows news score only" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease; margin-left: 3px;">
+                                    <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
+                                        <path d="M3 8 L6 5 L9 8 L13 4" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                        <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
                                     </svg>
                                 </label>
                             </div>
@@ -3266,13 +3289,21 @@
 
             let sentiment = data.composite_score;
 
-            // Check if signal mode is active (now a radio button)
+            // Check if signal mode or news mode is active
             const signalModeActive = document.getElementById('scale-signal')?.checked || false;
+            const newsModeActive = document.getElementById('scale-news')?.checked || false;
+            
             if (signalModeActive && window.currentChartData && window.currentChartData.length > 0) {
                 // Get the most recent data point's signal value
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                 if (lastPoint && lastPoint.signalValue != null) {
                     sentiment = lastPoint.signalValue;
+                }
+            } else if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                // Get the most recent data point's news value
+                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                if (lastPoint && lastPoint.news != null) {
+                    sentiment = lastPoint.news;
                 }
             }
 
@@ -4428,9 +4459,15 @@
                     const lastPoint = data.dataPoints[data.dataPoints.length - 1];
                     let displayValue;
                     
+                    // Check for news mode
+                    const newsModeActive = document.getElementById('scale-news')?.checked || false;
+                    
                     if (signalModeActive && lastPoint.signalValue != null) {
                         // In signal mode, use signal value
                         displayValue = lastPoint.signalValue;
+                    } else if (newsModeActive && lastPoint.news != null) {
+                        // In news mode, use news score
+                        displayValue = lastPoint.news;
                     } else {
                         // In regular mode, use sentiment value
                         displayValue = lastPoint.sentiment ?? data.composite_score ?? 0;
@@ -5174,6 +5211,19 @@
                 // Mode 1: Fixed -100 to +100 (also used for signal mode)
                 minValue = -100;
                 maxValue = 100;
+            } else if (scaleMode === 'news') {
+                // News mode: Scale based on news values only
+                const newsValues = (scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints))
+                    .filter(p => p.news != null && !isNaN(p.news))
+                    .map(p => p.news);
+                
+                if (newsValues.length > 0) {
+                    minValue = Math.min(...newsValues);
+                    maxValue = Math.max(...newsValues);
+                } else {
+                    minValue = -100;
+                    maxValue = 100;
+                }
             } else {
                 // Collect all values from enabled drivers
                 const driverKeys = ['sentiment', 'news', 'indicators'];
@@ -5208,7 +5258,7 @@
             // Update Y-axis labels
             const yAxisDiv = document.getElementById('oscillator-y-axis');
             if (yAxisDiv) {
-                // Display: max at top, 0 in middle, min at bottom
+                // Display: max at top, min at bottom (no zero label)
                 const formatValue = (val) => {
                     if (val === 0) return '0';
                     return val > 0 ? `+${val.toFixed(0)}` : val.toFixed(0);
@@ -5216,7 +5266,6 @@
 
                 yAxisDiv.innerHTML = `
                     <span>${formatValue(maxValue)}</span>
-                    <span>0</span>
                     <span>${formatValue(minValue)}</span>
                 `;
             }
@@ -5234,8 +5283,9 @@
                 return Math.max(5, Math.min(95, y));
             };
 
-            // Check if signal mode is active
+            // Check if signal mode or news mode is active
             const signalModeActive = document.getElementById('scale-signal')?.checked || false;
+            const newsModeActive = document.getElementById('scale-news')?.checked || false;
 
             // Define which drivers to plot and their colors
             // Only include drivers that have historical data from the API
@@ -5252,9 +5302,15 @@
                     return; // Skip other drivers in signal mode
                 }
                 
+                // In news mode, only show news line
+                if (newsModeActive && driver.key !== 'news') {
+                    return; // Skip other drivers in news mode
+                }
+                
                 // Check if this driver should be displayed (check eye button active state)
                 // In signal mode, always show sentiment line regardless of eye button state
-                const shouldDisplay = signalModeActive && driver.key === 'sentiment' 
+                // In news mode, always show news line regardless of eye button state
+                const shouldDisplay = (signalModeActive && driver.key === 'sentiment') || (newsModeActive && driver.key === 'news')
                     ? true 
                     : (!driver.eyeBtn || driver.eyeBtn.classList.contains('active'));
                 if (!shouldDisplay) return;
@@ -5664,7 +5720,7 @@
                     }
                 });
 
-                // Add event listeners to scale mode radio buttons (all 4 buttons are now mutually exclusive)
+                // Add event listeners to scale mode radio buttons (all 5 buttons are now mutually exclusive)
                 const scaleRadios = document.querySelectorAll('input[name="oscillator-scale"]');
                 scaleRadios.forEach(radio => {
                     radio.addEventListener('change', () => {
@@ -5680,12 +5736,16 @@
                         // This ensures the score box shows the correct value based on the current mode
                         if (window.currentChartData && window.currentChartData.length > 0) {
                             const signalModeActive = radio.value === 'signal';
+                            const newsModeActive = radio.value === 'news';
                             const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                             let displayValue;
                             
                             if (signalModeActive && lastPoint.signalValue != null) {
                                 // In signal mode, use signal value
                                 displayValue = lastPoint.signalValue;
+                            } else if (newsModeActive && lastPoint.news != null) {
+                                // In news mode, use news score
+                                displayValue = lastPoint.news;
                             } else {
                                 // In regular mode, use sentiment value
                                 displayValue = lastPoint.sentiment ?? currentCompositeScore ?? 0;
