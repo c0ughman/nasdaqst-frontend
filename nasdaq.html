@@ -4282,9 +4282,9 @@
                         
                         // STEP 1: Calculate signals from RAW 1-second data
                         console.log(`   Calculating signals from ${rawSecondData.length} raw 1-second data points...`);
-                        console.log(`     - Technical DOWN: ≥1 point → -100 (15s)`);
-                        console.log(`     - Technical UP: ≥3 points → +100 (15s)`);
-                        console.log(`     - News UP: ≥5 points → +100 (1min)`);
+                        console.log(`     - Technical DOWN: ≥0.5 point → -100 (15s)`);
+                        console.log(`     - Technical UP: ≥1 point → +100 (15s)`);
+                        console.log(`     - News UP: ≥2 points → +100 (1min)`);
                         
                         const rawSignalValues = calculateGranularSignalOscillator(rawSecondData, inheritedSignalState);
                         
@@ -5014,10 +5014,10 @@
 
         // Calculate signal-based oscillator values for GRANULAR data (second-by-second)
         // Uses different thresholds and shorter durations than minute-level signals
-        // Thresholds:
-        //   - Technical DOWN: ≥1 point decrease → -100 for 15 seconds
-        //   - Technical UP: ≥3 points increase → +100 for 15 seconds
-        //   - News UP: ≥5 points increase → +100 for 1 minute
+        // Thresholds (LOWERED for more movement):
+        //   - Technical DOWN: ≥0.5 point decrease → -100 for 15 seconds
+        //   - Technical UP: ≥1 point increase → +100 for 15 seconds
+        //   - News UP: ≥2 points increase → +100 for 1 minute
         // Flip rules: Same as minute-level (2 opposite signals to flip)
         // Optionally inherits initial signal state from minute-level data
         function calculateGranularSignalOscillator(dataPoints, initialSignalState = null) {
