@@ -5246,6 +5246,11 @@
                         if (window.currentChartData) {
                             drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
                         }
+
+                        // Update the composite score display to reflect signal mode or regular mode
+                        updateSentimentDisplay({
+                            composite_score: currentCompositeScore
+                        });
                     });
                 });
 
