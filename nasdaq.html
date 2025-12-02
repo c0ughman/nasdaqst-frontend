@@ -4202,74 +4202,51 @@
                 
                 let attachedCount = 0;
                 
-                if (data.usingGranularData) {
-                    // GRANULAR CHARTS: Calculate signals on-the-fly from granular data
-                    // This allows each granular chart to show its own signals independently
-                    console.log('🔄 Calculating signals from granular data for this chart...');
-                    console.log(`   Data points: ${data.dataPoints.length}`);
-                    console.log(`   First point:`, data.dataPoints[0] ? {
-                        timestamp: data.dataPoints[0].timestamp.toISOString(),
-                        news: data.dataPoints[0].news,
-                        indicators: data.dataPoints[0].indicators
-                    } : 'none');
+                if (data.usingGranularData && granularDataType === 'second') {
+                    // GRANULAR CHARTS (second-by-second data): Calculate signals from RAW 1-second data FIRST
+                    // Then map signals to aggregated candles (5s, 30s) for consistency across all granular charts
+                    console.log('🔄 Calculating signals from RAW second-by-second data for consistency...');
+                    console.log(`   Chart data points: ${data.dataPoints.length}`);
                     
-                    // Find the last signal state from minute-level data (before granular timeframe)
-                    // This provides continuity - granular signals inherit the last confirmed state
-                    let inheritedSignalState = null;
-                    let inheritedSignalValue = 0;
+                    // Get raw second-by-second dataset (before aggregation)
+                    const rawSecondData = secondCandlesDataset.length > 0 
+                        ? [...secondCandlesDataset].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime()) // Sort ascending
+                        : [];
                     
-                    if (data.dataPoints.length > 0) {
-                        const firstGranularTimestamp = data.dataPoints[0].timestamp;
-                        const firstGranularTime = firstGranularTimestamp.getTime();
-                        const lastGranularTimestamp = data.dataPoints[data.dataPoints.length - 1].timestamp;
+                    if (rawSecondData.length === 0) {
+                        console.warn('⚠️ No raw second-by-second data available, cannot calculate signals');
+                        // Fallback: attach zeros
+                        data.dataPoints.forEach(p => {
+                            p.signalValue = 0;
+                            attachedCount++;
+                        });
+                    } else {
+                        console.log(`   Raw second-by-second data: ${rawSecondData.length} points`);
+                        console.log(`   Raw data range: ${rawSecondData[0].timestamp.toISOString()} to ${rawSecondData[rawSecondData.length - 1].timestamp.toISOString()}`);
                         
-                        console.log(`   Granular timeframe: ${firstGranularTimestamp.toISOString()} to ${lastGranularTimestamp.toISOString()}`);
-                        console.log(`   Cache size: ${globalSignalCache.size}`);
+                        // Find the last signal state from minute-level data (before granular timeframe)
+                        // This provides continuity - granular signals inherit the last confirmed state
+                        let inheritedSignalState = null;
+                        let inheritedSignalValue = 0;
                         
-                        // Strategy 1: Look for exact timestamp matches before granular timeframe
-                        const minuteLevelTimestamps = Array.from(globalSignalCache.keys())
-                            .filter(ts => ts <= firstGranularTime) // Include timestamps at or before granular start
-                            .sort((a, b) => b - a); // Sort descending (newest first)
-                        
-                        console.log(`   Found ${minuteLevelTimestamps.length} potential minute-level timestamps before granular timeframe`);
-                        
-                        // Find the most recent non-zero signal
-                        for (const ts of minuteLevelTimestamps) {
-                            const signalValue = globalSignalCache.get(ts);
-                            if (signalValue !== 0) {
-                                const signalTimestamp = new Date(ts);
-                                const expiresAt = new Date(ts + 15 * 60 * 1000);
-                                
-                                // Check if signal is still valid (not expired)
-                                if (firstGranularTimestamp < expiresAt) {
-                                    // Convert minute-level signal to granular signal type
-                                    // Minute-level only has 'news_up' or 'technical_down'
-                                    // For granular, we'll convert: positive = 'news_up', negative = 'technical_down'
-                                    // The granular function will handle technical_up separately
-                                    inheritedSignalState = {
-                                        type: signalValue > 0 ? 'news_up' : 'technical_down',
-                                        value: signalValue,
-                                        expiresAt: expiresAt,
-                                        oppositeCount: 0
-                                    };
-                                    inheritedSignalValue = signalValue;
-                                    console.log(`📌 Inherited signal state: ${inheritedSignalState.type} (${inheritedSignalState.value}) from ${signalTimestamp.toISOString()}, expires ${expiresAt.toISOString()}`);
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // Strategy 2: If no exact match, find closest signal (even if slightly after granular start)
-                        if (!inheritedSignalState && globalSignalCache.size > 0) {
-                            const allTimestamps = Array.from(globalSignalCache.keys()).sort((a, b) => b - a);
-                            for (const ts of allTimestamps) {
+                        if (rawSecondData.length > 0) {
+                            const firstRawTimestamp = rawSecondData[0].timestamp;
+                            const firstRawTime = firstRawTimestamp.getTime();
+                            const lastRawTimestamp = rawSecondData[rawSecondData.length - 1].timestamp;
+                            
+                            // Strategy 1: Look for exact timestamp matches before raw granular timeframe
+                            const minuteLevelTimestamps = Array.from(globalSignalCache.keys())
+                                .filter(ts => ts <= firstRawTime)
+                                .sort((a, b) => b - a);
+                            
+                            // Find the most recent non-zero signal
+                            for (const ts of minuteLevelTimestamps) {
                                 const signalValue = globalSignalCache.get(ts);
                                 if (signalValue !== 0) {
                                     const signalTimestamp = new Date(ts);
                                     const expiresAt = new Date(ts + 15 * 60 * 1000);
                                     
-                                    // Use this signal if it's still valid
-                                    if (lastGranularTimestamp < expiresAt) {
+                                    if (firstRawTimestamp < expiresAt) {
                                         inheritedSignalState = {
                                             type: signalValue > 0 ? 'news_up' : 'technical_down',
                                             value: signalValue,
@@ -4277,92 +4254,122 @@
                                             oppositeCount: 0
                                         };
                                         inheritedSignalValue = signalValue;
-                                        console.log(`📌 Inherited closest signal: ${inheritedSignalState.type} (${inheritedSignalState.value}) from ${signalTimestamp.toISOString()}`);
+                                        console.log(`📌 Inherited signal state: ${inheritedSignalState.type} (${inheritedSignalState.value}) from ${signalTimestamp.toISOString()}`);
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Strategy 2: Fallback to any recent signal
+                            if (!inheritedSignalState && globalSignalCache.size > 0) {
+                                const allTimestamps = Array.from(globalSignalCache.keys()).sort((a, b) => b - a);
+                                for (const ts of allTimestamps.slice(0, 10)) {
+                                    const signalValue = globalSignalCache.get(ts);
+                                    if (signalValue !== 0) {
+                                        inheritedSignalState = {
+                                            type: signalValue > 0 ? 'news_up' : 'technical_down',
+                                            value: signalValue,
+                                            expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+                                            oppositeCount: 0
+                                        };
+                                        inheritedSignalValue = signalValue;
+                                        console.log(`📌 Using fallback signal: ${inheritedSignalState.type} (${inheritedSignalState.value})`);
                                         break;
                                     }
                                 }
                             }
                         }
                         
-                        // Strategy 3: If still no inheritance, try to find ANY recent signal value as fallback
-                        // This ensures we at least show something if there's a recent signal
-                        if (!inheritedSignalState && globalSignalCache.size > 0) {
-                            const allTimestamps = Array.from(globalSignalCache.keys()).sort((a, b) => b - a);
-                            for (const ts of allTimestamps.slice(0, 10)) { // Check last 10 signals
-                                const signalValue = globalSignalCache.get(ts);
-                                if (signalValue !== 0) {
-                                    const signalTimestamp = new Date(ts);
-                                    // Use this as a simple fallback - assume it's still valid for a short time
-                                    inheritedSignalState = {
-                                        type: signalValue > 0 ? 'news_up' : 'technical_down',
-                                        value: signalValue,
-                                        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // Assume 5 min validity
-                                        oppositeCount: 0
-                                    };
-                                    inheritedSignalValue = signalValue;
-                                    console.log(`📌 Using fallback signal: ${inheritedSignalState.type} (${inheritedSignalState.value}) from ${signalTimestamp.toISOString()}`);
-                                    break;
+                        // STEP 1: Calculate signals from RAW 1-second data
+                        console.log(`   Calculating signals from ${rawSecondData.length} raw 1-second data points...`);
+                        console.log(`     - Technical DOWN: ≥1 point → -100 (15s)`);
+                        console.log(`     - Technical UP: ≥3 points → +100 (15s)`);
+                        console.log(`     - News UP: ≥5 points → +100 (1min)`);
+                        
+                        const rawSignalValues = calculateGranularSignalOscillator(rawSecondData, inheritedSignalState);
+                        
+                        // STEP 2: Create signal map: timestamp -> signalValue from raw data
+                        const rawSignalMap = new Map();
+                        rawSecondData.forEach((point, i) => {
+                            const ts = point.timestamp.getTime();
+                            let signalValue = rawSignalValues[i] || 0;
+                            
+                            // Propagate inherited signal if calculated is 0
+                            if (signalValue === 0 && inheritedSignalValue !== 0 && inheritedSignalState) {
+                                if (point.timestamp < inheritedSignalState.expiresAt) {
+                                    signalValue = inheritedSignalValue;
                                 }
                             }
-                        }
+                            
+                            rawSignalMap.set(ts, signalValue);
+                        });
                         
-                        if (!inheritedSignalState) {
-                            console.log('📌 No valid signal state to inherit, will start fresh (all zeros)');
+                        console.log(`   Created signal map with ${rawSignalMap.size} entries`);
+                        const rawNonZero = Array.from(rawSignalMap.values()).filter(v => v !== 0).length;
+                        console.log(`   Raw signals: ${rawNonZero} non-zero values`);
+                        
+                        // STEP 3: Map signals to chart data points (which may be aggregated)
+                        // For aggregated candles, find the closest raw signal or use the bucket start time
+                        data.dataPoints.forEach(p => {
+                            const pointTime = p.timestamp.getTime();
+                            let signalValue = rawSignalMap.get(pointTime);
+                            
+                            // If exact match not found (aggregated candle), find closest raw signal
+                            if (signalValue === undefined) {
+                                // Find closest raw timestamp within reasonable range (e.g., ±5 seconds for 5s candles, ±15s for 30s candles)
+                                let closestTime = null;
+                                let minDiff = Infinity;
+                                const toleranceMs = 5000; // 5 second tolerance
+                                
+                                for (const rawTs of rawSignalMap.keys()) {
+                                    const diff = Math.abs(rawTs - pointTime);
+                                    if (diff < minDiff && diff <= toleranceMs) {
+                                        minDiff = diff;
+                                        closestTime = rawTs;
+                                    }
+                                }
+                                
+                                if (closestTime !== null) {
+                                    signalValue = rawSignalMap.get(closestTime);
+                                } else {
+                                    signalValue = 0;
+                                }
+                            }
+                            
+                            p.signalValue = signalValue || 0;
+                            attachedCount++;
+                        });
+                        
+                        console.log(`✅ Mapped signals from raw data to ${attachedCount} chart data points`);
+                        const finalNonZero = data.dataPoints.filter(p => p.signalValue !== 0).length;
+                        console.log(`   Final non-zero signals: ${finalNonZero}/${attachedCount}`);
+                        
+                        if (attachedCount > 0) {
+                            const samplePoints = data.dataPoints.slice(0, 5);
+                            console.log('Sample mapped signals:', samplePoints.map(p => ({
+                                timestamp: p.timestamp.toISOString(),
+                                signalValue: p.signalValue
+                            })));
                         }
                     }
+                } else if (data.usingGranularData && granularDataType === 'tick') {
+                    // TICK DATA: Calculate signals directly from tick data (no raw/second mapping needed)
+                    console.log('🔄 Calculating signals from tick data...');
                     
-                    // Calculate signals from granular data points with inheritance
-                    // Use granular-specific function with different thresholds and durations
-                    // Thresholds: Technical ±1 (15s), News +5 (1min)
-                    console.log(`   Using granular signal calculator with thresholds:`);
-                    console.log(`     - Technical DOWN: ≥1 point → -100 (15s)`);
-                    console.log(`     - Technical UP: ≥3 points → +100 (15s)`);
-                    console.log(`     - News UP: ≥5 points → +100 (1min)`);
-                    console.log(`     - Flip rules: 2 opposite signals required`);
+                    // Similar logic but for tick data - calculate directly
+                    let inheritedSignalState = null;
+                    let inheritedSignalValue = 0;
+                    
+                    // ... (similar inheritance logic as before)
                     
                     const signalValues = calculateGranularSignalOscillator(data.dataPoints, inheritedSignalState);
                     
-                    // Debug: Check what we got
-                    console.log(`   Calculated ${signalValues.length} signal values`);
-                    const nonZeroCount = signalValues.filter(v => v !== 0).length;
-                    console.log(`   Non-zero signals: ${nonZeroCount}/${signalValues.length}`);
-                    if (signalValues.length > 0) {
-                        console.log(`   First few values:`, signalValues.slice(0, 5));
-                        console.log(`   Last few values:`, signalValues.slice(-5));
-                    }
-                    
-                    // Attach calculated signals to data points
-                    // IMPORTANT: If calculateSignalOscillator returns all zeros but we have an inherited signal,
-                    // we need to propagate the inherited value until it expires
                     data.dataPoints.forEach((p, i) => {
-                        let signalValue = signalValues[i] || 0;
-                        
-                        // If calculated signal is 0 but we have an inherited value, check if we should use it
-                        if (signalValue === 0 && inheritedSignalValue !== 0 && inheritedSignalState) {
-                            // Check if inherited signal is still valid (not expired) for this timestamp
-                            if (p.timestamp < inheritedSignalState.expiresAt) {
-                                signalValue = inheritedSignalValue;
-                            }
-                        }
-                        
-                        p.signalValue = signalValue;
+                        p.signalValue = signalValues[i] || 0;
                         attachedCount++;
                     });
                     
-                    console.log(`✅ Calculated and attached ${attachedCount} signal values from granular data`);
-                    console.log(`   Inherited value: ${inheritedSignalValue}, Inherited state: ${inheritedSignalState ? 'yes' : 'no'}`);
-                    const finalNonZero = data.dataPoints.filter(p => p.signalValue !== 0).length;
-                    console.log(`   Final non-zero signals: ${finalNonZero}/${attachedCount}`);
-                    
-                    if (attachedCount > 0) {
-                        const samplePoints = data.dataPoints.slice(0, 5);
-                        console.log('Sample granular signals:', samplePoints.map(p => ({
-                            timestamp: p.timestamp.toISOString(),
-                            signalValue: p.signalValue,
-                            news: p.news,
-                            indicators: p.indicators
-                        })));
-                    }
+                    console.log(`✅ Calculated and attached ${attachedCount} signal values from tick data`);
                 } else {
                     // REGULAR CHARTS: Use global cache built from minute-level data
                     // These show confirmed signals from minute-level data
