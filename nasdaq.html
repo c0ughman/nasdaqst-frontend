@@ -1181,7 +1181,8 @@
         #scale-visible:checked + label,
         #scale-full:checked + label,
         #scale-signal:checked + label,
-        #scale-news:checked + label {
+        #scale-news:checked + label,
+        #scale-weighted:checked + label {
             background: rgba(255, 140, 66, 0.2) !important;
             border-color: #ff8c42 !important;
             color: #ff8c42 !important;
@@ -2297,50 +2298,65 @@
                                 <div class="oscillator-score-label">Score</div>
                             </div>
 
-                            <!-- Scale Mode Selector -->
-                            <div style="display: flex; flex-direction: row; gap: 3px; align-items: center;">
-                                <input type="radio" id="scale-fixed" name="oscillator-scale" value="fixed" style="display: none;">
-                                <label for="scale-fixed" title="Fixed scale: -100 to +100" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
-                                    <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
-                                        <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
-                                        <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1"/>
-                                    </svg>
-                                </label>
+                            <!-- Scale Mode Selector - 2 rows of 3 buttons -->
+                            <div style="display: flex; flex-direction: column; gap: 3px; align-items: center;">
+                                <!-- First Row -->
+                                <div style="display: flex; flex-direction: row; gap: 3px; align-items: center;">
+                                    <input type="radio" id="scale-fixed" name="oscillator-scale" value="fixed" style="display: none;">
+                                    <label for="scale-fixed" title="Fixed scale: -100 to +100" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                        <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
+                                            <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
+                                            <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1"/>
+                                        </svg>
+                                    </label>
 
-                                <input type="radio" id="scale-visible" name="oscillator-scale" value="visible" checked style="display: none;">
-                                <label for="scale-visible" title="Scale to visible window" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
-                                    <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
-                                        <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
-                                        <path d="M5 8 L8 5 L11 10 L14 6" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                                    </svg>
-                                </label>
+                                    <input type="radio" id="scale-visible" name="oscillator-scale" value="visible" checked style="display: none;">
+                                    <label for="scale-visible" title="Scale to visible window" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                        <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
+                                            <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
+                                            <path d="M5 8 L8 5 L11 10 L14 6" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                        </svg>
+                                    </label>
 
-                                <input type="radio" id="scale-full" name="oscillator-scale" value="full" style="display: none;">
-                                <label for="scale-full" title="Scale to full timeframe" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
-                                    <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
-                                        <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
-                                        <path d="M2 8 L5 5 L8 10 L11 4 L14 9" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                                    </svg>
-                                </label>
+                                    <input type="radio" id="scale-full" name="oscillator-scale" value="full" style="display: none;">
+                                    <label for="scale-full" title="Scale to full timeframe" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                        <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
+                                            <rect x="2" y="2" width="12" height="12" stroke="currentColor" stroke-width="1.5" rx="1"/>
+                                            <path d="M2 8 L5 5 L8 10 L11 4 L14 9" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                        </svg>
+                                    </label>
+                                </div>
 
-                                <!-- Signal Mode Toggle (now part of radio group) -->
-                                <input type="radio" id="scale-signal" name="oscillator-scale" value="signal" style="display: none;">
-                                <label for="scale-signal" id="signal-mode-toggle" title="Signal Mode (News UP / Technical DOWN) - Fixed scale: -100 to +100" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease; margin-left: 3px;">
-                                    <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
-                                        <path d="M8 2 L8 14" stroke="currentColor" stroke-width="1.5"/>
-                                        <path d="M4 6 L8 2 L12 6" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                                        <path d="M4 10 L8 14 L12 10" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                                    </svg>
-                                </label>
+                                <!-- Second Row -->
+                                <div style="display: flex; flex-direction: row; gap: 3px; align-items: center;">
+                                    <!-- Signal Mode Toggle -->
+                                    <input type="radio" id="scale-signal" name="oscillator-scale" value="signal" style="display: none;">
+                                    <label for="scale-signal" id="signal-mode-toggle" title="Signal Mode (News UP / Technical DOWN) - Fixed scale: -100 to +100" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                        <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
+                                            <path d="M8 2 L8 14" stroke="currentColor" stroke-width="1.5"/>
+                                            <path d="M4 6 L8 2 L12 6" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                            <path d="M4 10 L8 14 L12 10" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                        </svg>
+                                    </label>
 
-                                <!-- News Score Mode Toggle -->
-                                <input type="radio" id="scale-news" name="oscillator-scale" value="news" style="display: none;">
-                                <label for="scale-news" id="news-mode-toggle" title="News Score Mode - Shows news score only" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease; margin-left: 3px;">
-                                    <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
-                                        <path d="M3 8 L6 5 L9 8 L13 4" stroke="currentColor" stroke-width="1.5" fill="none"/>
-                                        <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
-                                    </svg>
-                                </label>
+                                    <!-- News Score Mode Toggle -->
+                                    <input type="radio" id="scale-news" name="oscillator-scale" value="news" style="display: none;">
+                                    <label for="scale-news" id="news-mode-toggle" title="News Score Mode - Shows news score only" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                        <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
+                                            <path d="M3 8 L6 5 L9 8 L13 4" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                            <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+                                        </svg>
+                                    </label>
+
+                                    <!-- Weighted Average Mode Toggle -->
+                                    <input type="radio" id="scale-weighted" name="oscillator-scale" value="weighted" style="display: none;">
+                                    <label for="scale-weighted" id="weighted-mode-toggle" title="Weighted Average Mode - Mix of signal-based score and conventional sentiment" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                        <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
+                                            <path d="M2 8 L6 4 L10 8 L14 4" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                            <path d="M2 12 L6 8 L10 12 L14 8" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                        </svg>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <div class="chart-tooltip" id="oscillator-tooltip">
@@ -3289,15 +3305,22 @@
 
             let sentiment = data.composite_score;
 
-            // Check if signal mode or news mode is active
+            // Check if signal mode, news mode, or weighted mode is active
             const signalModeActive = document.getElementById('scale-signal')?.checked || false;
             const newsModeActive = document.getElementById('scale-news')?.checked || false;
+            const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
             
             if (signalModeActive && window.currentChartData && window.currentChartData.length > 0) {
                 // Get the most recent data point's signal value
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                 if (lastPoint && lastPoint.signalValue != null) {
                     sentiment = lastPoint.signalValue;
+                }
+            } else if (weightedModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                // Get the most recent data point's weighted value
+                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                if (lastPoint && lastPoint.weightedValue != null) {
+                    sentiment = lastPoint.weightedValue;
                 }
             } else if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
                 // Get the most recent data point's news value (use processed if available)
@@ -4652,6 +4675,28 @@
                     }
                 }
 
+                // Calculate weighted average (signal + sentiment) if weighted mode is active
+                const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
+                if (weightedModeActive && data.dataPoints && data.dataPoints.length > 0) {
+                    console.log('⚖️ Weighted mode active - calculating weighted average of signal and sentiment');
+                    data.dataPoints.forEach(point => {
+                        const signalValue = point.signalValue != null ? point.signalValue : 0;
+                        const sentimentValue = point.sentiment != null ? point.sentiment : 0;
+                        
+                        // Normalize signal value from -100/+100/0 to -1/+1/0 for averaging
+                        const normalizedSignal = signalValue / 100;
+                        
+                        // Normalize sentiment value to -1 to +1 range (assuming sentiment is typically -100 to +100)
+                        const normalizedSentiment = Math.max(-1, Math.min(1, sentimentValue / 100));
+                        
+                        // Weighted average: 50% signal, 50% sentiment
+                        const weightedAverage = (normalizedSignal * 0.5) + (normalizedSentiment * 0.5);
+                        
+                        // Convert back to -100 to +100 scale
+                        point.weightedValue = weightedAverage * 100;
+                    });
+                }
+
                 // Process news scores with hold/decay logic if news mode is active
                 const newsModeActive = document.getElementById('scale-news')?.checked || false;
                 if (newsModeActive && data.dataPoints && data.dataPoints.length > 0) {
@@ -4690,12 +4735,16 @@
                     const lastPoint = data.dataPoints[data.dataPoints.length - 1];
                     let displayValue;
                     
-                    // Check for news mode
+                    // Check for news mode and weighted mode
                     const newsModeActive = document.getElementById('scale-news')?.checked || false;
+                    const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
                     
                     if (signalModeActive && lastPoint.signalValue != null) {
                         // In signal mode, use signal value
                         displayValue = lastPoint.signalValue;
+                    } else if (weightedModeActive && lastPoint.weightedValue != null) {
+                        // In weighted mode, use weighted average value
+                        displayValue = lastPoint.weightedValue;
                     } else if (newsModeActive) {
                         // In news mode, use processed news score if available, otherwise raw news score
                         displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
@@ -5438,7 +5487,7 @@
             // Calculate min/max range based on scale mode
             let minValue, maxValue;
 
-            if (scaleMode === 'fixed' || scaleMode === 'signal') {
+            if (scaleMode === 'fixed' || scaleMode === 'signal' || scaleMode === 'weighted') {
                 // Mode 1: Fixed -100 to +100 (also used for signal mode)
                 minValue = -100;
                 maxValue = 100;
@@ -5451,6 +5500,19 @@
                 if (newsValues.length > 0) {
                     minValue = Math.min(...newsValues);
                     maxValue = Math.max(...newsValues);
+                } else {
+                    minValue = -100;
+                    maxValue = 100;
+                }
+            } else if (scaleMode === 'weighted') {
+                // Weighted mode: Scale based on weighted values only
+                const weightedValues = (scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints))
+                    .filter(p => p.weightedValue != null && !isNaN(p.weightedValue))
+                    .map(p => p.weightedValue);
+                
+                if (weightedValues.length > 0) {
+                    minValue = Math.min(...weightedValues);
+                    maxValue = Math.max(...weightedValues);
                 } else {
                     minValue = -100;
                     maxValue = 100;
@@ -5549,10 +5611,18 @@
                     return; // Skip other drivers in news mode
                 }
                 
+                // In weighted mode, only show sentiment line (with weighted values)
+                if (weightedModeActive && driver.key !== 'sentiment') {
+                    return; // Skip other drivers in weighted mode
+                }
+                
                 // Check if this driver should be displayed (check eye button active state)
                 // In signal mode, always show sentiment line regardless of eye button state
                 // In news mode, always show news line regardless of eye button state
-                const shouldDisplay = (signalModeActive && driver.key === 'sentiment') || (newsModeActive && driver.key === 'news')
+                // In weighted mode, always show sentiment line regardless of eye button state
+                const shouldDisplay = (signalModeActive && driver.key === 'sentiment') || 
+                                     (newsModeActive && driver.key === 'news') ||
+                                     (weightedModeActive && driver.key === 'sentiment')
                     ? true 
                     : (!driver.eyeBtn || driver.eyeBtn.classList.contains('active'));
                 if (!shouldDisplay) return;
@@ -5567,6 +5637,10 @@
                     if (points.length > 0) {
                         console.log('Sample signal point:', points[0]);
                     }
+                } else if (driver.key === 'sentiment' && weightedModeActive) {
+                    // In weighted mode, use weighted average values
+                    points = dataPoints.filter(p => p.weightedValue != null && !isNaN(p.weightedValue));
+                    console.log(`⚖️ Weighted mode: Found ${points.length} points with weighted values`);
                 } else if (driver.key === 'news' && newsModeActive) {
                     // In news mode, use processed news values if available
                     points = dataPoints.filter(p => {
@@ -5599,10 +5673,12 @@
 
                 // Create smooth path with ease-in-out curves
                 if (points.length > 1) {
-                    // Helper to get value (use signalValue in signal mode for sentiment, processedNews in news mode)
+                    // Helper to get value (use signalValue in signal mode, weightedValue in weighted mode, processedNews in news mode)
                     const getValue = (point) => {
                         if (driver.key === 'sentiment' && signalModeActive) {
                             return point.signalValue;
+                        } else if (driver.key === 'sentiment' && weightedModeActive) {
+                            return point.weightedValue;
                         } else if (driver.key === 'news' && newsModeActive) {
                             return point.processedNews != null ? point.processedNews : point.news;
                         } else {
@@ -5980,6 +6056,28 @@
                     radio.addEventListener('change', async () => {
                         console.log(`Scale mode changed to: ${radio.value}`);
 
+                        // Calculate weighted average if weighted mode is activated
+                        const weightedModeActive = radio.value === 'weighted';
+                        if (weightedModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                            console.log('⚖️ Weighted mode activated - calculating weighted average');
+                            window.currentChartData.forEach(point => {
+                                const signalValue = point.signalValue != null ? point.signalValue : 0;
+                                const sentimentValue = point.sentiment != null ? point.sentiment : 0;
+                                
+                                // Normalize signal value from -100/+100/0 to -1/+1/0 for averaging
+                                const normalizedSignal = signalValue / 100;
+                                
+                                // Normalize sentiment value to -1 to +1 range
+                                const normalizedSentiment = Math.max(-1, Math.min(1, sentimentValue / 100));
+                                
+                                // Weighted average: 50% signal, 50% sentiment
+                                const weightedAverage = (normalizedSignal * 0.5) + (normalizedSentiment * 0.5);
+                                
+                                // Convert back to -100 to +100 scale
+                                point.weightedValue = weightedAverage * 100;
+                            });
+                        }
+
                         // Process news scores if news mode is activated
                         const newsModeActive = radio.value === 'news';
                         if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
@@ -6013,6 +6111,9 @@
                             if (signalModeActive && lastPoint.signalValue != null) {
                                 // In signal mode, use signal value
                                 displayValue = lastPoint.signalValue;
+                            } else if (weightedModeActive && lastPoint.weightedValue != null) {
+                                // In weighted mode, use weighted average value
+                                displayValue = lastPoint.weightedValue;
                             } else if (newsModeActive) {
                                 // In news mode, use processed news score if available, otherwise raw news score
                                 displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
@@ -6281,12 +6382,15 @@
                 // Show sentiment score as secondary info
                 const tooltipSentiment = document.getElementById('tooltip-sentiment');
                 if (tooltipSentiment) {
-                    // Check if signal mode is active
+                    // Check if signal mode or weighted mode is active
                     const signalModeActive = document.getElementById('scale-signal')?.checked || false;
+                    const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
 
                     let displayValue = null;
                     if (signalModeActive && result.signalValue != null) {
                         displayValue = result.signalValue; // Use signal value in signal mode
+                    } else if (weightedModeActive && result.weightedValue != null) {
+                        displayValue = result.weightedValue; // Use weighted average value
                     } else if (result.sentiment != null) {
                         displayValue = result.sentiment; // Use regular sentiment
                     }
@@ -6320,13 +6424,16 @@
                 oscillatorTooltip.style.display = 'block';
                 mainTooltip.style.display = 'none';
 
-                // Check if signal mode is active (now a radio button)
+                // Check if signal mode, weighted mode is active (now radio buttons)
                 const signalModeActive = document.getElementById('scale-signal')?.checked || false;
+                const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
 
-                // Display sentiment as main value (use signal value if in signal mode)
+                // Display sentiment as main value (use signal value if in signal mode, weighted value if in weighted mode)
                 let displayValue = null;
                 if (signalModeActive && result.signalValue != null) {
                     displayValue = result.signalValue; // Use binary signal value
+                } else if (weightedModeActive && result.weightedValue != null) {
+                    displayValue = result.weightedValue; // Use weighted average value
                 } else if (result.sentiment != null) {
                     displayValue = result.sentiment; // Use regular sentiment
                 }
