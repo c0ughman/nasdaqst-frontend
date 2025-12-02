@@ -4895,17 +4895,18 @@
                             // Control points create S-curve for both horizontal AND vertical transitions
                             const dx = x - prevX;
                             const dy = y - prevY;
-                            const tension = 0.4; // Controls curve smoothness (0 = linear, 0.5 = very curved)
+                            const horizontalTension = 0.5; // How far control points extend horizontally
+                            const verticalTension = 0.15; // How gradually vertical transitions happen
 
                             // First control point: ease-out from previous point
                             // Moves mostly in X direction first (slow vertical start)
-                            const cp1X = prevX + dx * tension;
-                            const cp1Y = prevY + dy * (tension * 0.2); // Minimal Y movement at start
+                            const cp1X = prevX + dx * horizontalTension;
+                            const cp1Y = prevY + dy * verticalTension; // Gradual Y movement at start
 
                             // Second control point: ease-in to current point
                             // Completes Y transition near the end (slow vertical finish)
-                            const cp2X = x - dx * tension;
-                            const cp2Y = y - dy * (tension * 0.2); // Complete Y movement near end
+                            const cp2X = x - dx * horizontalTension;
+                            const cp2Y = y - dy * verticalTension; // Complete Y movement near end
 
                             pathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
                         }
