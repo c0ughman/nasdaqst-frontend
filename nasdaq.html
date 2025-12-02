@@ -5408,6 +5408,26 @@
                 }
             });
 
+            // Draw center zero line AFTER all data lines so it's visible on top
+            // This ensures the zero line is always visible when the data line is at zero
+            const zeroY = valueToY(0);
+            if (zeroY >= 0 && zeroY <= 100) {
+                const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                centerLine.setAttribute('x1', '2');
+                centerLine.setAttribute('y1', zeroY.toString());
+                centerLine.setAttribute('x2', '98');
+                centerLine.setAttribute('y2', zeroY.toString());
+                // Make zero line more visible: solid color, higher opacity, thicker stroke
+                centerLine.setAttribute('stroke', '#888888'); // Solid gray color
+                centerLine.setAttribute('stroke-width', '1.5'); // Thicker than data lines (0.3)
+                centerLine.setAttribute('stroke-dasharray', '4,4'); // Longer dashes for better visibility
+                centerLine.setAttribute('opacity', '0.8'); // Higher opacity for visibility
+                centerLine.setAttribute('stroke-linecap', 'round');
+                // Ensure it's drawn on top by appending last
+                svg.appendChild(centerLine);
+                console.log(`✅ Drew zero line at Y=${zeroY.toFixed(2)}`);
+            }
+
             oscillatorDiv.appendChild(svg);
         }
 
