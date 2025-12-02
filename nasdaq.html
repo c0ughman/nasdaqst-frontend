@@ -4740,11 +4740,11 @@
                         // Normalize smoothed signal value from -100/+100/0 to -1/+1/0 for averaging
                         const normalizedSignal = smoothedSignal / 100;
                         
-                        // Normalize sentiment value and multiply by 2 to increase volatility
-                        // This makes sentiment movements more visible in the weighted average
-                        const normalizedSentiment = Math.max(-1, Math.min(1, (sentimentValue * 2) / 100));
+                        // Normalize sentiment value and multiply by 10 to dramatically increase volatility
+                        // This makes sentiment movements much more visible in the weighted average
+                        const normalizedSentiment = Math.max(-1, Math.min(1, (sentimentValue * 10) / 100));
                         
-                        // Weighted average: 70% signal, 30% sentiment (with doubled sentiment magnitude)
+                        // Weighted average: 70% signal, 30% sentiment (with 10x sentiment magnitude)
                         const weightedAverage = (normalizedSignal * 0.7) + (normalizedSentiment * 0.3);
                         
                         // Convert back to -100 to +100 scale
@@ -6174,10 +6174,10 @@
                                 const sentimentValue = point.sentiment != null ? point.sentiment : 0;
                                 
                                 const normalizedSignal = smoothedSignal / 100;
-                                // Multiply sentiment by 2 to increase volatility and visibility
-                                const normalizedSentiment = Math.max(-1, Math.min(1, (sentimentValue * 2) / 100));
+                                // Multiply sentiment by 10 to dramatically increase volatility and visibility
+                                const normalizedSentiment = Math.max(-1, Math.min(1, (sentimentValue * 10) / 100));
                                 
-                                // Weighted average: 70% signal, 30% sentiment (with doubled sentiment magnitude)
+                                // Weighted average: 70% signal, 30% sentiment (with 10x sentiment magnitude)
                                 const weightedAverage = (normalizedSignal * 0.7) + (normalizedSentiment * 0.3);
                                 point.weightedValue = weightedAverage * 100;
                             });
