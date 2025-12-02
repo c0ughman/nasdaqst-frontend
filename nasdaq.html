@@ -4304,9 +4304,10 @@
                             // Force to zero if below threshold (same as regular news decay)
                             const finalValue = decayedValue < 0.01 ? 0 : decayedValue;
                             
-                            // Debug logging for first few decay points
-                            if (processedPoints.length < 5 || minutesSinceDecayStart < 1) {
-                                console.log(`   🔽 Exponential decay at ${new Date(pointTime).toISOString()}: peak=${currentPeakValue.toFixed(2)}, minutes=${minutesSinceDecayStart.toFixed(2)}, decayed=${decayedValue.toFixed(2)}, final=${finalValue.toFixed(2)}`);
+                            // Debug logging for decay points (log every 5 minutes or first 10 points)
+                            const logDecay = processedPoints.length < 10 || Math.floor(minutesSinceDecayStart) % 5 === 0;
+                            if (logDecay) {
+                                console.log(`   🔽 Exponential decay at ${new Date(pointTime).toISOString()}: peak=${currentPeakValue.toFixed(2)}, minutes=${minutesSinceDecayStart.toFixed(2)}, decayed=${decayedValue.toFixed(2)}, final=${finalValue.toFixed(2)}, rate=${MINUTE_DECAY_RATE}`);
                             }
                             
                             processedPoints.push({ ...point, processedNews: finalValue });
