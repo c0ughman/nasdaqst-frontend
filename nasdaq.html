@@ -4683,8 +4683,8 @@
                     // Sort points by timestamp for processing
                     const sortedPoints = [...data.dataPoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
                     
-                    // Smooth signal transitions over 5 candles
-                    const SMOOTH_CANDLES = 5;
+                    // Smooth signal transitions over 3 candles (reduced from 5 for less smoothing)
+                    const SMOOTH_CANDLES = 3;
                     let smoothedSignals = [];
                     let transitionStartIndex = -1;
                     let transitionStartValue = 0;
@@ -4740,10 +4740,11 @@
                         // Normalize smoothed signal value from -100/+100/0 to -1/+1/0 for averaging
                         const normalizedSignal = smoothedSignal / 100;
                         
-                        // Normalize sentiment value to -1 to +1 range (assuming sentiment is typically -100 to +100)
-                        const normalizedSentiment = Math.max(-1, Math.min(1, sentimentValue / 100));
+                        // Normalize sentiment value and multiply by 2 to increase volatility
+                        // This makes sentiment movements more visible in the weighted average
+                        const normalizedSentiment = Math.max(-1, Math.min(1, (sentimentValue * 2) / 100));
                         
-                        // Weighted average: 70% signal, 30% sentiment
+                        // Weighted average: 70% signal, 30% sentiment (with doubled sentiment magnitude)
                         const weightedAverage = (normalizedSignal * 0.7) + (normalizedSentiment * 0.3);
                         
                         // Convert back to -100 to +100 scale
@@ -6120,8 +6121,8 @@
                             // Sort points by timestamp for processing
                             const sortedPoints = [...window.currentChartData].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
                             
-                            // Smooth signal transitions over 5 candles
-                            const SMOOTH_CANDLES = 5;
+                            // Smooth signal transitions over 3 candles (reduced from 5 for less smoothing)
+                            const SMOOTH_CANDLES = 3;
                             let smoothedSignals = [];
                             let transitionStartIndex = -1;
                             let transitionStartValue = 0;
@@ -6173,9 +6174,10 @@
                                 const sentimentValue = point.sentiment != null ? point.sentiment : 0;
                                 
                                 const normalizedSignal = smoothedSignal / 100;
-                                const normalizedSentiment = Math.max(-1, Math.min(1, sentimentValue / 100));
+                                // Multiply sentiment by 2 to increase volatility and visibility
+                                const normalizedSentiment = Math.max(-1, Math.min(1, (sentimentValue * 2) / 100));
                                 
-                                // Weighted average: 70% signal, 30% sentiment
+                                // Weighted average: 70% signal, 30% sentiment (with doubled sentiment magnitude)
                                 const weightedAverage = (normalizedSignal * 0.7) + (normalizedSentiment * 0.3);
                                 point.weightedValue = weightedAverage * 100;
                             });
