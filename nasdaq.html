@@ -4735,7 +4735,8 @@
                     const lastPoint = data.dataPoints[data.dataPoints.length - 1];
                     let displayValue;
                     
-                    // Check for news mode and weighted mode
+                    // Check for all modes
+                    const signalModeActive = document.getElementById('scale-signal')?.checked || false;
                     const newsModeActive = document.getElementById('scale-news')?.checked || false;
                     const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
                     
@@ -5587,9 +5588,10 @@
                 return Math.max(5, Math.min(95, y));
             };
 
-            // Check if signal mode or news mode is active
+            // Check if signal mode, news mode, or weighted mode is active
             const signalModeActive = document.getElementById('scale-signal')?.checked || false;
             const newsModeActive = document.getElementById('scale-news')?.checked || false;
+            const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
 
             // Define which drivers to plot and their colors
             // Only include drivers that have historical data from the API
