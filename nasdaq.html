@@ -4895,8 +4895,8 @@
                             // Control points create S-curve for both horizontal AND vertical transitions
                             const dx = x - prevX;
                             const dy = y - prevY;
-                            const horizontalTension = 0.5; // How far control points extend horizontally
-                            const verticalTension = 0.15; // How gradually vertical transitions happen
+                            const horizontalTension = 0.9; // How far control points extend horizontally (max roundness)
+                            const verticalTension = 0.4; // How gradually vertical transitions happen (max roundness)
 
                             // First control point: ease-out from previous point
                             // Moves mostly in X direction first (slow vertical start)
