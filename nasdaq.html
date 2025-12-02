@@ -5015,9 +5015,9 @@
         // Calculate signal-based oscillator values for GRANULAR data (second-by-second)
         // Uses different thresholds and shorter durations than minute-level signals
         // Thresholds (MUCH LOWER for maximum movement):
-        //   - Technical DOWN: ≥0.2 point decrease → -100 for 15 seconds
-        //   - Technical UP: ≥0.3 point increase → +100 for 15 seconds
-        //   - News UP: ≥0.5 point increase → +100 for 1 minute
+        //   - Technical DOWN: ≥0.2 point decrease → -100 for 1 minute (interrupted by opposite signals)
+        //   - Technical UP: ≥0.3 point increase → +100 for 1 minute (interrupted by opposite signals)
+        //   - News UP: ≥0.5 point increase → +100 for 1 minute (interrupted by opposite signals)
         // Flip rules: Same as minute-level (2 opposite signals to flip)
         // Optionally inherits initial signal state from minute-level data
         function calculateGranularSignalOscillator(dataPoints, initialSignalState = null) {
@@ -5064,57 +5064,41 @@
                     }
                 }
 
-                // Handle signal logic with 2-signal requirement to flip
+                // Handle signal logic: signals last 1 minute, but opposite signals interrupt immediately
                 if (activeSignal) {
-                    // We have an active signal - check if opposite signal can flip it
+                    // We have an active signal - check if opposite signal interrupts it
                     if (activeSignal.type === 'news_up' && technicalDownDetected) {
-                        // At +100 (news up), need 2 technical down signals to flip to -100
-                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
-                        if (activeSignal.oppositeCount >= 2) {
-                            // Flip to technical down
-                            activeSignal = {
-                                type: 'technical_down',
-                                value: -100,
-                                expiresAt: new Date(current.timestamp.getTime() + 15 * 1000), // 15 seconds
-                                oppositeCount: 0
-                            };
-                        }
+                        // At +100 (news up), opposite signal (technical down) interrupts immediately
+                        activeSignal = {
+                            type: 'technical_down',
+                            value: -100,
+                            expiresAt: new Date(current.timestamp.getTime() + 60 * 1000), // 1 minute
+                            oppositeCount: 0
+                        };
                     } else if (activeSignal.type === 'technical_down' && (newsUpDetected || technicalUpDetected)) {
-                        // At -100 (technical down), need 2 positive signals (news up OR technical up) to flip to +100
-                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
-                        if (activeSignal.oppositeCount >= 2) {
-                            // Flip to positive (prefer news up if both detected, otherwise technical up)
-                            const flipType = newsUpDetected ? 'news_up' : 'technical_up';
-                            const expirationMs = newsUpDetected ? 60 * 1000 : 15 * 1000; // News: 1 min, Technical: 15 sec
-                            activeSignal = {
-                                type: flipType,
-                                value: 100,
-                                expiresAt: new Date(current.timestamp.getTime() + expirationMs),
-                                oppositeCount: 0
-                            };
-                        }
+                        // At -100 (technical down), opposite signal (positive) interrupts immediately
+                        // Prefer news up if both detected, otherwise technical up
+                        const flipType = newsUpDetected ? 'news_up' : 'technical_up';
+                        activeSignal = {
+                            type: flipType,
+                            value: 100,
+                            expiresAt: new Date(current.timestamp.getTime() + 60 * 1000), // 1 minute
+                            oppositeCount: 0
+                        };
                     } else if (activeSignal.type === 'technical_up' && technicalDownDetected) {
-                        // At +100 (technical up), need 2 technical down signals to flip to -100
-                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
-                        if (activeSignal.oppositeCount >= 2) {
-                            // Flip to technical down
-                            activeSignal = {
-                                type: 'technical_down',
-                                value: -100,
-                                expiresAt: new Date(current.timestamp.getTime() + 15 * 1000), // 15 seconds
-                                oppositeCount: 0
-                            };
-                        }
+                        // At +100 (technical up), opposite signal (technical down) interrupts immediately
+                        activeSignal = {
+                            type: 'technical_down',
+                            value: -100,
+                            expiresAt: new Date(current.timestamp.getTime() + 60 * 1000), // 1 minute
+                            oppositeCount: 0
+                        };
                     } else if ((activeSignal.type === 'news_up' && newsUpDetected) || 
                                (activeSignal.type === 'technical_down' && technicalDownDetected) ||
                                (activeSignal.type === 'technical_up' && technicalUpDetected)) {
-                        // Same type signal - reset opposite count and extend expiration
+                        // Same type signal - extend expiration to 1 minute
                         activeSignal.oppositeCount = 0;
-                        if (activeSignal.type === 'news_up') {
-                            activeSignal.expiresAt = new Date(current.timestamp.getTime() + 60 * 1000); // 1 minute
-                        } else {
-                            activeSignal.expiresAt = new Date(current.timestamp.getTime() + 15 * 1000); // 15 seconds
-                        }
+                        activeSignal.expiresAt = new Date(current.timestamp.getTime() + 60 * 1000); // 1 minute
                     }
                 } else {
                     // No active signal - new signal can start
@@ -5137,14 +5121,14 @@
                         activeSignal = {
                             type: 'technical_up',
                             value: 100,
-                            expiresAt: new Date(current.timestamp.getTime() + 15 * 1000), // 15 seconds
+                            expiresAt: new Date(current.timestamp.getTime() + 60 * 1000), // 1 minute
                             oppositeCount: 0
                         };
                     } else if (technicalDownDetected) {
                         activeSignal = {
                             type: 'technical_down',
                             value: -100,
-                            expiresAt: new Date(current.timestamp.getTime() + 15 * 1000), // 15 seconds
+                            expiresAt: new Date(current.timestamp.getTime() + 60 * 1000), // 1 minute
                             oppositeCount: 0
                         };
                     }
