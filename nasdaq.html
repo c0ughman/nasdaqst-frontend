@@ -5497,8 +5497,18 @@
                 // Show sentiment score as secondary info
                 const tooltipSentiment = document.getElementById('tooltip-sentiment');
                 if (tooltipSentiment) {
-                    if (result.sentiment != null) {
-                        const sentimentDisplay = result.sentiment > 0 ? `+${Math.round(result.sentiment)}` : Math.round(result.sentiment);
+                    // Check if signal mode is active
+                    const signalModeActive = document.getElementById('scale-signal')?.checked || false;
+
+                    let displayValue = null;
+                    if (signalModeActive && result.signalValue != null) {
+                        displayValue = result.signalValue; // Use signal value in signal mode
+                    } else if (result.sentiment != null) {
+                        displayValue = result.sentiment; // Use regular sentiment
+                    }
+
+                    if (displayValue != null) {
+                        const sentimentDisplay = displayValue > 0 ? `+${Math.round(displayValue)}` : Math.round(displayValue);
                         tooltipSentiment.textContent = `Score: ${sentimentDisplay}`;
                         tooltipSentiment.style.display = 'block';
                     } else {
