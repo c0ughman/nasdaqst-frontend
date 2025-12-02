@@ -4646,7 +4646,7 @@
                             activeSignal = {
                                 type: 'technical_down',
                                 value: -100,
-                                expiresAt: new Date(current.timestamp.getTime() + 5 * 60 * 1000), // 5 minutes
+                                expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
                                 oppositeCount: 0
                             };
                         }
@@ -4669,7 +4669,7 @@
                         if (activeSignal.type === 'news_up') {
                             activeSignal.expiresAt = new Date(current.timestamp.getTime() + 15 * 60 * 1000);
                         } else {
-                            activeSignal.expiresAt = new Date(current.timestamp.getTime() + 5 * 60 * 1000);
+                            activeSignal.expiresAt = new Date(current.timestamp.getTime() + 15 * 60 * 1000);
                         }
                     }
                 } else {
@@ -4693,7 +4693,7 @@
                         activeSignal = {
                             type: 'technical_down',
                             value: -100,
-                            expiresAt: new Date(current.timestamp.getTime() + 5 * 60 * 1000), // 5 minutes
+                            expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
                             oppositeCount: 0
                         };
                     }
@@ -4972,7 +4972,9 @@
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     path.setAttribute('d', pathD);
                     path.setAttribute('fill', 'none');
-                    path.setAttribute('stroke', driver.color);
+                    // In signal mode, use white for the line; otherwise use driver color
+                    const lineColor = (driver.key === 'sentiment' && signalModeActive) ? '#ffffff' : driver.color;
+                    path.setAttribute('stroke', lineColor);
                     // All oscillator lines use 0.3 pixel width for visibility
                     path.setAttribute('stroke-width', '0.3');
                     path.setAttribute('stroke-linecap', 'round');
