@@ -4916,21 +4916,57 @@
                     if (driver.key === 'sentiment' && signalModeActive) {
                         const zeroY = valueToY(0);
 
-                        // Create green fill area (above zero line, below signal when at +100)
-                        const greenFillPath = `${pathD} L ${points[points.length - 1].x},${zeroY} L ${points[0].x},${zeroY} Z`;
-                        const greenFill = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        greenFill.setAttribute('d', greenFillPath);
-                        greenFill.setAttribute('fill', 'rgba(34, 197, 94, 0.15)'); // Green with transparency
-                        greenFill.setAttribute('stroke', 'none');
-                        svg.appendChild(greenFill);
+                        // Build separate paths for positive and negative areas
+                        for (let i = 0; i < points.length; i++) {
+                            const currentValue = getValue(points[i]);
+                            const currentY = valueToY(currentValue);
 
-                        // Create red fill area (below zero line, above signal when at -100)
-                        const redFillPath = `${pathD} L ${points[points.length - 1].x},${zeroY} L ${points[0].x},${zeroY} Z`;
-                        const redFill = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        redFill.setAttribute('d', redFillPath);
-                        redFill.setAttribute('fill', 'rgba(239, 68, 68, 0.15)'); // Red with transparency
-                        redFill.setAttribute('stroke', 'none');
-                        svg.appendChild(redFill);
+                            if (currentValue > 0 && i < points.length - 1) {
+                                const nextValue = getValue(points[i + 1]);
+                                if (nextValue > 0) {
+                                    // Both points positive - create green fill segment
+                                    const nextY = valueToY(nextValue);
+                                    const nextX = points[i + 1].x;
+                                    const curX = points[i].x;
+
+                                    const dx = nextX - curX;
+                                    const dy = nextY - currentY;
+                                    const cp1X = curX + dx * 0.5;
+                                    const cp1Y = currentY + dy * 0.15;
+                                    const cp2X = nextX - dx * 0.5;
+                                    const cp2Y = nextY - dy * 0.15;
+
+                                    const greenSegment = `M ${curX},${zeroY} L ${curX},${currentY} C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${nextX},${nextY} L ${nextX},${zeroY} Z`;
+                                    const greenFill = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                                    greenFill.setAttribute('d', greenSegment);
+                                    greenFill.setAttribute('fill', 'rgba(34, 197, 94, 0.25)');
+                                    greenFill.setAttribute('stroke', 'none');
+                                    svg.appendChild(greenFill);
+                                }
+                            } else if (currentValue < 0 && i < points.length - 1) {
+                                const nextValue = getValue(points[i + 1]);
+                                if (nextValue < 0) {
+                                    // Both points negative - create red fill segment
+                                    const nextY = valueToY(nextValue);
+                                    const nextX = points[i + 1].x;
+                                    const curX = points[i].x;
+
+                                    const dx = nextX - curX;
+                                    const dy = nextY - currentY;
+                                    const cp1X = curX + dx * 0.5;
+                                    const cp1Y = currentY + dy * 0.15;
+                                    const cp2X = nextX - dx * 0.5;
+                                    const cp2Y = nextY - dy * 0.15;
+
+                                    const redSegment = `M ${curX},${zeroY} L ${curX},${currentY} C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${nextX},${nextY} L ${nextX},${zeroY} Z`;
+                                    const redFill = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                                    redFill.setAttribute('d', redSegment);
+                                    redFill.setAttribute('fill', 'rgba(239, 68, 68, 0.25)');
+                                    redFill.setAttribute('stroke', 'none');
+                                    svg.appendChild(redFill);
+                                }
+                            }
+                        }
                     }
 
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
