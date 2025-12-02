@@ -4191,7 +4191,7 @@
                 const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes
                 const DECAY_DURATION_MS = 5 * 60 * 1000; // 5 minutes
                 const TOTAL_DURATION_MS = HOLD_DURATION_MS + DECAY_DURATION_MS; // 20 minutes total
-                const MOVEMENT_THRESHOLD = 0.001; // Minimum change to consider a movement (lowered to catch smaller changes)
+                const MOVEMENT_THRESHOLD = 2.0; // Minimum change to consider a movement (increased to avoid detecting every tiny fluctuation)
                 
                 // Sample a few points to see what we're working with
                 const samplePoints = sortedPoints.filter(p => p.news != null && !isNaN(p.news)).slice(0, 5);
@@ -4225,13 +4225,23 @@
                         
                         // Check if a new movement occurred by comparing with last ORIGINAL news value
                         // A movement is detected if the current original value differs significantly from the last original value
-                        const isNewMovement = lastOriginalNewsValue !== null && 
-                            Math.abs(originalNewsValue - lastOriginalNewsValue) > MOVEMENT_THRESHOLD;
+                        // AND it's a significant change (not just noise)
+                        const valueChange = lastOriginalNewsValue !== null ? Math.abs(originalNewsValue - lastOriginalNewsValue) : 0;
+                        const isNewMovement = valueChange > MOVEMENT_THRESHOLD;
                         
-                        if (isNewMovement) {
+                        // Also check if we're currently holding/decaying and the new value is significantly different
+                        // This allows new peaks to override the hold/decay
+                        const currentDisplayValue = timeSincePeak < HOLD_DURATION_MS 
+                            ? currentPeakValue 
+                            : (timeSincePeak < TOTAL_DURATION_MS 
+                                ? currentPeakValue * (1 - (timeSincePeak - HOLD_DURATION_MS) / DECAY_DURATION_MS)
+                                : 0);
+                        const significantChangeFromDisplay = Math.abs(originalNewsValue - currentDisplayValue) > MOVEMENT_THRESHOLD;
+                        
+                        if (isNewMovement || significantChangeFromDisplay) {
                             // New movement detected - jump to it and restart timer
                             movementsDetected++;
-                            console.log(`   📈 Movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue.toFixed(2)} → ${originalNewsValue.toFixed(2)}`);
+                            console.log(`   📈 Movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue?.toFixed(2) || 'N/A'} → ${originalNewsValue.toFixed(2)} (change: ${valueChange.toFixed(2)})`);
                             currentPeakValue = originalNewsValue;
                             peakTimestamp = pointTime;
                             processedPoints.push({ ...point, processedNews: originalNewsValue });
@@ -4297,6 +4307,7 @@
                 // Update original dataPoints array with processed news values
                 // Preserve original order of dataPoints
                 let valuesChanged = 0;
+                let sampleChanges = [];
                 dataPoints.forEach(point => {
                     if (point.timestamp && processedMap.has(point.timestamp.getTime())) {
                         const processedValue = processedMap.get(point.timestamp.getTime());
@@ -4307,9 +4318,21 @@
                         if (originalValue != null && processedValue != null && 
                             Math.abs(originalValue - processedValue) > 0.001) {
                             valuesChanged++;
+                            if (sampleChanges.length < 5) {
+                                sampleChanges.push({
+                                    time: point.timestamp.toISOString(),
+                                    original: originalValue.toFixed(2),
+                                    processed: processedValue.toFixed(2),
+                                    diff: Math.abs(originalValue - processedValue).toFixed(2)
+                                });
+                            }
                         }
                     }
                 });
+                
+                if (sampleChanges.length > 0) {
+                    console.log('   📊 Sample value changes:', sampleChanges);
+                }
                 
                 console.log(`   📊 Values changed: ${valuesChanged} out of ${dataPoints.length} points`);
                 if (valuesChanged === 0 && movementsDetected > 0) {
