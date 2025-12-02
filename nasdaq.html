@@ -2986,6 +2986,9 @@
                     lastGranularTimestamp = secondCandlesDataset[secondCandlesDataset.length - 1].timestamp;
                 }
                 
+                // Note: Granular charts calculate signals independently, so no cache rebuild needed
+                // The global cache is only for minute-level data (regular charts)
+                
                 return mappedData;
             } catch (error) {
                 console.error('❌ Error fetching second candles:', error);
@@ -3075,6 +3078,8 @@
                             const lastDs = tickCandlesDataset[tickCandlesDataset.length - 1].timestamp;
                             console.log(`📊 Dataset now spans: ${firstDs.toISOString()} to ${lastDs.toISOString()}`);
                         }
+                        
+                        // Note: Granular charts calculate signals independently, so no cache rebuild needed
                     } else {
                         console.log('✓ No new unique tick candles to append (all timestamps already exist)');
                     }
@@ -3087,6 +3092,9 @@
                 if (tickCandlesDataset.length > 0) {
                     lastGranularTimestamp = tickCandlesDataset[tickCandlesDataset.length - 1].timestamp;
                 }
+                
+                // Note: Granular charts calculate signals independently, so no cache rebuild needed
+                // The global cache is only for minute-level data (regular charts)
                 
                 return mappedData;
             } catch (error) {
@@ -4106,6 +4114,7 @@
                 minPrice,
                 maxPrice,
                 priceRange,
+                usingGranularData: usingGranularData, // Flag to indicate if using granular data
                 fullTimeframeData: fullTimeframeData.map((d, index) => ({
                     x: 2 + (index / (fullTimeframeData.length - 1)) * 96,
                     sentiment: d.sentiment,
@@ -4176,23 +4185,226 @@
                 // Draw market gap lines
                 drawMarketGapLines(data.gaps || [], data.dataPoints);
 
-                // Attach signal values from global cache if signal mode is active
+                // CHART-DEPENDENT SIGNAL CALCULATION
+                // Each chart calculates signals from its own data source:
+                // - Granular charts: Calculate signals on-the-fly from granular data
+                // - Regular charts: Use global cache built from minute-level data
                 const signalModeActive = document.getElementById('scale-signal')?.checked || false;
                 console.log('🔍 Signal mode active:', signalModeActive);
-                if (signalModeActive) {
-                    console.log('📊 Global cache size:', globalSignalCache.size);
-                    // Use pre-calculated global signal cache for consistency across ALL timeframes
-                    // This ensures the same signals appear regardless of zoom level
-                    let attachedCount = 0;
+                console.log('📊 Global cache size:', globalSignalCache.size);
+                console.log('📊 Using granular data:', data.usingGranularData);
+                
+                // Ensure cache is built if it's empty (safety check)
+                if (globalSignalCache.size === 0) {
+                    console.warn('⚠️ Signal cache is empty, rebuilding...');
+                    buildGlobalSignalCache();
+                }
+                
+                let attachedCount = 0;
+                
+                if (data.usingGranularData) {
+                    // GRANULAR CHARTS: Calculate signals on-the-fly from granular data
+                    // This allows each granular chart to show its own signals independently
+                    console.log('🔄 Calculating signals from granular data for this chart...');
+                    console.log(`   Data points: ${data.dataPoints.length}`);
+                    console.log(`   First point:`, data.dataPoints[0] ? {
+                        timestamp: data.dataPoints[0].timestamp.toISOString(),
+                        news: data.dataPoints[0].news,
+                        indicators: data.dataPoints[0].indicators
+                    } : 'none');
+                    
+                    // Find the last signal state from minute-level data (before granular timeframe)
+                    // This provides continuity - granular signals inherit the last confirmed state
+                    let inheritedSignalState = null;
+                    let inheritedSignalValue = 0;
+                    
+                    if (data.dataPoints.length > 0) {
+                        const firstGranularTimestamp = data.dataPoints[0].timestamp;
+                        const firstGranularTime = firstGranularTimestamp.getTime();
+                        const lastGranularTimestamp = data.dataPoints[data.dataPoints.length - 1].timestamp;
+                        
+                        console.log(`   Granular timeframe: ${firstGranularTimestamp.toISOString()} to ${lastGranularTimestamp.toISOString()}`);
+                        console.log(`   Cache size: ${globalSignalCache.size}`);
+                        
+                        // Strategy 1: Look for exact timestamp matches before granular timeframe
+                        const minuteLevelTimestamps = Array.from(globalSignalCache.keys())
+                            .filter(ts => ts <= firstGranularTime) // Include timestamps at or before granular start
+                            .sort((a, b) => b - a); // Sort descending (newest first)
+                        
+                        console.log(`   Found ${minuteLevelTimestamps.length} potential minute-level timestamps before granular timeframe`);
+                        
+                        // Find the most recent non-zero signal
+                        for (const ts of minuteLevelTimestamps) {
+                            const signalValue = globalSignalCache.get(ts);
+                            if (signalValue !== 0) {
+                                const signalTimestamp = new Date(ts);
+                                const expiresAt = new Date(ts + 15 * 60 * 1000);
+                                
+                                // Check if signal is still valid (not expired)
+                                if (firstGranularTimestamp < expiresAt) {
+                                    // Convert minute-level signal to granular signal type
+                                    // Minute-level only has 'news_up' or 'technical_down'
+                                    // For granular, we'll convert: positive = 'news_up', negative = 'technical_down'
+                                    // The granular function will handle technical_up separately
+                                    inheritedSignalState = {
+                                        type: signalValue > 0 ? 'news_up' : 'technical_down',
+                                        value: signalValue,
+                                        expiresAt: expiresAt,
+                                        oppositeCount: 0
+                                    };
+                                    inheritedSignalValue = signalValue;
+                                    console.log(`📌 Inherited signal state: ${inheritedSignalState.type} (${inheritedSignalState.value}) from ${signalTimestamp.toISOString()}, expires ${expiresAt.toISOString()}`);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Strategy 2: If no exact match, find closest signal (even if slightly after granular start)
+                        if (!inheritedSignalState && globalSignalCache.size > 0) {
+                            const allTimestamps = Array.from(globalSignalCache.keys()).sort((a, b) => b - a);
+                            for (const ts of allTimestamps) {
+                                const signalValue = globalSignalCache.get(ts);
+                                if (signalValue !== 0) {
+                                    const signalTimestamp = new Date(ts);
+                                    const expiresAt = new Date(ts + 15 * 60 * 1000);
+                                    
+                                    // Use this signal if it's still valid
+                                    if (lastGranularTimestamp < expiresAt) {
+                                        inheritedSignalState = {
+                                            type: signalValue > 0 ? 'news_up' : 'technical_down',
+                                            value: signalValue,
+                                            expiresAt: expiresAt,
+                                            oppositeCount: 0
+                                        };
+                                        inheritedSignalValue = signalValue;
+                                        console.log(`📌 Inherited closest signal: ${inheritedSignalState.type} (${inheritedSignalState.value}) from ${signalTimestamp.toISOString()}`);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Strategy 3: If still no inheritance, try to find ANY recent signal value as fallback
+                        // This ensures we at least show something if there's a recent signal
+                        if (!inheritedSignalState && globalSignalCache.size > 0) {
+                            const allTimestamps = Array.from(globalSignalCache.keys()).sort((a, b) => b - a);
+                            for (const ts of allTimestamps.slice(0, 10)) { // Check last 10 signals
+                                const signalValue = globalSignalCache.get(ts);
+                                if (signalValue !== 0) {
+                                    const signalTimestamp = new Date(ts);
+                                    // Use this as a simple fallback - assume it's still valid for a short time
+                                    inheritedSignalState = {
+                                        type: signalValue > 0 ? 'news_up' : 'technical_down',
+                                        value: signalValue,
+                                        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // Assume 5 min validity
+                                        oppositeCount: 0
+                                    };
+                                    inheritedSignalValue = signalValue;
+                                    console.log(`📌 Using fallback signal: ${inheritedSignalState.type} (${inheritedSignalState.value}) from ${signalTimestamp.toISOString()}`);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!inheritedSignalState) {
+                            console.log('📌 No valid signal state to inherit, will start fresh (all zeros)');
+                        }
+                    }
+                    
+                    // Calculate signals from granular data points with inheritance
+                    // Use granular-specific function with different thresholds and durations
+                    // Thresholds: Technical ±1 (15s), News +5 (1min)
+                    console.log(`   Using granular signal calculator with thresholds:`);
+                    console.log(`     - Technical DOWN: ≥1 point → -100 (15s)`);
+                    console.log(`     - Technical UP: ≥1 point → +100 (15s)`);
+                    console.log(`     - News UP: ≥5 points → +100 (1min)`);
+                    console.log(`     - Flip rules: 2 opposite signals required`);
+                    
+                    const signalValues = calculateGranularSignalOscillator(data.dataPoints, inheritedSignalState);
+                    
+                    // Debug: Check what we got
+                    console.log(`   Calculated ${signalValues.length} signal values`);
+                    const nonZeroCount = signalValues.filter(v => v !== 0).length;
+                    console.log(`   Non-zero signals: ${nonZeroCount}/${signalValues.length}`);
+                    if (signalValues.length > 0) {
+                        console.log(`   First few values:`, signalValues.slice(0, 5));
+                        console.log(`   Last few values:`, signalValues.slice(-5));
+                    }
+                    
+                    // Attach calculated signals to data points
+                    // IMPORTANT: If calculateSignalOscillator returns all zeros but we have an inherited signal,
+                    // we need to propagate the inherited value until it expires
+                    data.dataPoints.forEach((p, i) => {
+                        let signalValue = signalValues[i] || 0;
+                        
+                        // If calculated signal is 0 but we have an inherited value, check if we should use it
+                        if (signalValue === 0 && inheritedSignalValue !== 0 && inheritedSignalState) {
+                            // Check if inherited signal is still valid (not expired) for this timestamp
+                            if (p.timestamp < inheritedSignalState.expiresAt) {
+                                signalValue = inheritedSignalValue;
+                            }
+                        }
+                        
+                        p.signalValue = signalValue;
+                        attachedCount++;
+                    });
+                    
+                    console.log(`✅ Calculated and attached ${attachedCount} signal values from granular data`);
+                    console.log(`   Inherited value: ${inheritedSignalValue}, Inherited state: ${inheritedSignalState ? 'yes' : 'no'}`);
+                    const finalNonZero = data.dataPoints.filter(p => p.signalValue !== 0).length;
+                    console.log(`   Final non-zero signals: ${finalNonZero}/${attachedCount}`);
+                    
+                    if (attachedCount > 0) {
+                        const samplePoints = data.dataPoints.slice(0, 5);
+                        console.log('Sample granular signals:', samplePoints.map(p => ({
+                            timestamp: p.timestamp.toISOString(),
+                            signalValue: p.signalValue,
+                            news: p.news,
+                            indicators: p.indicators
+                        })));
+                    }
+                } else {
+                    // REGULAR CHARTS: Use global cache built from minute-level data
+                    // These show confirmed signals from minute-level data
+                    console.log('📋 Using global cache (minute-level signals) for this chart...');
+                    
+                    let exactMatches = 0;
+                    let closestMatches = 0;
+                    let noMatches = 0;
+                    
                     data.dataPoints.forEach(p => {
                         if (p.timestamp) {
-                            p.signalValue = globalSignalCache.get(p.timestamp.getTime()) || 0;
+                            const timestampKey = p.timestamp.getTime();
+                            let signalValue = globalSignalCache.get(timestampKey);
+                            
+                            if (signalValue !== undefined) {
+                                // Exact match from minute-level cache
+                                p.signalValue = signalValue;
+                                exactMatches++;
+                            } else {
+                                // Try to find closest match (for edge cases)
+                                signalValue = findClosestSignalValue(p.timestamp, 5000); // 5 second tolerance
+                                p.signalValue = signalValue;
+                                if (signalValue !== 0) {
+                                    closestMatches++;
+                                } else {
+                                    noMatches++;
+                                }
+                            }
                             attachedCount++;
                         }
                     });
-                    console.log(`✅ Attached signal values to ${attachedCount} data points`);
+                    
+                    console.log(`✅ Attached signal values from cache: ${attachedCount} data points`);
+                    console.log(`   Exact matches: ${exactMatches}, Closest matches: ${closestMatches}, No matches: ${noMatches}`);
+                    
                     if (attachedCount > 0) {
-                        console.log('Sample point with signal:', data.dataPoints[0]);
+                        const samplePoints = data.dataPoints.filter(p => p.signalValue !== undefined).slice(0, 3);
+                        console.log('Sample cached signals:', samplePoints.map(p => ({
+                            timestamp: p.timestamp.toISOString(),
+                            signalValue: p.signalValue,
+                            sentiment: p.sentiment
+                        })));
                     }
                 }
 
@@ -4202,6 +4414,25 @@
                 // Store current data points for hover functionality
                 window.currentChartData = data.dataPoints;
                 window.currentFullTimeframeData = data.fullTimeframeData;
+
+                // Update oscillator score display with the last value from current view
+                // This ensures the score box shows the last plotted value in the chart
+                if (data.dataPoints && data.dataPoints.length > 0) {
+                    const lastPoint = data.dataPoints[data.dataPoints.length - 1];
+                    let displayValue;
+                    
+                    if (signalModeActive && lastPoint.signalValue != null) {
+                        // In signal mode, use signal value
+                        displayValue = lastPoint.signalValue;
+                    } else {
+                        // In regular mode, use sentiment value
+                        displayValue = lastPoint.sentiment ?? data.composite_score ?? 0;
+                    }
+                    
+                    updateSentimentDisplay({
+                        composite_score: displayValue
+                    });
+                }
 
                 console.log('=== UPDATE CHART COMPLETE ===');
             } catch (error) {
@@ -4561,51 +4792,119 @@
             yAxis.innerHTML = labels.join('');
         }
 
-        // Build global signal cache from complete dataset (all timeframes merged)
-        // This ensures signals are consistent across all chart timeframes
+        // Helper function to find the closest timestamp match in cache (within tolerance)
+        // This handles cases where aggregated timestamps don't exactly match cache keys
+        function findClosestSignalValue(timestamp, maxToleranceMs = 5000) {
+            const targetTime = timestamp.getTime();
+            
+            // First try exact match
+            if (globalSignalCache.has(targetTime)) {
+                return globalSignalCache.get(targetTime);
+            }
+            
+            // Find closest timestamp within tolerance
+            let closestTime = null;
+            let minDiff = Infinity;
+            
+            for (const cachedTime of globalSignalCache.keys()) {
+                const diff = Math.abs(cachedTime - targetTime);
+                if (diff < minDiff && diff <= maxToleranceMs) {
+                    minDiff = diff;
+                    closestTime = cachedTime;
+                }
+            }
+            
+            if (closestTime !== null) {
+                return globalSignalCache.get(closestTime);
+            }
+            
+            // No match found, return 0
+            return 0;
+        }
+
+        // Build global signal cache from minute-level datasets only
+        // This cache is used by regular charts (Session, 2h, 4h, etc.) to show confirmed signals
+        // Granular charts calculate signals on-the-fly from their own data
         function buildGlobalSignalCache() {
-            console.log('🔄 Building global signal cache...');
+            console.log('🔄 Building global signal cache (minute-level data only)...');
             globalSignalCache.clear();
 
-            // Merge all datasets and sort by timestamp
+            // Only include minute-level datasets (not granular)
+            // Granular charts will calculate signals independently
             const allData = [
                 ...sentimentDataset,
                 ...sentimentDataset2d,
                 ...sentimentDataset3d
-            ].sort((a, b) => a.timestamp - b.timestamp);
+            ].filter(p => p && p.timestamp); // Filter out invalid entries
 
-            // Remove duplicates by timestamp
+            if (allData.length === 0) {
+                console.warn('⚠️ No data available for signal cache');
+                return;
+            }
+
+            // Sort by timestamp
+            allData.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+            // Remove duplicates by timestamp (keep the most recent version if duplicates exist)
             const uniqueData = [];
-            const seenTimestamps = new Set();
+            const seenTimestamps = new Map(); // Map to track latest version of each timestamp
+            
             for (const point of allData) {
                 const ts = point.timestamp.getTime();
-                if (!seenTimestamps.has(ts)) {
-                    seenTimestamps.add(ts);
-                    uniqueData.push(point);
+                // Keep the most recent data point for each timestamp
+                if (!seenTimestamps.has(ts) || point.timestamp > seenTimestamps.get(ts).timestamp) {
+                    if (seenTimestamps.has(ts)) {
+                        // Replace with newer version
+                        const oldIndex = uniqueData.findIndex(p => p.timestamp.getTime() === ts);
+                        if (oldIndex !== -1) {
+                            uniqueData[oldIndex] = point;
+                        }
+                    } else {
+                        uniqueData.push(point);
+                    }
+                    seenTimestamps.set(ts, point);
                 }
             }
 
-            console.log(`📊 Processing ${uniqueData.length} unique data points for signal detection`);
+            // Ensure uniqueData is still sorted after replacements
+            uniqueData.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+            console.log(`📊 Processing ${uniqueData.length} unique minute-level data points for signal detection`);
+            console.log(`   Regular datasets: ${sentimentDataset.length + sentimentDataset2d.length + sentimentDataset3d.length} points`);
+            console.log(`   Note: Granular charts calculate signals independently from their own data`);
 
             // Calculate signals from the complete dataset
             const signalValues = calculateSignalOscillator(uniqueData);
 
             // Build timestamp -> signal value map
             uniqueData.forEach((point, i) => {
-                globalSignalCache.set(point.timestamp.getTime(), signalValues[i] || 0);
+                const ts = point.timestamp.getTime();
+                const signalValue = signalValues[i] || 0;
+                globalSignalCache.set(ts, signalValue);
             });
 
             console.log(`✅ Signal cache built with ${globalSignalCache.size} entries`);
+            
+            // Log sample entries for debugging
+            if (globalSignalCache.size > 0) {
+                const sampleEntries = Array.from(globalSignalCache.entries()).slice(0, 3);
+                console.log(`   Sample cache entries:`, sampleEntries.map(([ts, val]) => ({
+                    timestamp: new Date(ts).toISOString(),
+                    signalValue: val
+                })));
+            }
         }
 
         // Calculate signal-based oscillator values from historical data
         // Returns array with +100 (News UP active), -100 (Technical DOWN active), or 0 (no signal)
         // Requires 2 opposite signals to flip from +100 to -100 or vice versa
-        function calculateSignalOscillator(dataPoints) {
+        // Optionally inherits initial signal state from a previous calculation
+        function calculateSignalOscillator(dataPoints, initialSignalState = null) {
             if (!dataPoints || dataPoints.length === 0) return [];
 
             const signalValues = [];
-            let activeSignal = null; // { type: 'news_up' | 'technical_down', value: 100 | -100, expiresAt: timestamp, oppositeCount: number }
+            // Start with inherited signal state if provided, otherwise start fresh
+            let activeSignal = initialSignalState ? { ...initialSignalState } : null;
 
             for (let i = 0; i < dataPoints.length; i++) {
                 const current = dataPoints[i];
@@ -4694,6 +4993,151 @@
                             type: 'technical_down',
                             value: -100,
                             expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
+                            oppositeCount: 0
+                        };
+                    }
+                }
+
+                // Store the current signal value for this data point
+                signalValues.push(activeSignal ? activeSignal.value : 0);
+            }
+
+            return signalValues;
+        }
+
+        // Calculate signal-based oscillator values for GRANULAR data (second-by-second)
+        // Uses different thresholds and shorter durations than minute-level signals
+        // Thresholds:
+        //   - Technical DOWN: ≥1 point decrease → -100 for 15 seconds
+        //   - Technical UP: ≥1 point increase → +100 for 15 seconds
+        //   - News UP: ≥5 points increase → +100 for 1 minute
+        // Flip rules: Same as minute-level (2 opposite signals to flip)
+        // Optionally inherits initial signal state from minute-level data
+        function calculateGranularSignalOscillator(dataPoints, initialSignalState = null) {
+            if (!dataPoints || dataPoints.length === 0) return [];
+
+            const signalValues = [];
+            // Start with inherited signal state if provided, otherwise start fresh
+            let activeSignal = initialSignalState ? { ...initialSignalState } : null;
+
+            for (let i = 0; i < dataPoints.length; i++) {
+                const current = dataPoints[i];
+                const previous = i > 0 ? dataPoints[i - 1] : null;
+
+                // Check if current active signal has expired
+                if (activeSignal && current.timestamp >= activeSignal.expiresAt) {
+                    activeSignal = null; // Signal expired
+                }
+
+                let newsUpDetected = false;
+                let technicalDownDetected = false;
+                let technicalUpDetected = false;
+
+                // Detect News UP signal (news score increases by ≥5)
+                if (previous && current.news != null && previous.news != null) {
+                    const newsChange = current.news - previous.news;
+                    if (newsChange >= 5) {
+                        newsUpDetected = true;
+                    }
+                }
+
+                // Detect Technical DOWN signal (technical score decreases by ≥1)
+                if (previous && current.indicators != null && previous.indicators != null) {
+                    const technicalChange = current.indicators - previous.indicators;
+                    if (technicalChange <= -1) {
+                        technicalDownDetected = true;
+                    }
+                }
+
+                // Detect Technical UP signal (technical score increases by ≥1)
+                if (previous && current.indicators != null && previous.indicators != null) {
+                    const technicalChange = current.indicators - previous.indicators;
+                    if (technicalChange >= 1) {
+                        technicalUpDetected = true;
+                    }
+                }
+
+                // Handle signal logic with 2-signal requirement to flip
+                if (activeSignal) {
+                    // We have an active signal - check if opposite signal can flip it
+                    if (activeSignal.type === 'news_up' && technicalDownDetected) {
+                        // At +100 (news up), need 2 technical down signals to flip to -100
+                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
+                        if (activeSignal.oppositeCount >= 2) {
+                            // Flip to technical down
+                            activeSignal = {
+                                type: 'technical_down',
+                                value: -100,
+                                expiresAt: new Date(current.timestamp.getTime() + 15 * 1000), // 15 seconds
+                                oppositeCount: 0
+                            };
+                        }
+                    } else if (activeSignal.type === 'technical_down' && (newsUpDetected || technicalUpDetected)) {
+                        // At -100 (technical down), need 2 positive signals (news up OR technical up) to flip to +100
+                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
+                        if (activeSignal.oppositeCount >= 2) {
+                            // Flip to positive (prefer news up if both detected, otherwise technical up)
+                            const flipType = newsUpDetected ? 'news_up' : 'technical_up';
+                            const expirationMs = newsUpDetected ? 60 * 1000 : 15 * 1000; // News: 1 min, Technical: 15 sec
+                            activeSignal = {
+                                type: flipType,
+                                value: 100,
+                                expiresAt: new Date(current.timestamp.getTime() + expirationMs),
+                                oppositeCount: 0
+                            };
+                        }
+                    } else if (activeSignal.type === 'technical_up' && technicalDownDetected) {
+                        // At +100 (technical up), need 2 technical down signals to flip to -100
+                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
+                        if (activeSignal.oppositeCount >= 2) {
+                            // Flip to technical down
+                            activeSignal = {
+                                type: 'technical_down',
+                                value: -100,
+                                expiresAt: new Date(current.timestamp.getTime() + 15 * 1000), // 15 seconds
+                                oppositeCount: 0
+                            };
+                        }
+                    } else if ((activeSignal.type === 'news_up' && newsUpDetected) || 
+                               (activeSignal.type === 'technical_down' && technicalDownDetected) ||
+                               (activeSignal.type === 'technical_up' && technicalUpDetected)) {
+                        // Same type signal - reset opposite count and extend expiration
+                        activeSignal.oppositeCount = 0;
+                        if (activeSignal.type === 'news_up') {
+                            activeSignal.expiresAt = new Date(current.timestamp.getTime() + 60 * 1000); // 1 minute
+                        } else {
+                            activeSignal.expiresAt = new Date(current.timestamp.getTime() + 15 * 1000); // 15 seconds
+                        }
+                    }
+                } else {
+                    // No active signal - new signal can start
+                    if (newsUpDetected && technicalDownDetected) {
+                        // If both trigger at same timestamp, News UP wins
+                        activeSignal = {
+                            type: 'news_up',
+                            value: 100,
+                            expiresAt: new Date(current.timestamp.getTime() + 60 * 1000), // 1 minute
+                            oppositeCount: 0
+                        };
+                    } else if (newsUpDetected) {
+                        activeSignal = {
+                            type: 'news_up',
+                            value: 100,
+                            expiresAt: new Date(current.timestamp.getTime() + 60 * 1000), // 1 minute
+                            oppositeCount: 0
+                        };
+                    } else if (technicalUpDetected) {
+                        activeSignal = {
+                            type: 'technical_up',
+                            value: 100,
+                            expiresAt: new Date(current.timestamp.getTime() + 15 * 1000), // 15 seconds
+                            oppositeCount: 0
+                        };
+                    } else if (technicalDownDetected) {
+                        activeSignal = {
+                            type: 'technical_down',
+                            value: -100,
+                            expiresAt: new Date(current.timestamp.getTime() + 15 * 1000), // 15 seconds
                             oppositeCount: 0
                         };
                     }
@@ -5229,28 +5673,36 @@
                     radio.addEventListener('change', () => {
                         console.log(`Scale mode changed to: ${radio.value}`);
 
-                        // If switching to signal mode, attach signal values before drawing
-                        if (radio.value === 'signal' && window.currentChartData) {
-                            console.log('📊 Attaching signal values for signal mode...');
-                            let attachedCount = 0;
-                            window.currentChartData.forEach(p => {
-                                if (p.timestamp) {
-                                    p.signalValue = globalSignalCache.get(p.timestamp.getTime()) || 0;
-                                    attachedCount++;
-                                }
-                            });
-                            console.log(`✅ Attached signal values to ${attachedCount} data points`);
-                        }
-
+                        // Signal values are already attached in updateChart(), so no need to attach here
                         // Redraw oscillator with new scale mode
                         if (window.currentChartData) {
                             drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
                         }
 
-                        // Update the composite score display to reflect signal mode or regular mode
-                        updateSentimentDisplay({
-                            composite_score: currentCompositeScore
-                        });
+                        // Update the oscillator score display with the last value from current view
+                        // This ensures the score box shows the correct value based on the current mode
+                        if (window.currentChartData && window.currentChartData.length > 0) {
+                            const signalModeActive = radio.value === 'signal';
+                            const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                            let displayValue;
+                            
+                            if (signalModeActive && lastPoint.signalValue != null) {
+                                // In signal mode, use signal value
+                                displayValue = lastPoint.signalValue;
+                            } else {
+                                // In regular mode, use sentiment value
+                                displayValue = lastPoint.sentiment ?? currentCompositeScore ?? 0;
+                            }
+                            
+                            updateSentimentDisplay({
+                                composite_score: displayValue
+                            });
+                        } else {
+                            // Fallback to current composite score if no chart data
+                            updateSentimentDisplay({
+                                composite_score: currentCompositeScore
+                            });
+                        }
                     });
                 });
 
