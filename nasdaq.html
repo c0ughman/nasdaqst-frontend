@@ -4446,12 +4446,13 @@
                     }
                 }
 
-                // Draw sentiment line in oscillator chart
-                drawSentimentOscillator(data.dataPoints, data.fullTimeframeData);
-
                 // Store current data points for hover functionality
                 window.currentChartData = data.dataPoints;
                 window.currentFullTimeframeData = data.fullTimeframeData;
+                window.currentTimeLabels = data.labels || [];
+
+                // Draw sentiment line in oscillator chart
+                drawSentimentOscillator(data.dataPoints, data.fullTimeframeData, window.currentTimeLabels);
 
                 // Update oscillator score display with the last value from current view
                 // This ensures the score box shows the last plotted value in the chart
@@ -5179,7 +5180,7 @@
         }
 
         // Draw sentiment line in oscillator chart with optional driver overlays
-        function drawSentimentOscillator(dataPoints, fullTimeframeData) {
+        function drawSentimentOscillator(dataPoints, fullTimeframeData, timeLabels) {
             const oscillatorDiv = document.getElementById('chart-oscillator');
             if (!oscillatorDiv) {
                 console.error('❌ chart-oscillator container not found');
@@ -5268,6 +5269,17 @@
                     <span>${formatValue(maxValue)}</span>
                     <span>${formatValue(minValue)}</span>
                 `;
+            }
+
+            // Update X-axis labels (time labels)
+            const xAxisDiv = document.getElementById('oscillator-x-axis');
+            if (xAxisDiv && timeLabels && timeLabels.length > 0) {
+                const labelsHtml = timeLabels.map(label =>
+                    `<span>${label}</span>`
+                ).join('');
+                xAxisDiv.innerHTML = labelsHtml;
+            } else if (xAxisDiv) {
+                xAxisDiv.innerHTML = '';
             }
 
             // Create value to Y mapping function with padding to keep lines visible
@@ -5695,7 +5707,7 @@
 
                     // Redraw oscillator with current data
                     if (window.currentChartData) {
-                        drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
+                        drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData, window.currentTimeLabels || []);
                     }
                 }
 
@@ -5729,7 +5741,7 @@
                         // Signal values are already attached in updateChart(), so no need to attach here
                         // Redraw oscillator with new scale mode
                         if (window.currentChartData) {
-                            drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData);
+                            drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData, window.currentTimeLabels || []);
                         }
 
                         // Update the oscillator score display with the last value from current view
