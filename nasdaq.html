@@ -5304,11 +5304,12 @@
                 }
 
                 let newsUpDetected = false;
+                let newsChange = 0; // Store the actual change value
                 let technicalDownDetected = false;
 
                 // Detect News UP signal (news score increases by ≥5)
                 if (previous && current.news != null && previous.news != null) {
-                    const newsChange = current.news - previous.news;
+                    newsChange = current.news - previous.news;
                     if (newsChange >= 5) {
                         newsUpDetected = true;
                     }
@@ -5339,15 +5340,30 @@
                         }
                     } else if (activeSignal.type === 'technical_down' && newsUpDetected) {
                         // At -100, need 2 news up signals to flip to +100
-                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
-                        if (activeSignal.oppositeCount >= 2) {
-                            // Flip to news up
+                        // OR if single signal is ≥ 2× threshold (≥10), flip immediately
+                        const NEWS_UP_THRESHOLD = 5;
+                        const DOUBLE_THRESHOLD = NEWS_UP_THRESHOLD * 2; // 10
+                        
+                        if (newsChange >= DOUBLE_THRESHOLD) {
+                            // Large signal (≥10) - flip immediately to +100
                             activeSignal = {
                                 type: 'news_up',
                                 value: 100,
                                 expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
                                 oppositeCount: 0
                             };
+                        } else {
+                            // Normal signal (5-9.99) - require 2 signals
+                            activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
+                            if (activeSignal.oppositeCount >= 2) {
+                                // Flip to news up
+                                activeSignal = {
+                                    type: 'news_up',
+                                    value: 100,
+                                    expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
+                                    oppositeCount: 0
+                                };
+                            }
                         }
                     } else if ((activeSignal.type === 'news_up' && newsUpDetected) || 
                                (activeSignal.type === 'technical_down' && technicalDownDetected)) {
