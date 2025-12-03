@@ -4355,9 +4355,15 @@
                 const processedMap = new Map();
                 processedPoints.forEach(p => {
                     if (p.timestamp) {
-                        processedMap.set(p.timestamp.getTime(), p.processedNews);
+                        const ts = p.timestamp.getTime();
+                        processedMap.set(ts, p.processedNews);
+                        // Debug: log first few decay values to verify they're in the map
+                        if (processedMap.size <= 5 || (p.processedNews != null && Math.abs(p.processedNews - (p.news || 0)) > 1)) {
+                            console.log(`   📍 Mapped timestamp ${ts} (${new Date(ts).toISOString()}) → processedNews=${p.processedNews}, original=${p.news}`);
+                        }
                     }
                 });
+                console.log(`   📍 Created processedMap with ${processedMap.size} entries`);
                 
                 // Update original dataPoints array with processed news values
                 // Preserve original order of dataPoints
