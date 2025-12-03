@@ -4219,7 +4219,7 @@
                 let processedPoints = [];
                 
                 const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-                const MINUTE_DECAY_RATE = 0.617; // Exponential decay rate per minute (10x faster decay for visualization: 1 - 0.383)
+                const MINUTE_DECAY_RATE = 0.05; // Exponential decay rate per minute (very fast decay for visualization)
                 const MOVEMENT_THRESHOLD = 5.0; // Minimum change to consider a movement (increased significantly)
                 
                 // Track the last few original values to detect directional changes
