@@ -4218,7 +4218,7 @@
         }
         
         // Process news movements to create a separate tracking line
-        // This line tracks BOTH upward movements (> 0.01) and downward movements (<= -2.0)
+        // This line tracks BOTH upward movements (> 0.01) and downward movements (<= -5.0)
         // When news moves by X points, the line moves by X points (adds/subtracts from current position)
         // The line holds at the new position for 15 minutes (NO DECAY during hold), then decays exponentially to zero over 30 minutes
         // If a new movement occurs during the hold/decay period, reset the timer and add/subtract the movement
@@ -4318,14 +4318,14 @@
                     }
                     
                     // Detect news movement by comparing with last news value
-                    // Track BOTH upward movements (> 0.01) and downward movements (<= -2.0)
+                    // Track BOTH upward movements (> 0.01) and downward movements (<= -5.0)
                     let newsMovement = 0;
                     let isUpwardMovement = false;
                     let isDownwardMovement = false;
                     if (lastNewsValue !== null && !isNaN(lastNewsValue)) {
                         newsMovement = currentNewsValue - lastNewsValue;
                         isUpwardMovement = newsMovement > 0.01; // Track upward movements
-                        isDownwardMovement = newsMovement <= -2.0; // Track downward movements >= 2 points
+                        isDownwardMovement = newsMovement <= -5.0; // Track downward movements >= 5 points
                     }
                     
                     // Check if we have an active movement
