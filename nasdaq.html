@@ -3323,10 +3323,10 @@
                     sentiment = lastPoint.weightedValue;
                 }
             } else if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
-                // Get the most recent data point's news value (use processed if available)
+                // Get the most recent data point's regular news value
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                 if (lastPoint) {
-                    sentiment = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
+                    sentiment = lastPoint.news != null ? lastPoint.news : 0;
                 }
             }
 
@@ -4832,28 +4832,10 @@
                     });
                 }
 
-                // Process news scores with hold/decay logic if news mode is active
+                // News mode: Just use regular news scores (no hold/decay processing)
                 const newsModeActive = document.getElementById('scale-news')?.checked || false;
                 if (newsModeActive && data.dataPoints && data.dataPoints.length > 0) {
-                    console.log('📰 News mode active - applying hold/decay logic to news scores');
-                    console.log(`   Data points before processing: ${data.dataPoints.length}`);
-                    const pointsWithNews = data.dataPoints.filter(p => p.news != null && !isNaN(p.news));
-                    console.log(`   Points with news data: ${pointsWithNews.length}`);
-                    if (pointsWithNews.length > 0) {
-                        console.log(`   Sample news values: ${pointsWithNews.slice(0, 3).map(p => p.news).join(', ')}`);
-                    }
-                    processNewsScoresWithHoldDecay(data.dataPoints);
-                    // Verify processing worked
-                    const pointsWithProcessed = data.dataPoints.filter(p => p.processedNews != null);
-                    console.log(`   Points with processed news after: ${pointsWithProcessed.length}`);
-                    if (pointsWithProcessed.length > 0) {
-                        const sample = pointsWithProcessed.slice(0, 3);
-                        console.log(`   Sample processed values:`, sample.map(p => ({
-                            time: p.timestamp.toISOString(),
-                            original: p.news,
-                            processed: p.processedNews
-                        })));
-                    }
+                    console.log('📰 News mode active - using regular news scores');
                 }
 
                 // Store current data points for hover functionality
@@ -4882,8 +4864,8 @@
                         // In weighted mode, use weighted average value
                         displayValue = lastPoint.weightedValue;
                     } else if (newsModeActive) {
-                        // In news mode, use processed news score if available, otherwise raw news score
-                        displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
+                        // In news mode, use regular news score
+                        displayValue = lastPoint.news != null ? lastPoint.news : 0;
                     } else {
                         // In regular mode, use sentiment value
                         displayValue = lastPoint.sentiment ?? data.composite_score ?? 0;
@@ -5817,13 +5799,8 @@
                         } else if (driver.key === 'sentiment' && weightedModeActive) {
                             return point.weightedValue;
                         } else if (driver.key === 'news' && newsModeActive) {
-                            // In news mode, ALWAYS prefer processedNews if it exists
-                            const value = point.processedNews != null ? point.processedNews : point.news;
-                            // Log first few points to verify we're using processedNews
-                            if (points.indexOf(point) < 3) {
-                                console.log(`   📈 Drawing news point ${points.indexOf(point)}: processedNews=${point.processedNews}, news=${point.news}, using=${value}`);
-                            }
-                            return value;
+                            // In news mode, use regular news score (no processing)
+                            return point.news;
                         } else {
                             return point[driver.key];
                         }
@@ -6264,21 +6241,10 @@
                             });
                         }
 
-                        // Process news scores if news mode is activated
+                        // News mode: Just use regular news scores (no processing needed)
                         const newsModeActive = radio.value === 'news';
-                        if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
-                            console.log('📰 News mode activated - processing news scores with hold/decay logic');
-                            processNewsScoresWithHoldDecay(window.currentChartData);
-                            
-                            // Verify processing worked - log a sample
-                            const sample = window.currentChartData.filter(p => p.news != null).slice(0, 3);
-                            if (sample.length > 0) {
-                                console.log('   Sample processed values:', sample.map(p => ({
-                                    time: p.timestamp.toISOString(),
-                                    original: p.news,
-                                    processed: p.processedNews
-                                })));
-                            }
+                        if (newsModeActive) {
+                            console.log('📰 News mode activated - using regular news scores');
                         }
 
                         // Signal values are already attached in updateChart(), so no need to attach here
@@ -6301,8 +6267,8 @@
                                 // In weighted mode, use weighted average value
                                 displayValue = lastPoint.weightedValue;
                             } else if (newsModeActive) {
-                                // In news mode, use processed news score if available, otherwise raw news score
-                                displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
+                                // In news mode, use regular news score
+                                displayValue = lastPoint.news != null ? lastPoint.news : 0;
                             } else {
                                 // In regular mode, use sentiment value
                                 displayValue = lastPoint.sentiment ?? currentCompositeScore ?? 0;
