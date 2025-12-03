@@ -4257,7 +4257,7 @@
                 
                 const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes
                 const MINUTE_DECAY_RATE = 0.05; // Exponential decay rate per minute (very fast decay for visualization)
-                const MOVEMENT_THRESHOLD = 0.01; // Detect ANY movement (any change in value)
+                const MOVEMENT_THRESHOLD = 1.0; // Minimum change to detect a movement (1 point)
                 
                 // Track the last few original values to detect directional changes
                 let recentOriginalValues = [];
@@ -4312,15 +4312,29 @@
                             currentDisplayValue = decayedValue < 0.01 ? 0 : decayedValue;
                         }
                         
-                        // Detect ANY movement by comparing with the LAST original news value
-                        // This ensures we detect actual changes in the news score, not differences from displayed value
-                        const movement = lastOriginalNewsValue !== null ? Math.abs(originalNewsValue - lastOriginalNewsValue) : 0;
-                        const isNewMovement = movement > MOVEMENT_THRESHOLD;
+                        // Detect movements by comparing with the LAST original news value
+                        // Only detect UPWARD movements (> 1 point increase) or significant DOWNWARD movements (> 1 point decrease)
+                        // Ignore small changes and decay-related decreases
+                        let isNewMovement = false;
+                        if (lastOriginalNewsValue !== null && !isNaN(lastOriginalNewsValue)) {
+                            const change = originalNewsValue - lastOriginalNewsValue;
+                            
+                            // Detect upward movements: increase of more than 1 point
+                            const upwardMovement = change > MOVEMENT_THRESHOLD;
+                            
+                            // Detect significant downward movements: decrease of more than 1 point (not decay)
+                            // Only detect if it's a significant drop, not gradual decay
+                            const downwardMovement = change < -MOVEMENT_THRESHOLD;
+                            
+                            isNewMovement = upwardMovement || downwardMovement;
+                        }
                         
                         if (isNewMovement) {
                             // New movement detected - capture this new value and start holding for 15 minutes
                             movementsDetected++;
-                            console.log(`   📈 Movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue?.toFixed(2) || 'N/A'} → ${originalNewsValue.toFixed(2)} (will hold for 15 minutes)`);
+                            const change = lastOriginalNewsValue !== null ? (originalNewsValue - lastOriginalNewsValue) : 0;
+                            const direction = change > 0 ? 'UP' : 'DOWN';
+                            console.log(`   📈 Movement #${movementsDetected} (${direction}) detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue?.toFixed(2) || 'N/A'} → ${originalNewsValue.toFixed(2)} (change: ${change > 0 ? '+' : ''}${change.toFixed(2)}, will hold for 15 minutes)`);
                             currentPeakValue = originalNewsValue;
                             peakTimestamp = pointTime;
                             processedPoints.push({ ...point, processedNews: originalNewsValue });
@@ -4444,13 +4458,21 @@
                         }
                     } else {
                         // No active peak - check if this is a new movement
-                        // Compare with previous point's original value to detect ANY movement
+                        // Only detect UPWARD movements (> 1 point) or significant DOWNWARD movements (> 1 point)
                         if (i > 0 && lastOriginalNewsValue !== null && !isNaN(lastOriginalNewsValue)) {
-                            const movement = Math.abs(originalNewsValue - lastOriginalNewsValue);
-                            if (movement > MOVEMENT_THRESHOLD) {
+                            const change = originalNewsValue - lastOriginalNewsValue;
+                            
+                            // Detect upward movements: increase of more than 1 point
+                            const upwardMovement = change > MOVEMENT_THRESHOLD;
+                            
+                            // Detect significant downward movements: decrease of more than 1 point (not decay)
+                            const downwardMovement = change < -MOVEMENT_THRESHOLD;
+                            
+                            if (upwardMovement || downwardMovement) {
                                 // Movement detected - start holding at this value for 15 minutes
                                 movementsDetected++;
-                                console.log(`   📈 Initial movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue.toFixed(2)} → ${originalNewsValue.toFixed(2)} (will hold for 15 minutes)`);
+                                const direction = change > 0 ? 'UP' : 'DOWN';
+                                console.log(`   📈 Initial movement #${movementsDetected} (${direction}) detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue.toFixed(2)} → ${originalNewsValue.toFixed(2)} (change: ${change > 0 ? '+' : ''}${change.toFixed(2)}, will hold for 15 minutes)`);
                                 currentPeakValue = originalNewsValue;
                                 peakTimestamp = pointTime;
                                 processedPoints.push({ ...point, processedNews: originalNewsValue });
