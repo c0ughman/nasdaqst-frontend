@@ -4312,16 +4312,15 @@
                             currentDisplayValue = decayedValue < 0.01 ? 0 : decayedValue;
                         }
                         
-                        // Detect ANY movement (any change in value)
-                        // During hold period: detect any change from the current held value
-                        // During decay period: detect any change from the current decayed value
-                        const movement = Math.abs(originalNewsValue - currentDisplayValue);
+                        // Detect ANY movement by comparing with the LAST original news value
+                        // This ensures we detect actual changes in the news score, not differences from displayed value
+                        const movement = lastOriginalNewsValue !== null ? Math.abs(originalNewsValue - lastOriginalNewsValue) : 0;
                         const isNewMovement = movement > MOVEMENT_THRESHOLD;
                         
                         if (isNewMovement) {
-                            // New movement detected - jump to it and restart timer
+                            // New movement detected - capture this new value and start holding for 15 minutes
                             movementsDetected++;
-                            console.log(`   📈 Movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: displaying ${currentDisplayValue.toFixed(2)} → new value ${originalNewsValue.toFixed(2)}`);
+                            console.log(`   📈 Movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue?.toFixed(2) || 'N/A'} → ${originalNewsValue.toFixed(2)} (will hold for 15 minutes)`);
                             currentPeakValue = originalNewsValue;
                             peakTimestamp = pointTime;
                             processedPoints.push({ ...point, processedNews: originalNewsValue });
@@ -4333,6 +4332,47 @@
                         // No new movement - apply hold/decay logic
                         if (timeSincePeak < HOLD_DURATION_MS) {
                             // Still in hold period - maintain peak value (FLAT LINE)
+                            // Add intermediate points during hold to ensure flat line is visible
+                            const prevPoint = processedPoints.length > 0 ? processedPoints[processedPoints.length - 1] : null;
+                            const timeSinceLastPoint = prevPoint && prevPoint.timestamp ? 
+                                (pointTime - prevPoint.timestamp.getTime()) : 0;
+                            
+                            // If more than 1 minute passed since last point, add intermediate hold points
+                            if (timeSinceLastPoint > 60 * 1000 && prevPoint && prevPoint.processedNews != null) {
+                                const intermediateCount = Math.floor(timeSinceLastPoint / (60 * 1000)); // One point per minute
+                                const timeStep = timeSinceLastPoint / (intermediateCount + 1);
+                                
+                                for (let j = 1; j <= intermediateCount; j++) {
+                                    const intermediateTime = prevPoint.timestamp.getTime() + (timeStep * j);
+                                    
+                                    // Create intermediate point with held value
+                                    const intermediatePoint = {
+                                        ...point,
+                                        timestamp: new Date(intermediateTime),
+                                        processedNews: currentPeakValue, // Hold the peak value
+                                        news: originalNewsValue // Keep original for reference
+                                    };
+                                    processedPoints.push(intermediatePoint);
+                                    
+                                    // Update the original dataPoint array too
+                                    const intermediateDataPoint = timestampToDataPoint.get(intermediateTime);
+                                    if (!intermediateDataPoint) {
+                                        const newDataPoint = {
+                                            ...point,
+                                            timestamp: new Date(intermediateTime),
+                                            processedNews: currentPeakValue
+                                        };
+                                        dataPoints.push(newDataPoint);
+                                        timestampToDataPoint.set(intermediateTime, newDataPoint);
+                                    } else {
+                                        intermediateDataPoint.processedNews = currentPeakValue;
+                                    }
+                                }
+                            }
+                            
+                            // Add the current point with held value
+                            const minutesHeld = timeSincePeak / (60 * 1000);
+                            console.log(`   ⏸️ Holding value: time=${new Date(pointTime).toISOString()}, heldValue=${currentPeakValue.toFixed(2)}, minutesHeld=${minutesHeld.toFixed(2)}/${(HOLD_DURATION_MS / (60 * 1000)).toFixed(2)}`);
                             processedPoints.push({ ...point, processedNews: currentPeakValue });
                             lastOriginalNewsValue = originalNewsValue; // Track original value for reference
                         } else {
