@@ -3323,10 +3323,10 @@
                     sentiment = lastPoint.weightedValue;
                 }
             } else if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
-                // Get the most recent data point's regular news value
+                // Get the most recent data point's processed news value (or fallback to regular news)
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                 if (lastPoint) {
-                    sentiment = lastPoint.news != null ? lastPoint.news : 0;
+                    sentiment = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
                 }
             }
 
@@ -3339,6 +3339,18 @@
             console.log('Updating oscillator score panel:', sentimentDisplay, 'Element found:', !!oscillatorScoreElement);
             if (oscillatorScoreElement) {
                 oscillatorScoreElement.textContent = sentimentDisplay;
+                
+                // Update color based on active mode
+                if (newsModeActive) {
+                    oscillatorScoreElement.style.color = '#ec4899'; // Pink for news
+                } else if (signalModeActive) {
+                    oscillatorScoreElement.style.color = '#ffffff'; // White for signal
+                } else if (weightedModeActive) {
+                    oscillatorScoreElement.style.color = '#ff8c42'; // Orange for weighted
+                } else {
+                    oscillatorScoreElement.style.color = '#ff8c42'; // Orange for default composite
+                }
+                
                 console.log('✅ Oscillator score updated to:', sentimentDisplay);
             } else {
                 console.error('❌ oscillator-current-score element not found!');
@@ -4864,8 +4876,8 @@
                         // In weighted mode, use weighted average value
                         displayValue = lastPoint.weightedValue;
                     } else if (newsModeActive) {
-                        // In news mode, use regular news score
-                        displayValue = lastPoint.news != null ? lastPoint.news : 0;
+                        // In news mode, use processedNews if available, otherwise fallback to news
+                        displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
                     } else {
                         // In regular mode, use sentiment value
                         displayValue = lastPoint.sentiment ?? data.composite_score ?? 0;
@@ -5799,8 +5811,8 @@
                         } else if (driver.key === 'sentiment' && weightedModeActive) {
                             return point.weightedValue;
                         } else if (driver.key === 'news' && newsModeActive) {
-                            // In news mode, use regular news score (no processing)
-                            return point.news;
+                            // In news mode, use processedNews if available, otherwise fallback to news
+                            return point.processedNews != null ? point.processedNews : (point.news != null ? point.news : 0);
                         } else {
                             return point[driver.key];
                         }
@@ -6267,8 +6279,8 @@
                                 // In weighted mode, use weighted average value
                                 displayValue = lastPoint.weightedValue;
                             } else if (newsModeActive) {
-                                // In news mode, use regular news score
-                                displayValue = lastPoint.news != null ? lastPoint.news : 0;
+                                // In news mode, use processedNews if available, otherwise fallback to news
+                                displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
                             } else {
                                 // In regular mode, use sentiment value
                                 displayValue = lastPoint.sentiment ?? currentCompositeScore ?? 0;
@@ -6534,8 +6546,9 @@
                 // Show sentiment score as secondary info
                 const tooltipSentiment = document.getElementById('tooltip-sentiment');
                 if (tooltipSentiment) {
-                    // Check if signal mode or weighted mode is active
+                    // Check if signal mode, news mode, or weighted mode is active
                     const signalModeActive = document.getElementById('scale-signal')?.checked || false;
+                    const newsModeActive = document.getElementById('scale-news')?.checked || false;
                     const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
 
                     let displayValue = null;
@@ -6543,6 +6556,9 @@
                         displayValue = result.signalValue; // Use signal value in signal mode
                     } else if (weightedModeActive && result.weightedValue != null) {
                         displayValue = result.weightedValue; // Use weighted average value
+                    } else if (newsModeActive) {
+                        // Use processedNews if available, otherwise fallback to news
+                        displayValue = result.processedNews != null ? result.processedNews : (result.news != null ? result.news : 0);
                     } else if (result.sentiment != null) {
                         displayValue = result.sentiment; // Use regular sentiment
                     }
@@ -6576,25 +6592,48 @@
                 oscillatorTooltip.style.display = 'block';
                 mainTooltip.style.display = 'none';
 
-                // Check if signal mode, weighted mode is active (now radio buttons)
+                // Check if signal mode, news mode, or weighted mode is active (now radio buttons)
                 const signalModeActive = document.getElementById('scale-signal')?.checked || false;
+                const newsModeActive = document.getElementById('scale-news')?.checked || false;
                 const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
 
-                // Display sentiment as main value (use signal value if in signal mode, weighted value if in weighted mode)
+                // Display sentiment as main value (use signal value if in signal mode, weighted value if in weighted mode, news if in news mode)
                 let displayValue = null;
+                let tooltipLabel = 'Sentiment Score';
+                let tooltipColor = '#ff8c42'; // Default orange
+                
                 if (signalModeActive && result.signalValue != null) {
                     displayValue = result.signalValue; // Use binary signal value
+                    tooltipLabel = 'Signal Score';
+                    tooltipColor = '#ffffff'; // White for signal
                 } else if (weightedModeActive && result.weightedValue != null) {
                     displayValue = result.weightedValue; // Use weighted average value
+                    tooltipLabel = 'Weighted Score';
+                    tooltipColor = '#ff8c42'; // Orange for weighted
+                } else if (newsModeActive) {
+                    // Use processedNews if available, otherwise fallback to news
+                    displayValue = result.processedNews != null ? result.processedNews : (result.news != null ? result.news : 0);
+                    tooltipLabel = 'News Score';
+                    tooltipColor = '#ec4899'; // Pink for news
                 } else if (result.sentiment != null) {
                     displayValue = result.sentiment; // Use regular sentiment
+                    tooltipLabel = 'Sentiment Score';
+                    tooltipColor = '#ff8c42'; // Orange for default
+                }
+
+                // Update tooltip label
+                const oscillatorTooltipLabel = document.querySelector('#oscillator-tooltip .tooltip-label');
+                if (oscillatorTooltipLabel) {
+                    oscillatorTooltipLabel.textContent = tooltipLabel;
                 }
 
                 if (displayValue != null) {
                     const sentimentDisplay = displayValue > 0 ? `+${Math.round(displayValue)}` : Math.round(displayValue);
                     oscillatorTooltipValue.textContent = sentimentDisplay;
+                    oscillatorTooltipValue.style.color = tooltipColor;
                 } else {
                     oscillatorTooltipValue.textContent = 'N/A';
+                    oscillatorTooltipValue.style.color = '#ff8c42';
                 }
 
                 oscillatorTooltipTime.textContent = result.time;
