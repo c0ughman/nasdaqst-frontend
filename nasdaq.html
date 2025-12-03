@@ -5666,56 +5666,14 @@
                 { key: 'indicators', color: '#3b82f6', label: 'Indicators', eyeBtn: document.getElementById('eye-indicators') } // Blue
             ];
 
-            // In news mode, draw both the original news line and the tracking line
+            // In news mode, draw only the tracking line
             if (newsModeActive) {
                 console.log(`📊 News mode: minValue=${minValue.toFixed(2)}, maxValue=${maxValue.toFixed(2)}`);
                 
                 // Sort points by x coordinate to ensure proper drawing order
                 const sortedDataPoints = [...dataPoints].sort((a, b) => (a.x || 0) - (b.x || 0));
                 
-                // First, draw the original news line (semi-transparent)
-                const originalNewsPoints = sortedDataPoints.filter(p => p.news != null && !isNaN(p.news) && p.x != null);
-                console.log(`📊 Original news points: ${originalNewsPoints.length}, sample values:`, 
-                    originalNewsPoints.slice(0, 3).map(p => ({ x: p.x, news: p.news, y: valueToY(p.news) })));
-                
-                if (originalNewsPoints.length > 0) {
-                    const getOriginalNewsValue = (point) => point.news;
-                    const firstY = valueToY(getOriginalNewsValue(originalNewsPoints[0]));
-                    let pathD = `M ${originalNewsPoints[0].x},${firstY}`;
-                    
-                    for (let i = 1; i < originalNewsPoints.length; i++) {
-                        const x = originalNewsPoints[i].x;
-                        const y = valueToY(getOriginalNewsValue(originalNewsPoints[i]));
-                        const prevX = originalNewsPoints[i - 1].x;
-                        const prevY = valueToY(getOriginalNewsValue(originalNewsPoints[i - 1]));
-                        
-                        if (i === 1 && originalNewsPoints.length === 2) {
-                            pathD += ` L ${x},${y}`;
-                        } else {
-                            const dx = x - prevX;
-                            const dy = y - prevY;
-                            const cp1X = prevX + dx * 0.5;
-                            const cp1Y = prevY + dy * 0.15;
-                            const cp2X = x - dx * 0.5;
-                            const cp2Y = y - dy * 0.15;
-                            pathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
-                        }
-                    }
-                    
-                    const originalPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    originalPath.setAttribute('d', pathD);
-                    originalPath.setAttribute('fill', 'none');
-                    originalPath.setAttribute('stroke', '#ec4899'); // Pink for news
-                    originalPath.setAttribute('stroke-width', '1');
-                    originalPath.setAttribute('stroke-linecap', 'round');
-                    originalPath.setAttribute('stroke-linejoin', 'round');
-                    originalPath.setAttribute('opacity', '0.4'); // Semi-transparent
-                    originalPath.classList.add('oscillator-line-news-original');
-                    svg.appendChild(originalPath);
-                    console.log(`✅ Drew original news line with ${originalNewsPoints.length} points, path length: ${pathD.length}, first 100 chars: ${pathD.substring(0, 100)}`);
-                }
-                
-                // Then, draw the tracking line (using processedNews)
+                // Draw the tracking line (using processedNews)
                 const trackingPoints = sortedDataPoints.filter(p => {
                     const newsValue = p.processedNews != null ? p.processedNews : 0;
                     return newsValue != null && !isNaN(newsValue) && p.x != null;
