@@ -4257,7 +4257,7 @@
                 
                 const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes
                 const MINUTE_DECAY_RATE = 0.05; // Exponential decay rate per minute (very fast decay for visualization)
-                const MOVEMENT_THRESHOLD = 5.0; // Minimum change to consider a movement (increased significantly)
+                const MOVEMENT_THRESHOLD = 0.01; // Detect ANY movement (any change in value)
                 
                 // Track the last few original values to detect directional changes
                 let recentOriginalValues = [];
@@ -4312,21 +4312,11 @@
                             currentDisplayValue = decayedValue < 0.01 ? 0 : decayedValue;
                         }
                         
-                        // During hold period, ONLY detect movements if new value is significantly HIGHER than current peak
-                        // During decay period, be more strict - only detect if new value would create a NEW peak (higher than original peak for upward, lower for downward)
-                        let isNewMovement = false;
-                        if (timeSincePeak < HOLD_DURATION_MS) {
-                            // During hold: only detect if new value is significantly HIGHER (new peak)
-                            isNewMovement = originalNewsValue > currentPeakValue + MOVEMENT_THRESHOLD;
-                        } else {
-                            // During exponential decay: only detect movements if they would create a NEW peak
-                            // For upward movements: new value must be significantly higher than the ORIGINAL peak
-                            // For downward movements: new value must be significantly lower than the ORIGINAL peak
-                            // This allows decay to be visible while still catching significant new movements
-                            const upwardMovement = originalNewsValue > currentPeakValue + MOVEMENT_THRESHOLD;
-                            const downwardMovement = originalNewsValue < currentPeakValue - MOVEMENT_THRESHOLD;
-                            isNewMovement = upwardMovement || downwardMovement;
-                        }
+                        // Detect ANY movement (any change in value)
+                        // During hold period: detect any change from the current held value
+                        // During decay period: detect any change from the current decayed value
+                        const movement = Math.abs(originalNewsValue - currentDisplayValue);
+                        const isNewMovement = movement > MOVEMENT_THRESHOLD;
                         
                         if (isNewMovement) {
                             // New movement detected - jump to it and restart timer
@@ -4414,13 +4404,13 @@
                         }
                     } else {
                         // No active peak - check if this is a new movement
-                        // Compare with previous point's original value to detect significant movement
+                        // Compare with previous point's original value to detect ANY movement
                         if (i > 0 && lastOriginalNewsValue !== null && !isNaN(lastOriginalNewsValue)) {
                             const movement = Math.abs(originalNewsValue - lastOriginalNewsValue);
                             if (movement > MOVEMENT_THRESHOLD) {
-                                // Movement detected - start holding at this value
+                                // Movement detected - start holding at this value for 15 minutes
                                 movementsDetected++;
-                                console.log(`   📈 Initial movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue.toFixed(2)} → ${originalNewsValue.toFixed(2)}`);
+                                console.log(`   📈 Initial movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue.toFixed(2)} → ${originalNewsValue.toFixed(2)} (will hold for 15 minutes)`);
                                 currentPeakValue = originalNewsValue;
                                 peakTimestamp = pointTime;
                                 processedPoints.push({ ...point, processedNews: originalNewsValue });
@@ -4869,10 +4859,11 @@
                     });
                 }
 
-                // News mode: Just use regular news scores (no hold/decay processing)
+                // News mode: Process news scores with hold/decay logic
                 const newsModeActive = document.getElementById('scale-news')?.checked || false;
                 if (newsModeActive && data.dataPoints && data.dataPoints.length > 0) {
-                    console.log('📰 News mode active - using regular news scores');
+                    console.log('📰 News mode active - processing news scores with hold/decay');
+                    processNewsScoresWithHoldDecay(data.dataPoints);
                 }
 
                 // Store current data points for hover functionality
@@ -6299,10 +6290,11 @@
                             });
                         }
 
-                        // News mode: Just use regular news scores (no processing needed)
+                        // News mode: Process news scores with hold/decay logic
                         const newsModeActive = radio.value === 'news';
-                        if (newsModeActive) {
-                            console.log('📰 News mode activated - using regular news scores');
+                        if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                            console.log('📰 News mode activated - processing news scores with hold/decay');
+                            processNewsScoresWithHoldDecay(window.currentChartData);
                         }
 
                         // Signal values are already attached in updateChart(), so no need to attach here
