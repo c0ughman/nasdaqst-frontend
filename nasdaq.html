@@ -4363,27 +4363,40 @@
                 // Preserve original order of dataPoints
                 let valuesChanged = 0;
                 let sampleChanges = [];
+                let processedCount = 0;
+                let missingCount = 0;
                 dataPoints.forEach(point => {
-                    if (point.timestamp && processedMap.has(point.timestamp.getTime())) {
-                        const processedValue = processedMap.get(point.timestamp.getTime());
-                        const originalValue = point.news;
-                        point.processedNews = processedValue;
-                        
-                        // Check if value actually changed
-                        if (originalValue != null && processedValue != null && 
-                            Math.abs(originalValue - processedValue) > 0.001) {
-                            valuesChanged++;
-                            if (sampleChanges.length < 5) {
-                                sampleChanges.push({
-                                    time: point.timestamp.toISOString(),
-                                    original: originalValue.toFixed(2),
-                                    processed: processedValue.toFixed(2),
-                                    diff: Math.abs(originalValue - processedValue).toFixed(2)
-                                });
+                    if (point.news != null && !isNaN(point.news)) {
+                        if (point.timestamp && processedMap.has(point.timestamp.getTime())) {
+                            const processedValue = processedMap.get(point.timestamp.getTime());
+                            const originalValue = point.news;
+                            // ALWAYS set processedNews, even if it matches original (important for chart rendering)
+                            point.processedNews = processedValue;
+                            processedCount++;
+                            
+                            // Check if value actually changed
+                            if (originalValue != null && processedValue != null && 
+                                Math.abs(originalValue - processedValue) > 0.001) {
+                                valuesChanged++;
+                                if (sampleChanges.length < 5) {
+                                    sampleChanges.push({
+                                        time: point.timestamp.toISOString(),
+                                        original: originalValue.toFixed(2),
+                                        processed: processedValue.toFixed(2),
+                                        diff: Math.abs(originalValue - processedValue).toFixed(2)
+                                    });
+                                }
                             }
+                        } else {
+                            // Point has news but wasn't in processed map - use original value as fallback
+                            point.processedNews = point.news;
+                            missingCount++;
+                            console.warn(`   ⚠️ Point at ${point.timestamp?.toISOString()} has news=${point.news} but not in processedMap, using original`);
                         }
                     }
                 });
+                
+                console.log(`   📊 Assigned processedNews: ${processedCount} from map, ${missingCount} fallback, total=${dataPoints.filter(p => p.processedNews != null).length}`);
                 
                 if (sampleChanges.length > 0) {
                     console.log('   📊 Sample value changes:', sampleChanges);
@@ -5752,7 +5765,13 @@
                         } else if (driver.key === 'sentiment' && weightedModeActive) {
                             return point.weightedValue;
                         } else if (driver.key === 'news' && newsModeActive) {
-                            return point.processedNews != null ? point.processedNews : point.news;
+                            // In news mode, ALWAYS prefer processedNews if it exists
+                            const value = point.processedNews != null ? point.processedNews : point.news;
+                            // Log first few points to verify we're using processedNews
+                            if (points.indexOf(point) < 3) {
+                                console.log(`   📈 Drawing news point ${points.indexOf(point)}: processedNews=${point.processedNews}, news=${point.news}, using=${value}`);
+                            }
+                            return value;
                         } else {
                             return point[driver.key];
                         }
