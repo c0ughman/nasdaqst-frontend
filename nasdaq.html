@@ -4310,7 +4310,7 @@
                             lastOriginalNewsValue = originalNewsValue; // Track original value for reference
                         } else {
                             // After hold period - apply exponential decay using same formula as regular news
-                            // Formula: news_score(t) = news_score(0) * (0.9617)^t where t is minutes since decay started
+                            // Formula: news_score(t) = news_score(0) * (0.05)^t where t is minutes since decay started
                             const minutesSinceDecayStart = (timeSincePeak - HOLD_DURATION_MS) / (60 * 1000);
                             
                             // Exponential decay: multiply by decay rate raised to the power of minutes
@@ -4319,6 +4319,49 @@
                             
                             // Force to zero if below threshold (same as regular news decay)
                             const finalValue = decayedValue < 0.01 ? 0 : decayedValue;
+                            
+                            // Add intermediate points during decay to show exponential curve
+                            // Check if this is the first point after hold period or if significant time has passed
+                            const prevPoint = processedPoints.length > 0 ? processedPoints[processedPoints.length - 1] : null;
+                            const timeSinceLastPoint = prevPoint && prevPoint.timestamp ? 
+                                (pointTime - prevPoint.timestamp.getTime()) : 0;
+                            
+                            // If more than 2 minutes passed since last point, add intermediate decay points
+                            if (timeSinceLastPoint > 2 * 60 * 1000 && prevPoint && prevPoint.processedNews != null) {
+                                const intermediateCount = Math.floor(timeSinceLastPoint / (60 * 1000)); // One point per minute
+                                const timeStep = timeSinceLastPoint / (intermediateCount + 1);
+                                
+                                for (let j = 1; j <= intermediateCount; j++) {
+                                    const intermediateTime = prevPoint.timestamp.getTime() + (timeStep * j);
+                                    const intermediateMinutesSinceDecayStart = (intermediateTime - peakTimestamp - HOLD_DURATION_MS) / (60 * 1000);
+                                    const intermediateDecayedValue = currentPeakValue * Math.pow(MINUTE_DECAY_RATE, intermediateMinutesSinceDecayStart);
+                                    const intermediateFinalValue = intermediateDecayedValue < 0.01 ? 0 : intermediateDecayedValue;
+                                    
+                                    // Create intermediate point with interpolated timestamp
+                                    const intermediatePoint = {
+                                        ...point,
+                                        timestamp: new Date(intermediateTime),
+                                        processedNews: intermediateFinalValue,
+                                        news: originalNewsValue // Keep original for reference
+                                    };
+                                    processedPoints.push(intermediatePoint);
+                                    
+                                    // Update the original dataPoint array too
+                                    const intermediateDataPoint = timestampToDataPoint.get(intermediateTime);
+                                    if (!intermediateDataPoint) {
+                                        // Create new dataPoint for intermediate time
+                                        const newDataPoint = {
+                                            ...point,
+                                            timestamp: new Date(intermediateTime),
+                                            processedNews: intermediateFinalValue
+                                        };
+                                        dataPoints.push(newDataPoint);
+                                        timestampToDataPoint.set(intermediateTime, newDataPoint);
+                                    } else {
+                                        intermediateDataPoint.processedNews = intermediateFinalValue;
+                                    }
+                                }
+                            }
                             
                             // Always log decay to verify it's working
                             console.log(`   🔽 Exponential decay: time=${new Date(pointTime).toISOString()}, peak=${currentPeakValue.toFixed(2)}, minutes=${minutesSinceDecayStart.toFixed(2)}, decayed=${decayedValue.toFixed(2)}, final=${finalValue.toFixed(2)}`);
