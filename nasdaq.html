@@ -4786,9 +4786,11 @@
                 }
 
                 // News mode: Process news scores with hold/decay logic
+                // Apply to both regular and granular data
                 const newsModeActive = document.getElementById('scale-news')?.checked || false;
                 if (newsModeActive && data.dataPoints && data.dataPoints.length > 0) {
-                    console.log('📰 News mode active - processing news scores with hold/decay');
+                    const dataType = data.usingGranularData ? (granularDataType === 'second' ? 'granular (second)' : 'granular (tick)') : 'regular';
+                    console.log(`📰 News mode active - processing news scores with hold/decay for ${dataType} data (${data.dataPoints.length} points)`);
                     processNewsScoresWithHoldDecay(data.dataPoints);
                 }
 
