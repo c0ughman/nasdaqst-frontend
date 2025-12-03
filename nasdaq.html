@@ -4218,9 +4218,10 @@
         }
         
         // Process news movements to create a separate tracking line
-        // This line ONLY tracks UPWARD news movements: when news moves UP by X points, the line moves UP by X points
+        // This line tracks BOTH upward movements (> 0.01) and downward movements (<= -2.0)
+        // When news moves by X points, the line moves by X points (adds/subtracts from current position)
         // The line holds at the new position for 15 minutes (NO DECAY during hold), then decays exponentially to zero over 30 minutes
-        // If a new UPWARD movement occurs during the hold period, reset the timer and move to the new position
+        // If a new movement occurs during the hold/decay period, reset the timer and add/subtract the movement
         function processNewsScoresWithHoldDecay(dataPoints) {
             try {
                 if (!dataPoints || dataPoints.length === 0) {
@@ -4300,8 +4301,9 @@
                                 const clampedLineValue = clampValue(currentLineValue);
                                 const minutesSinceDecayStart = (timeSinceMovement - HOLD_DURATION_MS) / (60 * 1000);
                                 // Exponential decay: value(t) = initialValue * e^(-decayRate * t)
+                                // Works for both positive and negative values
                                 const decayedValue = clampedLineValue * Math.exp(-DECAY_RATE * minutesSinceDecayStart);
-                                point.processedNews = clampValue(decayedValue < 0.01 ? 0 : decayedValue);
+                                point.processedNews = clampValue(Math.abs(decayedValue) < 0.01 ? 0 : decayedValue);
                             } else {
                                 // Decay complete - line is at zero
                                 point.processedNews = 0;
@@ -4316,12 +4318,14 @@
                     }
                     
                     // Detect news movement by comparing with last news value
-                    // ONLY track UPWARD movements
+                    // Track BOTH upward movements (> 0.01) and downward movements (<= -2.0)
                     let newsMovement = 0;
                     let isUpwardMovement = false;
+                    let isDownwardMovement = false;
                     if (lastNewsValue !== null && !isNaN(lastNewsValue)) {
                         newsMovement = currentNewsValue - lastNewsValue;
-                        isUpwardMovement = newsMovement > 0.01; // Only track upward movements
+                        isUpwardMovement = newsMovement > 0.01; // Track upward movements
+                        isDownwardMovement = newsMovement <= -2.0; // Track downward movements >= 2 points
                     }
                     
                     // Check if we have an active movement
@@ -4336,11 +4340,13 @@
                             currentDisplayValue = clampValue(currentLineValue);
                         } else if (timeSinceMovement < TOTAL_DURATION_MS) {
                             // DECAY PERIOD - exponential decay after hold
-                            // Start decay from clamped value (if was at +100, decay from +100)
+                            // Start decay from clamped value (if was at +100, decay from +100; if -50, decay from -50)
                             const clampedLineValue = clampValue(currentLineValue);
                             const minutesSinceDecayStart = (timeSinceMovement - HOLD_DURATION_MS) / (60 * 1000);
+                            // Exponential decay: value(t) = initialValue * e^(-decayRate * t)
+                            // Works for both positive and negative values
                             currentDisplayValue = clampedLineValue * Math.exp(-DECAY_RATE * minutesSinceDecayStart);
-                            if (currentDisplayValue < 0.01) currentDisplayValue = 0;
+                            if (Math.abs(currentDisplayValue) < 0.01) currentDisplayValue = 0;
                             // Clamp during decay too
                             currentDisplayValue = clampValue(currentDisplayValue);
                         } else {
@@ -4348,22 +4354,23 @@
                             currentDisplayValue = 0;
                         }
                         
-                        // If there's a new UPWARD movement, reset and apply it
-                        if (isUpwardMovement) {
-                            // New upward movement detected - add movement to current displayed value and reset timer
+                        // If there's a new movement (upward or downward), reset and apply it
+                        if (isUpwardMovement || isDownwardMovement) {
+                            // New movement detected - add/subtract movement to/from current displayed value and reset timer
                             movementsDetected++;
-                            // Clamp to [-100, 100] - if already at +100, stay at +100
+                            // Add the movement (negative numbers will subtract)
                             currentLineValue = clampValue(currentDisplayValue + newsMovement);
                             movementTimestamp = pointTime; // Reset timer
                             
-                            console.log(`   📈 Upward movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: news change=+${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, resetting 15min hold`);
+                            const direction = isUpwardMovement ? 'UP' : 'DOWN';
+                            console.log(`   📈 Movement #${movementsDetected} (${direction}) detected at ${new Date(pointTime).toISOString()}: news change=${newsMovement > 0 ? '+' : ''}${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, resetting 15min hold`);
                             
                             point.processedNews = currentLineValue;
                             lastNewsValue = currentNewsValue;
                             continue;
                         }
                         
-                        // No new upward movement - continue hold/decay logic
+                        // No new movement - continue hold/decay logic
                         // Clamp the displayed value to [-100, 100]
                         point.processedNews = clampValue(currentDisplayValue);
                         
@@ -4373,19 +4380,20 @@
                             movementTimestamp = null;
                         }
                     } else {
-                        // No active movement - check for new UPWARD movement only
-                        if (isUpwardMovement) {
-                            // Initial upward movement detected
+                        // No active movement - check for new movement (upward or downward)
+                        if (isUpwardMovement || isDownwardMovement) {
+                            // Initial movement detected
                             movementsDetected++;
-                            // Clamp to [-100, 100]
+                            // Set line to the movement amount (clamped)
                             currentLineValue = clampValue(newsMovement);
                             movementTimestamp = pointTime;
                             
-                            console.log(`   📈 Initial upward movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: news change=+${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, starting 15min hold`);
+                            const direction = isUpwardMovement ? 'UP' : 'DOWN';
+                            console.log(`   📈 Initial movement #${movementsDetected} (${direction}) detected at ${new Date(pointTime).toISOString()}: news change=${newsMovement > 0 ? '+' : ''}${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, starting 15min hold`);
                             
                             point.processedNews = currentLineValue;
                         } else {
-                            // No upward movement - line stays at zero
+                            // No movement - line stays at zero
                             point.processedNews = 0;
                         }
                     }
