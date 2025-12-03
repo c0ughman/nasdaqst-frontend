@@ -3305,10 +3305,15 @@
 
             let sentiment = data.composite_score;
 
-            // Check if signal mode, news mode, or weighted mode is active
+            // Check if signal mode, news mode, or weighted mode is active (radio buttons)
             const signalModeActive = document.getElementById('scale-signal')?.checked || false;
             const newsModeActive = document.getElementById('scale-news')?.checked || false;
             const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
+            
+            // Check which eye icon is active (for driver toggles)
+            const newsEyeActive = document.getElementById('eye-news')?.classList.contains('active') || false;
+            const indicatorsEyeActive = document.getElementById('eye-indicators')?.classList.contains('active') || false;
+            const sentimentEyeActive = document.getElementById('eye-sentiment')?.classList.contains('active') || false;
             
             if (signalModeActive && window.currentChartData && window.currentChartData.length > 0) {
                 // Get the most recent data point's signal value
@@ -3328,6 +3333,24 @@
                 if (lastPoint) {
                     sentiment = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
                 }
+            } else if (newsEyeActive && window.currentChartData && window.currentChartData.length > 0) {
+                // News eye icon is active - show news value
+                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                if (lastPoint) {
+                    sentiment = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
+                }
+            } else if (indicatorsEyeActive && window.currentChartData && window.currentChartData.length > 0) {
+                // Indicators eye icon is active - show indicators value
+                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                if (lastPoint && lastPoint.indicators != null) {
+                    sentiment = lastPoint.indicators;
+                }
+            } else if (sentimentEyeActive && window.currentChartData && window.currentChartData.length > 0) {
+                // Sentiment eye icon is active - show sentiment value
+                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                if (lastPoint && lastPoint.sentiment != null) {
+                    sentiment = lastPoint.sentiment;
+                }
             }
 
             console.log('Composite score value:', sentiment);
@@ -3340,13 +3363,15 @@
             if (oscillatorScoreElement) {
                 oscillatorScoreElement.textContent = sentimentDisplay;
                 
-                // Update color based on active mode
-                if (newsModeActive) {
+                // Update color based on active mode (radio buttons take priority, then eye icons)
+                if (newsModeActive || newsEyeActive) {
                     oscillatorScoreElement.style.color = '#ec4899'; // Pink for news
                 } else if (signalModeActive) {
                     oscillatorScoreElement.style.color = '#ffffff'; // White for signal
                 } else if (weightedModeActive) {
                     oscillatorScoreElement.style.color = '#ff8c42'; // Orange for weighted
+                } else if (indicatorsEyeActive) {
+                    oscillatorScoreElement.style.color = '#3b82f6'; // Blue for indicators
                 } else {
                     oscillatorScoreElement.style.color = '#ff8c42'; // Orange for default composite
                 }
@@ -6158,6 +6183,27 @@
                     // Redraw oscillator with current data
                     if (window.currentChartData) {
                         drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData, window.currentTimeLabels || []);
+                        
+                        // Update the right-side display to show the active driver's value
+                        if (window.currentChartData.length > 0) {
+                            const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                            let displayValue = null;
+                            
+                            // Determine which driver is active
+                            if (lineType === 'news' && clickedBtn.classList.contains('active')) {
+                                displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
+                            } else if (lineType === 'indicators' && clickedBtn.classList.contains('active')) {
+                                displayValue = lastPoint.indicators != null ? lastPoint.indicators : 0;
+                            } else if (lineType === 'sentiment' && clickedBtn.classList.contains('active')) {
+                                displayValue = lastPoint.sentiment != null ? lastPoint.sentiment : 0;
+                            }
+                            
+                            if (displayValue != null) {
+                                updateSentimentDisplay({
+                                    composite_score: displayValue
+                                });
+                            }
+                        }
                     }
                 }
 
@@ -6474,6 +6520,12 @@
                 signalValue = closestPoint.signalValue;
             }
 
+            // Get other driver values from closest point (no interpolation for these)
+            const news = closestPoint.news != null ? closestPoint.news : null;
+            const processedNews = closestPoint.processedNews != null ? closestPoint.processedNews : null;
+            const indicators = closestPoint.indicators != null ? closestPoint.indicators : null;
+            const weightedValue = closestPoint.weightedValue != null ? closestPoint.weightedValue : null;
+
             // Use the closest data point's time
             const time = closestPoint.timeLabel || closestPoint.timestamp?.toLocaleTimeString('en-US', {
                 hour: '2-digit',
@@ -6482,7 +6534,17 @@
                 hour12: false
             }) || 'N/A';
 
-            return { price: price, sentiment: sentiment, signalValue: signalValue, time: time, timestamp: closestPoint.timestamp };
+            return { 
+                price: price, 
+                sentiment: sentiment, 
+                signalValue: signalValue, 
+                news: news,
+                processedNews: processedNews,
+                indicators: indicators,
+                weightedValue: weightedValue,
+                time: time, 
+                timestamp: closestPoint.timestamp 
+            };
         }
 
         // Unified hover handler for both charts
@@ -6546,21 +6608,30 @@
                 // Show sentiment score as secondary info
                 const tooltipSentiment = document.getElementById('tooltip-sentiment');
                 if (tooltipSentiment) {
-                    // Check if signal mode, news mode, or weighted mode is active
+                    // Check if signal mode, news mode, or weighted mode is active (radio buttons)
                     const signalModeActive = document.getElementById('scale-signal')?.checked || false;
                     const newsModeActive = document.getElementById('scale-news')?.checked || false;
                     const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
+                    
+                    // Check which eye icon is active (for driver toggles)
+                    const newsEyeActive = document.getElementById('eye-news')?.classList.contains('active') || false;
+                    const indicatorsEyeActive = document.getElementById('eye-indicators')?.classList.contains('active') || false;
+                    const sentimentEyeActive = document.getElementById('eye-sentiment')?.classList.contains('active') || false;
 
                     let displayValue = null;
                     if (signalModeActive && result.signalValue != null) {
                         displayValue = result.signalValue; // Use signal value in signal mode
                     } else if (weightedModeActive && result.weightedValue != null) {
                         displayValue = result.weightedValue; // Use weighted average value
-                    } else if (newsModeActive) {
+                    } else if (newsModeActive || newsEyeActive) {
                         // Use processedNews if available, otherwise fallback to news
                         displayValue = result.processedNews != null ? result.processedNews : (result.news != null ? result.news : 0);
+                    } else if (indicatorsEyeActive && result.indicators != null) {
+                        displayValue = result.indicators; // Use indicators value
+                    } else if (sentimentEyeActive && result.sentiment != null) {
+                        displayValue = result.sentiment; // Use sentiment value
                     } else if (result.sentiment != null) {
-                        displayValue = result.sentiment; // Use regular sentiment
+                        displayValue = result.sentiment; // Use regular sentiment as fallback
                     }
 
                     if (displayValue != null) {
@@ -6592,12 +6663,17 @@
                 oscillatorTooltip.style.display = 'block';
                 mainTooltip.style.display = 'none';
 
-                // Check if signal mode, news mode, or weighted mode is active (now radio buttons)
+                // Check if signal mode, news mode, or weighted mode is active (radio buttons)
                 const signalModeActive = document.getElementById('scale-signal')?.checked || false;
                 const newsModeActive = document.getElementById('scale-news')?.checked || false;
                 const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
+                
+                // Check which eye icon is active (for driver toggles)
+                const newsEyeActive = document.getElementById('eye-news')?.classList.contains('active') || false;
+                const indicatorsEyeActive = document.getElementById('eye-indicators')?.classList.contains('active') || false;
+                const sentimentEyeActive = document.getElementById('eye-sentiment')?.classList.contains('active') || false;
 
-                // Display sentiment as main value (use signal value if in signal mode, weighted value if in weighted mode, news if in news mode)
+                // Display sentiment as main value (radio buttons take priority, then eye icons)
                 let displayValue = null;
                 let tooltipLabel = 'Sentiment Score';
                 let tooltipColor = '#ff8c42'; // Default orange
@@ -6610,13 +6686,21 @@
                     displayValue = result.weightedValue; // Use weighted average value
                     tooltipLabel = 'Weighted Score';
                     tooltipColor = '#ff8c42'; // Orange for weighted
-                } else if (newsModeActive) {
+                } else if (newsModeActive || newsEyeActive) {
                     // Use processedNews if available, otherwise fallback to news
                     displayValue = result.processedNews != null ? result.processedNews : (result.news != null ? result.news : 0);
                     tooltipLabel = 'News Score';
                     tooltipColor = '#ec4899'; // Pink for news
+                } else if (indicatorsEyeActive && result.indicators != null) {
+                    displayValue = result.indicators; // Use indicators value
+                    tooltipLabel = 'Indicators Score';
+                    tooltipColor = '#3b82f6'; // Blue for indicators
+                } else if (sentimentEyeActive && result.sentiment != null) {
+                    displayValue = result.sentiment; // Use sentiment value
+                    tooltipLabel = 'Sentiment Score';
+                    tooltipColor = '#ff8c42'; // Orange for sentiment
                 } else if (result.sentiment != null) {
-                    displayValue = result.sentiment; // Use regular sentiment
+                    displayValue = result.sentiment; // Use regular sentiment as fallback
                     tooltipLabel = 'Sentiment Score';
                     tooltipColor = '#ff8c42'; // Orange for default
                 }
