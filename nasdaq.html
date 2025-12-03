@@ -4254,9 +4254,12 @@
                 const sortedPoints = [...dataPoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
                 
                 // Track the separate line state
-                let currentLineValue = 0; // Current value of the separate tracking line
+                let currentLineValue = 0; // Current value of the separate tracking line (clamped to [-100, 100])
                 let movementTimestamp = null; // When the last movement occurred
                 let lastNewsValue = null; // Last news value to detect changes
+                
+                // Helper function to clamp values to [-100, 100]
+                const clampValue = (value) => Math.min(100, Math.max(-100, value));
                 
                 const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes hold
                 const DECAY_DURATION_MS = 30 * 60 * 1000; // 30 minutes decay to zero
@@ -4290,14 +4293,15 @@
                             const timeSinceMovement = pointTime - movementTimestamp;
                             
                             if (timeSinceMovement < HOLD_DURATION_MS) {
-                                // Still holding
-                                point.processedNews = currentLineValue;
+                                // Still holding - clamp to [-100, 100]
+                                point.processedNews = clampValue(currentLineValue);
                             } else if (timeSinceMovement < TOTAL_DURATION_MS) {
-                                // In decay period
+                                // In decay period - start from clamped value
+                                const clampedLineValue = clampValue(currentLineValue);
                                 const minutesSinceDecayStart = (timeSinceMovement - HOLD_DURATION_MS) / (60 * 1000);
                                 // Exponential decay: value(t) = initialValue * e^(-decayRate * t)
-                                const decayedValue = currentLineValue * Math.exp(-DECAY_RATE * minutesSinceDecayStart);
-                                point.processedNews = decayedValue < 0.01 ? 0 : decayedValue;
+                                const decayedValue = clampedLineValue * Math.exp(-DECAY_RATE * minutesSinceDecayStart);
+                                point.processedNews = clampValue(decayedValue < 0.01 ? 0 : decayedValue);
                             } else {
                                 // Decay complete - line is at zero
                                 point.processedNews = 0;
@@ -4325,15 +4329,20 @@
                         const timeSinceMovement = pointTime - movementTimestamp;
                         
                         // Calculate current displayed value (for potential new movement)
+                        // IMPORTANT: currentLineValue should already be clamped, but ensure decay starts from clamped value
                         let currentDisplayValue;
                         if (timeSinceMovement < HOLD_DURATION_MS) {
-                            // HOLD PERIOD - no decay, maintain value
-                            currentDisplayValue = currentLineValue;
+                            // HOLD PERIOD - no decay, maintain value (clamped)
+                            currentDisplayValue = clampValue(currentLineValue);
                         } else if (timeSinceMovement < TOTAL_DURATION_MS) {
                             // DECAY PERIOD - exponential decay after hold
+                            // Start decay from clamped value (if was at +100, decay from +100)
+                            const clampedLineValue = clampValue(currentLineValue);
                             const minutesSinceDecayStart = (timeSinceMovement - HOLD_DURATION_MS) / (60 * 1000);
-                            currentDisplayValue = currentLineValue * Math.exp(-DECAY_RATE * minutesSinceDecayStart);
+                            currentDisplayValue = clampedLineValue * Math.exp(-DECAY_RATE * minutesSinceDecayStart);
                             if (currentDisplayValue < 0.01) currentDisplayValue = 0;
+                            // Clamp during decay too
+                            currentDisplayValue = clampValue(currentDisplayValue);
                         } else {
                             // Decay complete - line is at zero
                             currentDisplayValue = 0;
@@ -4343,7 +4352,8 @@
                         if (isUpwardMovement) {
                             // New upward movement detected - add movement to current displayed value and reset timer
                             movementsDetected++;
-                            currentLineValue = currentDisplayValue + newsMovement; // Add upward movement to current position
+                            // Clamp to [-100, 100] - if already at +100, stay at +100
+                            currentLineValue = clampValue(currentDisplayValue + newsMovement);
                             movementTimestamp = pointTime; // Reset timer
                             
                             console.log(`   📈 Upward movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: news change=+${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, resetting 15min hold`);
@@ -4354,7 +4364,8 @@
                         }
                         
                         // No new upward movement - continue hold/decay logic
-                        point.processedNews = currentDisplayValue;
+                        // Clamp the displayed value to [-100, 100]
+                        point.processedNews = clampValue(currentDisplayValue);
                         
                         // Reset state if decay complete
                         if (timeSinceMovement >= TOTAL_DURATION_MS) {
@@ -4366,7 +4377,8 @@
                         if (isUpwardMovement) {
                             // Initial upward movement detected
                             movementsDetected++;
-                            currentLineValue = newsMovement; // Set line to the upward movement amount
+                            // Clamp to [-100, 100]
+                            currentLineValue = clampValue(newsMovement);
                             movementTimestamp = pointTime;
                             
                             console.log(`   📈 Initial upward movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: news change=+${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, starting 15min hold`);
@@ -4760,7 +4772,8 @@
                         const sentimentValue = point.sentiment != null ? point.sentiment : 0;
                         
                         // Add sentiment score with 80% of signal score (both already in -100 to +100 range)
-                        point.weightedValue = sentimentValue + (smoothedSignal * 0.8);
+                        // Clamp to [-100, 100]
+                        point.weightedValue = Math.min(100, Math.max(-100, sentimentValue + (smoothedSignal * 0.8)));
                     });
                 }
 
@@ -5544,28 +5557,32 @@
                 maxValue = 100;
             } else if (scaleMode === 'news') {
                 // News mode: Scale based on BOTH news values AND processedNews (tracking line) values
+                // But clamp visual scale to [-100, 100]
                 const allNewsValues = [];
                 const datasetToUse = scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints);
                 
                 datasetToUse.forEach(p => {
-                    // Include original news values
+                    // Include original news values (clamped)
                     if (p.news != null && !isNaN(p.news)) {
-                        allNewsValues.push(p.news);
+                        allNewsValues.push(Math.min(100, Math.max(-100, p.news)));
                     }
-                    // Include processedNews (tracking line) values
+                    // Include processedNews (tracking line) values (already clamped in processing)
                     if (p.processedNews != null && !isNaN(p.processedNews)) {
-                        allNewsValues.push(p.processedNews);
+                        allNewsValues.push(Math.min(100, Math.max(-100, p.processedNews)));
                     }
                 });
                 
                 if (allNewsValues.length > 0) {
                     minValue = Math.min(...allNewsValues);
                     maxValue = Math.max(...allNewsValues);
-                    // Add 10% padding to ensure both lines are fully visible
+                    // Clamp to [-100, 100] range
+                    minValue = Math.max(-100, minValue);
+                    maxValue = Math.min(100, maxValue);
+                    // Add 10% padding to ensure both lines are fully visible, but stay within bounds
                     const range = maxValue - minValue;
                     const padding = range * 0.1 || 10;
-                    minValue -= padding;
-                    maxValue += padding;
+                    minValue = Math.max(-100, minValue - padding);
+                    maxValue = Math.min(100, maxValue + padding);
                 } else {
                     minValue = -100;
                     maxValue = 100;
@@ -6268,7 +6285,8 @@
                                 const sentimentValue = point.sentiment != null ? point.sentiment : 0;
                                 
                                 // Add sentiment score with 80% of signal score (both already in -100 to +100 range)
-                                point.weightedValue = sentimentValue + (smoothedSignal * 0.8);
+                                // Clamp to [-100, 100]
+                                point.weightedValue = Math.min(100, Math.max(-100, sentimentValue + (smoothedSignal * 0.8)));
                             });
                         }
 
