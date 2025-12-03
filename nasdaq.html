@@ -4827,8 +4827,8 @@
                         const smoothedSignal = smoothedSignals[index];
                         const sentimentValue = point.sentiment != null ? point.sentiment : 0;
                         
-                        // Add sentiment score with 70% of signal score (both already in -100 to +100 range)
-                        point.weightedValue = sentimentValue + (smoothedSignal * 0.7);
+                        // Add sentiment score with 80% of signal score (both already in -100 to +100 range)
+                        point.weightedValue = sentimentValue + (smoothedSignal * 0.8);
                     });
                 }
 
@@ -5926,7 +5926,7 @@
                 // Make zero line more visible: solid color, higher opacity, thicker stroke
                 centerLine.setAttribute('stroke', '#888888'); // Solid gray color
                 centerLine.setAttribute('stroke-width', '1.5'); // Thicker than data lines (0.3)
-                centerLine.setAttribute('stroke-dasharray', '4,4'); // Longer dashes for better visibility
+                centerLine.setAttribute('stroke-dasharray', '2,2'); // Dashed line pattern
                 centerLine.setAttribute('opacity', '0.8'); // Higher opacity for visibility
                 centerLine.setAttribute('stroke-linecap', 'round');
                 // Ensure it's drawn on top by appending last
@@ -6236,8 +6236,8 @@
                                 const smoothedSignal = smoothedSignals[index];
                                 const sentimentValue = point.sentiment != null ? point.sentiment : 0;
                                 
-                                // Add sentiment score with 70% of signal score (both already in -100 to +100 range)
-                                point.weightedValue = sentimentValue + (smoothedSignal * 0.7);
+                                // Add sentiment score with 80% of signal score (both already in -100 to +100 range)
+                                point.weightedValue = sentimentValue + (smoothedSignal * 0.8);
                             });
                         }
 
