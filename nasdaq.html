@@ -4204,6 +4204,13 @@
                 }
                 
                 // Sort points by timestamp (oldest to newest) to process chronologically
+                // IMPORTANT: Create a map to track original dataPoints by timestamp so we can update them directly
+                const timestampToDataPoint = new Map();
+                dataPoints.forEach(dp => {
+                    if (dp.timestamp) {
+                        timestampToDataPoint.set(dp.timestamp.getTime(), dp);
+                    }
+                });
                 const sortedPoints = [...dataPoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
                 
                 // Track the current peak state
@@ -4351,19 +4358,24 @@
                 
                 console.log(`   ✅ Processing complete. Detected ${movementsDetected} movements.`);
                 
-                // Create a map of processed news values by timestamp for quick lookup
-                const processedMap = new Map();
-                processedPoints.forEach(p => {
-                    if (p.timestamp) {
-                        const ts = p.timestamp.getTime();
-                        processedMap.set(ts, p.processedNews);
-                        // Debug: log first few decay values to verify they're in the map
-                        if (processedMap.size <= 5 || (p.processedNews != null && Math.abs(p.processedNews - (p.news || 0)) > 1)) {
-                            console.log(`   📍 Mapped timestamp ${ts} (${new Date(ts).toISOString()}) → processedNews=${p.processedNews}, original=${p.news}`);
+                // Instead of creating a map and mapping back, directly update the original dataPoints
+                // This ensures we're updating the exact same objects that will be used for drawing
+                processedPoints.forEach(processedPoint => {
+                    if (processedPoint.timestamp) {
+                        const ts = processedPoint.timestamp.getTime();
+                        const originalPoint = timestampToDataPoint.get(ts);
+                        if (originalPoint) {
+                            originalPoint.processedNews = processedPoint.processedNews;
+                            // Debug: log decay values being assigned
+                            if (processedPoint.processedNews != null && Math.abs(processedPoint.processedNews - (processedPoint.news || 0)) > 1) {
+                                console.log(`   📍 Direct assignment: ${new Date(ts).toISOString()} → processedNews=${processedPoint.processedNews.toFixed(2)}, original=${processedPoint.news?.toFixed(2)}`);
+                            }
+                        } else {
+                            console.warn(`   ⚠️ Could not find original point for timestamp ${ts}`);
                         }
                     }
                 });
-                console.log(`   📍 Created processedMap with ${processedMap.size} entries`);
+                console.log(`   📍 Directly updated ${processedPoints.length} points in original dataPoints array`);
                 
                 // Update original dataPoints array with processed news values
                 // Preserve original order of dataPoints
