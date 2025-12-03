@@ -4302,17 +4302,19 @@
                             processedPoints.push({ ...point, processedNews: currentPeakValue });
                             lastOriginalNewsValue = originalNewsValue; // Track original value for reference
                         } else {
-                            // After hold period - apply exponential decay
+                            // After hold period - apply exponential decay using same formula as regular news
+                            // Formula: news_score(t) = news_score(0) * (0.9617)^t where t is minutes since decay started
                             const minutesSinceDecayStart = (timeSincePeak - HOLD_DURATION_MS) / (60 * 1000);
+                            
+                            // Exponential decay: multiply by decay rate raised to the power of minutes
+                            // This creates exponential decay, not linear
                             const decayedValue = currentPeakValue * Math.pow(MINUTE_DECAY_RATE, minutesSinceDecayStart);
+                            
                             // Force to zero if below threshold (same as regular news decay)
                             const finalValue = decayedValue < 0.01 ? 0 : decayedValue;
                             
-                            // Debug logging for decay points (log every 5 minutes or first 10 points)
-                            const logDecay = processedPoints.length < 10 || Math.floor(minutesSinceDecayStart) % 5 === 0;
-                            if (logDecay) {
-                                console.log(`   🔽 Exponential decay at ${new Date(pointTime).toISOString()}: peak=${currentPeakValue.toFixed(2)}, minutes=${minutesSinceDecayStart.toFixed(2)}, decayed=${decayedValue.toFixed(2)}, final=${finalValue.toFixed(2)}, rate=${MINUTE_DECAY_RATE}`);
-                            }
+                            // Always log decay to verify it's working
+                            console.log(`   🔽 Exponential decay: time=${new Date(pointTime).toISOString()}, peak=${currentPeakValue.toFixed(2)}, minutes=${minutesSinceDecayStart.toFixed(2)}, decayed=${decayedValue.toFixed(2)}, final=${finalValue.toFixed(2)}`);
                             
                             processedPoints.push({ ...point, processedNews: finalValue });
                             lastOriginalNewsValue = originalNewsValue; // Track original value for reference
