@@ -5539,14 +5539,29 @@
                 minValue = -100;
                 maxValue = 100;
             } else if (scaleMode === 'news') {
-                // News mode: Scale based on news values only
-                const newsValues = (scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints))
-                    .filter(p => p.news != null && !isNaN(p.news))
-                    .map(p => p.news);
+                // News mode: Scale based on BOTH news values AND processedNews (tracking line) values
+                const allNewsValues = [];
+                const datasetToUse = scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints);
                 
-                if (newsValues.length > 0) {
-                    minValue = Math.min(...newsValues);
-                    maxValue = Math.max(...newsValues);
+                datasetToUse.forEach(p => {
+                    // Include original news values
+                    if (p.news != null && !isNaN(p.news)) {
+                        allNewsValues.push(p.news);
+                    }
+                    // Include processedNews (tracking line) values
+                    if (p.processedNews != null && !isNaN(p.processedNews)) {
+                        allNewsValues.push(p.processedNews);
+                    }
+                });
+                
+                if (allNewsValues.length > 0) {
+                    minValue = Math.min(...allNewsValues);
+                    maxValue = Math.max(...allNewsValues);
+                    // Add 10% padding to ensure both lines are fully visible
+                    const range = maxValue - minValue;
+                    const padding = range * 0.1 || 10;
+                    minValue -= padding;
+                    maxValue += padding;
                 } else {
                     minValue = -100;
                     maxValue = 100;
@@ -5649,14 +5664,20 @@
 
             // In news mode, draw both the original news line and the tracking line
             if (newsModeActive) {
+                console.log(`📊 News mode: minValue=${minValue.toFixed(2)}, maxValue=${maxValue.toFixed(2)}`);
+                
                 // Sort points by x coordinate to ensure proper drawing order
                 const sortedDataPoints = [...dataPoints].sort((a, b) => (a.x || 0) - (b.x || 0));
                 
                 // First, draw the original news line (semi-transparent)
                 const originalNewsPoints = sortedDataPoints.filter(p => p.news != null && !isNaN(p.news) && p.x != null);
+                console.log(`📊 Original news points: ${originalNewsPoints.length}, sample values:`, 
+                    originalNewsPoints.slice(0, 3).map(p => ({ x: p.x, news: p.news, y: valueToY(p.news) })));
+                
                 if (originalNewsPoints.length > 0) {
                     const getOriginalNewsValue = (point) => point.news;
-                    let pathD = `M ${originalNewsPoints[0].x},${valueToY(getOriginalNewsValue(originalNewsPoints[0]))}`;
+                    const firstY = valueToY(getOriginalNewsValue(originalNewsPoints[0]));
+                    let pathD = `M ${originalNewsPoints[0].x},${firstY}`;
                     
                     for (let i = 1; i < originalNewsPoints.length; i++) {
                         const x = originalNewsPoints[i].x;
@@ -5681,13 +5702,13 @@
                     originalPath.setAttribute('d', pathD);
                     originalPath.setAttribute('fill', 'none');
                     originalPath.setAttribute('stroke', '#ec4899'); // Pink for news
-                    originalPath.setAttribute('stroke-width', '0.3');
+                    originalPath.setAttribute('stroke-width', '1');
                     originalPath.setAttribute('stroke-linecap', 'round');
                     originalPath.setAttribute('stroke-linejoin', 'round');
                     originalPath.setAttribute('opacity', '0.4'); // Semi-transparent
                     originalPath.classList.add('oscillator-line-news-original');
                     svg.appendChild(originalPath);
-                    console.log(`✅ Drew original news line with ${originalNewsPoints.length} points`);
+                    console.log(`✅ Drew original news line with ${originalNewsPoints.length} points, path length: ${pathD.length}, first 100 chars: ${pathD.substring(0, 100)}`);
                 }
                 
                 // Then, draw the tracking line (using processedNews)
@@ -5695,9 +5716,14 @@
                     const newsValue = p.processedNews != null ? p.processedNews : 0;
                     return newsValue != null && !isNaN(newsValue) && p.x != null;
                 });
+                console.log(`📊 Tracking points: ${trackingPoints.length}, sample values:`, 
+                    trackingPoints.slice(0, 3).map(p => ({ x: p.x, processedNews: p.processedNews, y: valueToY(p.processedNews || 0) })));
+                
                 if (trackingPoints.length > 0) {
                     const getTrackingValue = (point) => point.processedNews != null ? point.processedNews : 0;
-                    let pathD = `M ${trackingPoints[0].x},${valueToY(getTrackingValue(trackingPoints[0]))}`;
+                    const firstTrackingY = valueToY(getTrackingValue(trackingPoints[0]));
+                    let pathD = `M ${trackingPoints[0].x},${firstTrackingY}`;
+                    console.log(`📊 First tracking point: x=${trackingPoints[0].x}, value=${getTrackingValue(trackingPoints[0])}, y=${firstTrackingY}`);
                     
                     for (let i = 1; i < trackingPoints.length; i++) {
                         const x = trackingPoints[i].x;
@@ -5722,14 +5748,35 @@
                     trackingPath.setAttribute('d', pathD);
                     trackingPath.setAttribute('fill', 'none');
                     trackingPath.setAttribute('stroke', '#10b981'); // Green for tracking line to distinguish it
-                    trackingPath.setAttribute('stroke-width', '0.5'); // Slightly thicker to distinguish
+                    trackingPath.setAttribute('stroke-width', '1.5'); // Thicker to distinguish from original line
                     trackingPath.setAttribute('stroke-linecap', 'round');
                     trackingPath.setAttribute('stroke-linejoin', 'round');
                     trackingPath.setAttribute('opacity', '0.9'); // Full opacity
                     trackingPath.classList.add('oscillator-line-news-tracking');
                     svg.appendChild(trackingPath);
-                    console.log(`✅ Drew news tracking line with ${trackingPoints.length} points`);
+                    console.log(`✅ Drew news tracking line with ${trackingPoints.length} points, path length: ${pathD.length}, first 100 chars: ${pathD.substring(0, 100)}`);
                 }
+                
+                // Draw center zero line AFTER all data lines so it's visible on top
+                const zeroY = valueToY(0);
+                if (zeroY >= 0 && zeroY <= 100) {
+                    const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    centerLine.setAttribute('x1', '2');
+                    centerLine.setAttribute('y1', zeroY.toString());
+                    centerLine.setAttribute('x2', '98');
+                    centerLine.setAttribute('y2', zeroY.toString());
+                    centerLine.setAttribute('stroke', '#888888');
+                    centerLine.setAttribute('stroke-width', '1.5');
+                    centerLine.setAttribute('stroke-dasharray', '2,2');
+                    centerLine.setAttribute('opacity', '0.8');
+                    centerLine.setAttribute('stroke-linecap', 'round');
+                    svg.appendChild(centerLine);
+                    console.log(`✅ Drew zero line at Y=${zeroY.toFixed(2)}`);
+                }
+                
+                // IMPORTANT: Append SVG to DOM before returning!
+                oscillatorDiv.appendChild(svg);
+                console.log(`✅ SVG appended to DOM with ${svg.children.length} children`);
                 
                 // Skip the normal driver loop for news mode since we handled it above
                 return;
