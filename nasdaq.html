@@ -4218,9 +4218,9 @@
         }
         
         // Process news movements to create a separate tracking line
-        // This line follows news movements: when news moves by X points, the line moves by X points
-        // The line holds at the new position for 15 minutes, then decays exponentially to zero over 30 minutes
-        // If a new movement occurs during the hold period, reset the timer and move to the new position
+        // This line ONLY tracks UPWARD news movements: when news moves UP by X points, the line moves UP by X points
+        // The line holds at the new position for 15 minutes (NO DECAY during hold), then decays exponentially to zero over 30 minutes
+        // If a new UPWARD movement occurs during the hold period, reset the timer and move to the new position
         function processNewsScoresWithHoldDecay(dataPoints) {
             try {
                 if (!dataPoints || dataPoints.length === 0) {
@@ -4312,9 +4312,12 @@
                     }
                     
                     // Detect news movement by comparing with last news value
+                    // ONLY track UPWARD movements
                     let newsMovement = 0;
+                    let isUpwardMovement = false;
                     if (lastNewsValue !== null && !isNaN(lastNewsValue)) {
                         newsMovement = currentNewsValue - lastNewsValue;
+                        isUpwardMovement = newsMovement > 0.01; // Only track upward movements
                     }
                     
                     // Check if we have an active movement
@@ -4324,31 +4327,33 @@
                         // Calculate current displayed value (for potential new movement)
                         let currentDisplayValue;
                         if (timeSinceMovement < HOLD_DURATION_MS) {
+                            // HOLD PERIOD - no decay, maintain value
                             currentDisplayValue = currentLineValue;
                         } else if (timeSinceMovement < TOTAL_DURATION_MS) {
+                            // DECAY PERIOD - exponential decay after hold
                             const minutesSinceDecayStart = (timeSinceMovement - HOLD_DURATION_MS) / (60 * 1000);
                             currentDisplayValue = currentLineValue * Math.exp(-DECAY_RATE * minutesSinceDecayStart);
                             if (currentDisplayValue < 0.01) currentDisplayValue = 0;
                         } else {
+                            // Decay complete - line is at zero
                             currentDisplayValue = 0;
                         }
                         
-                        // If there's a new news movement, reset and apply it
-                        if (Math.abs(newsMovement) > 0.01) {
-                            // New movement detected - add movement to current displayed value and reset timer
+                        // If there's a new UPWARD movement, reset and apply it
+                        if (isUpwardMovement) {
+                            // New upward movement detected - add movement to current displayed value and reset timer
                             movementsDetected++;
-                            currentLineValue = currentDisplayValue + newsMovement; // Add movement to current position
+                            currentLineValue = currentDisplayValue + newsMovement; // Add upward movement to current position
                             movementTimestamp = pointTime; // Reset timer
                             
-                            const direction = newsMovement > 0 ? 'UP' : 'DOWN';
-                            console.log(`   📈 Movement #${movementsDetected} (${direction}) detected at ${new Date(pointTime).toISOString()}: news change=${newsMovement > 0 ? '+' : ''}${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, resetting 15min hold`);
+                            console.log(`   📈 Upward movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: news change=+${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, resetting 15min hold`);
                             
                             point.processedNews = currentLineValue;
                             lastNewsValue = currentNewsValue;
                             continue;
                         }
                         
-                        // No new movement - continue hold/decay logic
+                        // No new upward movement - continue hold/decay logic
                         point.processedNews = currentDisplayValue;
                         
                         // Reset state if decay complete
@@ -4357,19 +4362,18 @@
                             movementTimestamp = null;
                         }
                     } else {
-                        // No active movement - check for new movement
-                        if (Math.abs(newsMovement) > 0.01) {
-                            // Initial movement detected
+                        // No active movement - check for new UPWARD movement only
+                        if (isUpwardMovement) {
+                            // Initial upward movement detected
                             movementsDetected++;
-                            currentLineValue = newsMovement; // Set line to the movement amount
+                            currentLineValue = newsMovement; // Set line to the upward movement amount
                             movementTimestamp = pointTime;
                             
-                            const direction = newsMovement > 0 ? 'UP' : 'DOWN';
-                            console.log(`   📈 Initial movement #${movementsDetected} (${direction}) detected at ${new Date(pointTime).toISOString()}: news change=${newsMovement > 0 ? '+' : ''}${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, starting 15min hold`);
+                            console.log(`   📈 Initial upward movement #${movementsDetected} detected at ${new Date(pointTime).toISOString()}: news change=+${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, starting 15min hold`);
                             
                             point.processedNews = currentLineValue;
                         } else {
-                            // No movement - line stays at zero
+                            // No upward movement - line stays at zero
                             point.processedNews = 0;
                         }
                     }
@@ -5747,8 +5751,8 @@
                     const trackingPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     trackingPath.setAttribute('d', pathD);
                     trackingPath.setAttribute('fill', 'none');
-                    trackingPath.setAttribute('stroke', '#10b981'); // Green for tracking line to distinguish it
-                    trackingPath.setAttribute('stroke-width', '1.5'); // Thicker to distinguish from original line
+                    trackingPath.setAttribute('stroke', '#ec4899'); // Pink to match news color
+                    trackingPath.setAttribute('stroke-width', '0.5'); // Thinner line
                     trackingPath.setAttribute('stroke-linecap', 'round');
                     trackingPath.setAttribute('stroke-linejoin', 'round');
                     trackingPath.setAttribute('opacity', '0.9'); // Full opacity
