@@ -4833,8 +4833,8 @@
                         // Normalize sentiment value to -1 to +1 range
                         const normalizedSentiment = Math.max(-1, Math.min(1, sentimentValue / 100));
                         
-                        // Weighted average: 70% signal, 30% sentiment
-                        const weightedAverage = (normalizedSignal * 0.7) + (normalizedSentiment * 0.3);
+                        // Add sentiment score with 70% of signal score
+                        const weightedAverage = normalizedSentiment + (normalizedSignal * 0.7);
                         
                         // Convert back to -100 to +100 scale
                         point.weightedValue = weightedAverage * 100;
@@ -6272,8 +6272,8 @@
                                 // Normalize sentiment value to -1 to +1 range
                                 const normalizedSentiment = Math.max(-1, Math.min(1, sentimentValue / 100));
                                 
-                                // Weighted average: 70% signal, 30% sentiment
-                                const weightedAverage = (normalizedSignal * 0.7) + (normalizedSentiment * 0.3);
+                                // Add sentiment score with 70% of signal score
+                                const weightedAverage = normalizedSentiment + (normalizedSignal * 0.7);
                                 point.weightedValue = weightedAverage * 100;
                             });
                         }
