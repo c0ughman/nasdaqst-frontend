@@ -4222,7 +4222,8 @@
         // When news moves by X points, the line moves by X points (adds/subtracts from current position)
         // The line holds at the new position for 15 minutes (NO DECAY during hold), then decays exponentially to zero over 30 minutes
         // If a new movement occurs during the hold/decay period, reset the timer and add/subtract the movement
-        function processNewsScoresWithHoldDecay(dataPoints) {
+        // initialValue: Optional starting value (for granular data to inherit from minute-level)
+        function processNewsScoresWithHoldDecay(dataPoints, initialValue = null) {
             try {
                 if (!dataPoints || dataPoints.length === 0) {
                     console.warn('⚠️ processNewsScoresWithHoldDecay: No data points provided');
@@ -4254,13 +4255,19 @@
                 });
                 const sortedPoints = [...dataPoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
                 
+                // Helper function to clamp values to [-100, 100]
+                const clampValue = (value) => Math.min(100, Math.max(-100, value));
+                
                 // Track the separate line state
-                let currentLineValue = 0; // Current value of the separate tracking line (clamped to [-100, 100])
+                // If initialValue is provided (for granular data), start with that value
+                let currentLineValue = initialValue != null ? clampValue(initialValue) : 0; // Current value of the separate tracking line (clamped to [-100, 100])
                 let movementTimestamp = null; // When the last movement occurred
                 let lastNewsValue = null; // Last news value to detect changes
                 
-                // Helper function to clamp values to [-100, 100]
-                const clampValue = (value) => Math.min(100, Math.max(-100, value));
+                // If we have an initial value, initialize all points before first movement to that value
+                if (initialValue != null) {
+                    console.log(`   📌 Starting with inherited value: ${initialValue.toFixed(2)}`);
+                }
                 
                 const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes hold
                 const DECAY_DURATION_MS = 30 * 60 * 1000; // 30 minutes decay to zero
@@ -4311,8 +4318,8 @@
                                 movementTimestamp = null;
                             }
                         } else {
-                            // No active movement - line stays at zero
-                            point.processedNews = 0;
+                            // No active movement - use initial value if provided, otherwise stay at zero
+                            point.processedNews = initialValue != null ? clampValue(initialValue) : 0;
                         }
                         continue;
                     }
@@ -4384,8 +4391,12 @@
                         if (isUpwardMovement || isDownwardMovement) {
                             // Initial movement detected
                             movementsDetected++;
-                            // Set line to the movement amount (clamped)
-                            currentLineValue = clampValue(newsMovement);
+                            // If we have an initial value, add/subtract movement from it; otherwise set to movement amount
+                            if (initialValue != null) {
+                                currentLineValue = clampValue(initialValue + newsMovement);
+                            } else {
+                                currentLineValue = clampValue(newsMovement);
+                            }
                             movementTimestamp = pointTime;
                             
                             const direction = isUpwardMovement ? 'UP' : 'DOWN';
@@ -4393,8 +4404,8 @@
                             
                             point.processedNews = currentLineValue;
                         } else {
-                            // No movement - line stays at zero
-                            point.processedNews = 0;
+                            // No movement - use initial value if provided, otherwise stay at zero
+                            point.processedNews = initialValue != null ? clampValue(initialValue) : 0;
                         }
                     }
                     
@@ -4791,7 +4802,31 @@
                 if (newsModeActive && data.dataPoints && data.dataPoints.length > 0) {
                     const dataType = data.usingGranularData ? (granularDataType === 'second' ? 'granular (second)' : 'granular (tick)') : 'regular';
                     console.log(`📰 News mode active - processing news scores with hold/decay for ${dataType} data (${data.dataPoints.length} points)`);
-                    processNewsScoresWithHoldDecay(data.dataPoints);
+                    
+                    // For granular data, inherit the latest minute-level processedNews value
+                    let initialProcessedNews = null;
+                    if (data.usingGranularData && sentimentDataset && sentimentDataset.length > 0) {
+                        // Process minute-level data first to get current processedNews value
+                        // Get the latest minute-level points (last 100 points should be enough)
+                        const latestMinutePoints = [...sentimentDataset]
+                            .filter(p => p.news != null && !isNaN(p.news))
+                            .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+                            .slice(-100); // Get last 100 points
+                        
+                        if (latestMinutePoints.length > 0) {
+                            // Process these points to get the latest processedNews value
+                            processNewsScoresWithHoldDecay(latestMinutePoints);
+                            
+                            // Find the latest processedNews value
+                            const latestPoint = latestMinutePoints[latestMinutePoints.length - 1];
+                            if (latestPoint.processedNews != null && !isNaN(latestPoint.processedNews)) {
+                                initialProcessedNews = latestPoint.processedNews;
+                                console.log(`   📌 Inheriting latest minute-level processedNews: ${initialProcessedNews.toFixed(2)} from ${latestPoint.timestamp.toISOString()}`);
+                            }
+                        }
+                    }
+                    
+                    processNewsScoresWithHoldDecay(data.dataPoints, initialProcessedNews);
                 }
 
                 // Store current data points for hover functionality
