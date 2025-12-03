@@ -4217,10 +4217,10 @@
             };
         }
         
-        // Process news scores with hold/decay logic for news mode
-        // When news score changes (up or down), hold at that level for 15 minutes,
-        // then decay to zero over 5 minutes. If a new movement occurs during hold or decay,
-        // jump to the new value and restart the 15-minute timer.
+        // Process news movements to create a separate tracking line
+        // This line follows news movements: when news moves by X points, the line moves by X points
+        // The line holds at the new position for 15 minutes, then decays exponentially to zero over 30 minutes
+        // If a new movement occurs during the hold period, reset the timer and move to the new position
         function processNewsScoresWithHoldDecay(dataPoints) {
             try {
                 if (!dataPoints || dataPoints.length === 0) {
@@ -4228,7 +4228,7 @@
                     return dataPoints;
                 }
                 
-                console.log('🔄 Processing news scores with hold/decay logic...');
+                console.log('🔄 Processing news movements for separate tracking line...');
                 console.log(`   Total data points: ${dataPoints.length}`);
                 
                 // Check how many points have news data
@@ -4237,11 +4237,14 @@
                 
                 if (pointsWithNews.length === 0) {
                     console.warn('⚠️ No points with news data found - cannot process');
+                    // Set processedNews to 0 for all points
+                    dataPoints.forEach(point => {
+                        point.processedNews = 0;
+                    });
                     return dataPoints;
                 }
                 
                 // Sort points by timestamp (oldest to newest) to process chronologically
-                // IMPORTANT: Create a map to track original dataPoints by timestamp so we can update them directly
                 const timestampToDataPoint = new Map();
                 dataPoints.forEach(dp => {
                     if (dp.timestamp) {
@@ -4250,318 +4253,154 @@
                 });
                 const sortedPoints = [...dataPoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
                 
-                // Track the current peak state
-                let currentPeakValue = null;
-                let peakTimestamp = null;
-                let processedPoints = [];
+                // Track the separate line state
+                let currentLineValue = 0; // Current value of the separate tracking line
+                let movementTimestamp = null; // When the last movement occurred
+                let lastNewsValue = null; // Last news value to detect changes
                 
-                const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-                const MINUTE_DECAY_RATE = 0.05; // Exponential decay rate per minute (very fast decay for visualization)
-                const MOVEMENT_THRESHOLD = 1.0; // Minimum change to detect a movement (1 point)
+                const HOLD_DURATION_MS = 15 * 60 * 1000; // 15 minutes hold
+                const DECAY_DURATION_MS = 30 * 60 * 1000; // 30 minutes decay to zero
+                const TOTAL_DURATION_MS = HOLD_DURATION_MS + DECAY_DURATION_MS; // 45 minutes total
                 
-                // Track the last few original values to detect directional changes
-                let recentOriginalValues = [];
-                
-                // Sample a few points to see what we're working with
-                const samplePoints = sortedPoints.filter(p => p.news != null && !isNaN(p.news)).slice(0, 5);
-                if (samplePoints.length > 0) {
-                    console.log('   Sample news values:', samplePoints.map(p => ({
-                        time: new Date(p.timestamp.getTime()).toISOString(),
-                        news: p.news
-                    })));
-                }
+                // Calculate exponential decay factor: value should approach zero after 30 minutes
+                // Formula: value(t) = initialValue * e^(-k * t)
+                // At t=30min, we want value ≈ 0.001 * initialValue (0.1% remaining)
+                // So: e^(-k * 30) ≈ 0.001
+                // -k * 30 = ln(0.001) ≈ -6.908
+                // k ≈ 0.2303 per minute
+                const DECAY_RATE = 0.2303; // Per minute decay rate
                 
                 let movementsDetected = 0;
                 
-                // Track the last original news value to detect movements
-                let lastOriginalNewsValue = null;
-                
+                // Process each point chronologically
                 for (let i = 0; i < sortedPoints.length; i++) {
                     const point = sortedPoints[i];
                     const pointTime = point.timestamp.getTime();
-                    const originalNewsValue = point.news;
+                    const currentNewsValue = point.news;
                     
-                    // Skip points without news data
-                    if (originalNewsValue == null || isNaN(originalNewsValue)) {
-                        processedPoints.push({ ...point, processedNews: originalNewsValue });
-                        lastOriginalNewsValue = originalNewsValue;
+                    // Initialize processedNews for all points
+                    if (point.processedNews === undefined) {
+                        point.processedNews = 0;
+                    }
+                    
+                    // Skip points without news data - keep line value unchanged
+                    if (currentNewsValue == null || isNaN(currentNewsValue)) {
+                        // If we have an active movement, continue decay/hold logic
+                        if (movementTimestamp !== null) {
+                            const timeSinceMovement = pointTime - movementTimestamp;
+                            
+                            if (timeSinceMovement < HOLD_DURATION_MS) {
+                                // Still holding
+                                point.processedNews = currentLineValue;
+                            } else if (timeSinceMovement < TOTAL_DURATION_MS) {
+                                // In decay period
+                                const minutesSinceDecayStart = (timeSinceMovement - HOLD_DURATION_MS) / (60 * 1000);
+                                // Exponential decay: value(t) = initialValue * e^(-decayRate * t)
+                                const decayedValue = currentLineValue * Math.exp(-DECAY_RATE * minutesSinceDecayStart);
+                                point.processedNews = decayedValue < 0.01 ? 0 : decayedValue;
+                            } else {
+                                // Decay complete - line is at zero
+                                point.processedNews = 0;
+                                currentLineValue = 0;
+                                movementTimestamp = null;
+                            }
+                        } else {
+                            // No active movement - line stays at zero
+                            point.processedNews = 0;
+                        }
                         continue;
                     }
                     
-                    // Track recent original values (keep last 3 for trend detection)
-                    recentOriginalValues.push(originalNewsValue);
-                    if (recentOriginalValues.length > 3) {
-                        recentOriginalValues.shift();
+                    // Detect news movement by comparing with last news value
+                    let newsMovement = 0;
+                    if (lastNewsValue !== null && !isNaN(lastNewsValue)) {
+                        newsMovement = currentNewsValue - lastNewsValue;
                     }
                     
-                    // Check if we have an active peak
-                    if (currentPeakValue !== null && peakTimestamp !== null) {
-                        const timeSincePeak = pointTime - peakTimestamp;
+                    // Check if we have an active movement
+                    if (movementTimestamp !== null) {
+                        const timeSinceMovement = pointTime - movementTimestamp;
                         
-                        // Calculate what we're currently displaying (peak value, decayed value, or zero)
-                        // After hold period, use exponential decay: news_score(t) = news_score(0) * (0.9617)^t
+                        // Calculate current displayed value (for potential new movement)
                         let currentDisplayValue;
-                        if (timeSincePeak < HOLD_DURATION_MS) {
-                            // Still in hold period - use peak value
-                            currentDisplayValue = currentPeakValue;
+                        if (timeSinceMovement < HOLD_DURATION_MS) {
+                            currentDisplayValue = currentLineValue;
+                        } else if (timeSinceMovement < TOTAL_DURATION_MS) {
+                            const minutesSinceDecayStart = (timeSinceMovement - HOLD_DURATION_MS) / (60 * 1000);
+                            currentDisplayValue = currentLineValue * Math.exp(-DECAY_RATE * minutesSinceDecayStart);
+                            if (currentDisplayValue < 0.01) currentDisplayValue = 0;
                         } else {
-                            // After hold period - apply exponential decay
-                            const minutesSinceDecayStart = (timeSincePeak - HOLD_DURATION_MS) / (60 * 1000);
-                            const decayedValue = currentPeakValue * Math.pow(MINUTE_DECAY_RATE, minutesSinceDecayStart);
-                            // Force to zero if below threshold (same as regular news decay)
-                            currentDisplayValue = decayedValue < 0.01 ? 0 : decayedValue;
+                            currentDisplayValue = 0;
                         }
                         
-                        // Detect movements by comparing with the LAST original news value
-                        // Only detect UPWARD movements (> 1 point increase) or significant DOWNWARD movements (> 1 point decrease)
-                        // Ignore small changes and decay-related decreases
-                        let isNewMovement = false;
-                        if (lastOriginalNewsValue !== null && !isNaN(lastOriginalNewsValue)) {
-                            const change = originalNewsValue - lastOriginalNewsValue;
-                            
-                            // Detect upward movements: increase of more than 1 point
-                            const upwardMovement = change > MOVEMENT_THRESHOLD;
-                            
-                            // Detect significant downward movements: decrease of more than 1 point (not decay)
-                            // Only detect if it's a significant drop, not gradual decay
-                            const downwardMovement = change < -MOVEMENT_THRESHOLD;
-                            
-                            isNewMovement = upwardMovement || downwardMovement;
-                        }
-                        
-                        if (isNewMovement) {
-                            // New movement detected - capture this new value and start holding for 15 minutes
+                        // If there's a new news movement, reset and apply it
+                        if (Math.abs(newsMovement) > 0.01) {
+                            // New movement detected - add movement to current displayed value and reset timer
                             movementsDetected++;
-                            const change = lastOriginalNewsValue !== null ? (originalNewsValue - lastOriginalNewsValue) : 0;
-                            const direction = change > 0 ? 'UP' : 'DOWN';
-                            console.log(`   📈 Movement #${movementsDetected} (${direction}) detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue?.toFixed(2) || 'N/A'} → ${originalNewsValue.toFixed(2)} (change: ${change > 0 ? '+' : ''}${change.toFixed(2)}, will hold for 15 minutes)`);
-                            currentPeakValue = originalNewsValue;
-                            peakTimestamp = pointTime;
-                            processedPoints.push({ ...point, processedNews: originalNewsValue });
-                            lastOriginalNewsValue = originalNewsValue;
-                            recentOriginalValues = [originalNewsValue]; // Reset tracking
+                            currentLineValue = currentDisplayValue + newsMovement; // Add movement to current position
+                            movementTimestamp = pointTime; // Reset timer
+                            
+                            const direction = newsMovement > 0 ? 'UP' : 'DOWN';
+                            console.log(`   📈 Movement #${movementsDetected} (${direction}) detected at ${new Date(pointTime).toISOString()}: news change=${newsMovement > 0 ? '+' : ''}${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, resetting 15min hold`);
+                            
+                            point.processedNews = currentLineValue;
+                            lastNewsValue = currentNewsValue;
                             continue;
                         }
                         
-                        // No new movement - apply hold/decay logic
-                        if (timeSincePeak < HOLD_DURATION_MS) {
-                            // Still in hold period - maintain peak value (FLAT LINE)
-                            // Add intermediate points during hold to ensure flat line is visible
-                            const prevPoint = processedPoints.length > 0 ? processedPoints[processedPoints.length - 1] : null;
-                            const timeSinceLastPoint = prevPoint && prevPoint.timestamp ? 
-                                (pointTime - prevPoint.timestamp.getTime()) : 0;
-                            
-                            // If more than 1 minute passed since last point, add intermediate hold points
-                            if (timeSinceLastPoint > 60 * 1000 && prevPoint && prevPoint.processedNews != null) {
-                                const intermediateCount = Math.floor(timeSinceLastPoint / (60 * 1000)); // One point per minute
-                                const timeStep = timeSinceLastPoint / (intermediateCount + 1);
-                                
-                                for (let j = 1; j <= intermediateCount; j++) {
-                                    const intermediateTime = prevPoint.timestamp.getTime() + (timeStep * j);
-                                    
-                                    // Create intermediate point with held value
-                                    const intermediatePoint = {
-                                        ...point,
-                                        timestamp: new Date(intermediateTime),
-                                        processedNews: currentPeakValue, // Hold the peak value
-                                        news: originalNewsValue // Keep original for reference
-                                    };
-                                    processedPoints.push(intermediatePoint);
-                                    
-                                    // Update the original dataPoint array too
-                                    const intermediateDataPoint = timestampToDataPoint.get(intermediateTime);
-                                    if (!intermediateDataPoint) {
-                                        const newDataPoint = {
-                                            ...point,
-                                            timestamp: new Date(intermediateTime),
-                                            processedNews: currentPeakValue
-                                        };
-                                        dataPoints.push(newDataPoint);
-                                        timestampToDataPoint.set(intermediateTime, newDataPoint);
-                                    } else {
-                                        intermediateDataPoint.processedNews = currentPeakValue;
-                                    }
-                                }
-                            }
-                            
-                            // Add the current point with held value
-                            const minutesHeld = timeSincePeak / (60 * 1000);
-                            console.log(`   ⏸️ Holding value: time=${new Date(pointTime).toISOString()}, heldValue=${currentPeakValue.toFixed(2)}, minutesHeld=${minutesHeld.toFixed(2)}/${(HOLD_DURATION_MS / (60 * 1000)).toFixed(2)}`);
-                            processedPoints.push({ ...point, processedNews: currentPeakValue });
-                            lastOriginalNewsValue = originalNewsValue; // Track original value for reference
-                        } else {
-                            // After hold period - apply exponential decay using same formula as regular news
-                            // Formula: news_score(t) = news_score(0) * (0.05)^t where t is minutes since decay started
-                            const minutesSinceDecayStart = (timeSincePeak - HOLD_DURATION_MS) / (60 * 1000);
-                            
-                            // Exponential decay: multiply by decay rate raised to the power of minutes
-                            // This creates exponential decay, not linear
-                            const decayedValue = currentPeakValue * Math.pow(MINUTE_DECAY_RATE, minutesSinceDecayStart);
-                            
-                            // Force to zero if below threshold (same as regular news decay)
-                            const finalValue = decayedValue < 0.01 ? 0 : decayedValue;
-                            
-                            // Add intermediate points during decay to show exponential curve
-                            // Check if this is the first point after hold period or if significant time has passed
-                            const prevPoint = processedPoints.length > 0 ? processedPoints[processedPoints.length - 1] : null;
-                            const timeSinceLastPoint = prevPoint && prevPoint.timestamp ? 
-                                (pointTime - prevPoint.timestamp.getTime()) : 0;
-                            
-                            // If more than 2 minutes passed since last point, add intermediate decay points
-                            if (timeSinceLastPoint > 2 * 60 * 1000 && prevPoint && prevPoint.processedNews != null) {
-                                const intermediateCount = Math.floor(timeSinceLastPoint / (60 * 1000)); // One point per minute
-                                const timeStep = timeSinceLastPoint / (intermediateCount + 1);
-                                
-                                for (let j = 1; j <= intermediateCount; j++) {
-                                    const intermediateTime = prevPoint.timestamp.getTime() + (timeStep * j);
-                                    const intermediateMinutesSinceDecayStart = (intermediateTime - peakTimestamp - HOLD_DURATION_MS) / (60 * 1000);
-                                    const intermediateDecayedValue = currentPeakValue * Math.pow(MINUTE_DECAY_RATE, intermediateMinutesSinceDecayStart);
-                                    const intermediateFinalValue = intermediateDecayedValue < 0.01 ? 0 : intermediateDecayedValue;
-                                    
-                                    // Create intermediate point with interpolated timestamp
-                                    const intermediatePoint = {
-                                        ...point,
-                                        timestamp: new Date(intermediateTime),
-                                        processedNews: intermediateFinalValue,
-                                        news: originalNewsValue // Keep original for reference
-                                    };
-                                    processedPoints.push(intermediatePoint);
-                                    
-                                    // Update the original dataPoint array too
-                                    const intermediateDataPoint = timestampToDataPoint.get(intermediateTime);
-                                    if (!intermediateDataPoint) {
-                                        // Create new dataPoint for intermediate time
-                                        const newDataPoint = {
-                                            ...point,
-                                            timestamp: new Date(intermediateTime),
-                                            processedNews: intermediateFinalValue
-                                        };
-                                        dataPoints.push(newDataPoint);
-                                        timestampToDataPoint.set(intermediateTime, newDataPoint);
-                                    } else {
-                                        intermediateDataPoint.processedNews = intermediateFinalValue;
-                                    }
-                                }
-                            }
-                            
-                            // Always log decay to verify it's working
-                            console.log(`   🔽 Exponential decay: time=${new Date(pointTime).toISOString()}, peak=${currentPeakValue.toFixed(2)}, minutes=${minutesSinceDecayStart.toFixed(2)}, decayed=${decayedValue.toFixed(2)}, final=${finalValue.toFixed(2)}`);
-                            
-                            processedPoints.push({ ...point, processedNews: finalValue });
-                            lastOriginalNewsValue = originalNewsValue; // Track original value for reference
-                            
-                            // Reset peak state if decayed value is effectively zero
-                            if (finalValue === 0 && minutesSinceDecayStart > 120) { // After 2 hours, decay is negligible
-                                currentPeakValue = null;
-                                peakTimestamp = null;
-                            }
+                        // No new movement - continue hold/decay logic
+                        point.processedNews = currentDisplayValue;
+                        
+                        // Reset state if decay complete
+                        if (timeSinceMovement >= TOTAL_DURATION_MS) {
+                            currentLineValue = 0;
+                            movementTimestamp = null;
                         }
                     } else {
-                        // No active peak - check if this is a new movement
-                        // Only detect UPWARD movements (> 1 point) or significant DOWNWARD movements (> 1 point)
-                        if (i > 0 && lastOriginalNewsValue !== null && !isNaN(lastOriginalNewsValue)) {
-                            const change = originalNewsValue - lastOriginalNewsValue;
+                        // No active movement - check for new movement
+                        if (Math.abs(newsMovement) > 0.01) {
+                            // Initial movement detected
+                            movementsDetected++;
+                            currentLineValue = newsMovement; // Set line to the movement amount
+                            movementTimestamp = pointTime;
                             
-                            // Detect upward movements: increase of more than 1 point
-                            const upwardMovement = change > MOVEMENT_THRESHOLD;
+                            const direction = newsMovement > 0 ? 'UP' : 'DOWN';
+                            console.log(`   📈 Initial movement #${movementsDetected} (${direction}) detected at ${new Date(pointTime).toISOString()}: news change=${newsMovement > 0 ? '+' : ''}${newsMovement.toFixed(2)}, line value=${currentLineValue.toFixed(2)}, starting 15min hold`);
                             
-                            // Detect significant downward movements: decrease of more than 1 point (not decay)
-                            const downwardMovement = change < -MOVEMENT_THRESHOLD;
-                            
-                            if (upwardMovement || downwardMovement) {
-                                // Movement detected - start holding at this value for 15 minutes
-                                movementsDetected++;
-                                const direction = change > 0 ? 'UP' : 'DOWN';
-                                console.log(`   📈 Initial movement #${movementsDetected} (${direction}) detected at ${new Date(pointTime).toISOString()}: ${lastOriginalNewsValue.toFixed(2)} → ${originalNewsValue.toFixed(2)} (change: ${change > 0 ? '+' : ''}${change.toFixed(2)}, will hold for 15 minutes)`);
-                                currentPeakValue = originalNewsValue;
-                                peakTimestamp = pointTime;
-                                processedPoints.push({ ...point, processedNews: originalNewsValue });
-                                lastOriginalNewsValue = originalNewsValue;
-                                recentOriginalValues = [originalNewsValue]; // Reset tracking
-                                continue;
-                            }
+                            point.processedNews = currentLineValue;
+                        } else {
+                            // No movement - line stays at zero
+                            point.processedNews = 0;
                         }
-                        
-                        // No movement detected - keep original value
-                        processedPoints.push({ ...point, processedNews: originalNewsValue });
-                        lastOriginalNewsValue = originalNewsValue;
                     }
+                    
+                    lastNewsValue = currentNewsValue;
                 }
                 
                 console.log(`   ✅ Processing complete. Detected ${movementsDetected} movements.`);
                 
-                // Instead of creating a map and mapping back, directly update the original dataPoints
-                // This ensures we're updating the exact same objects that will be used for drawing
-                processedPoints.forEach(processedPoint => {
+                // Update all dataPoints with processedNews values
+                sortedPoints.forEach(processedPoint => {
                     if (processedPoint.timestamp) {
                         const ts = processedPoint.timestamp.getTime();
                         const originalPoint = timestampToDataPoint.get(ts);
                         if (originalPoint) {
                             originalPoint.processedNews = processedPoint.processedNews;
-                            // Debug: log decay values being assigned
-                            if (processedPoint.processedNews != null && Math.abs(processedPoint.processedNews - (processedPoint.news || 0)) > 1) {
-                                console.log(`   📍 Direct assignment: ${new Date(ts).toISOString()} → processedNews=${processedPoint.processedNews.toFixed(2)}, original=${processedPoint.news?.toFixed(2)}`);
-                            }
-                        } else {
-                            console.warn(`   ⚠️ Could not find original point for timestamp ${ts}`);
                         }
                     }
                 });
-                console.log(`   📍 Directly updated ${processedPoints.length} points in original dataPoints array`);
-                
-                // Update original dataPoints array with processed news values
-                // Preserve original order of dataPoints
-                let valuesChanged = 0;
-                let sampleChanges = [];
-                let processedCount = 0;
-                let missingCount = 0;
-                dataPoints.forEach(point => {
-                    if (point.news != null && !isNaN(point.news)) {
-                        if (point.timestamp && processedMap.has(point.timestamp.getTime())) {
-                            const processedValue = processedMap.get(point.timestamp.getTime());
-                            const originalValue = point.news;
-                            // ALWAYS set processedNews, even if it matches original (important for chart rendering)
-                            point.processedNews = processedValue;
-                            processedCount++;
-                            
-                            // Check if value actually changed
-                            if (originalValue != null && processedValue != null && 
-                                Math.abs(originalValue - processedValue) > 0.001) {
-                                valuesChanged++;
-                                if (sampleChanges.length < 5) {
-                                    sampleChanges.push({
-                                        time: point.timestamp.toISOString(),
-                                        original: originalValue.toFixed(2),
-                                        processed: processedValue.toFixed(2),
-                                        diff: Math.abs(originalValue - processedValue).toFixed(2)
-                                    });
-                                }
-                            }
-                        } else {
-                            // Point has news but wasn't in processed map - use original value as fallback
-                            point.processedNews = point.news;
-                            missingCount++;
-                            console.warn(`   ⚠️ Point at ${point.timestamp?.toISOString()} has news=${point.news} but not in processedMap, using original`);
-                        }
-                    }
-                });
-                
-                console.log(`   📊 Assigned processedNews: ${processedCount} from map, ${missingCount} fallback, total=${dataPoints.filter(p => p.processedNews != null).length}`);
-                
-                if (sampleChanges.length > 0) {
-                    console.log('   📊 Sample value changes:', sampleChanges);
-                }
-                
-                console.log(`   📊 Values changed: ${valuesChanged} out of ${dataPoints.length} points`);
-                if (valuesChanged === 0 && movementsDetected > 0) {
-                    console.warn('   ⚠️ Warning: Movements detected but no values changed. This might indicate a bug.');
-                }
                 
                 return dataPoints;
             } catch (error) {
                 console.error('❌ Error in processNewsScoresWithHoldDecay:', error);
                 console.error('Stack trace:', error.stack);
-                return dataPoints; // Return original data on error
+                // Set processedNews to 0 for all points on error
+                dataPoints.forEach(point => {
+                    if (point.processedNews === undefined) {
+                        point.processedNews = 0;
+                    }
+                });
+                return dataPoints;
             }
         }
         
