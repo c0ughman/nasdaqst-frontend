@@ -5738,7 +5738,9 @@
             svg.setAttribute('viewBox', '0 0 100 100');
             svg.setAttribute('preserveAspectRatio', 'none');
             svg.style.width = '100%';
-            svg.style.height = '100%';
+            // Set height to fill the available space in the container
+            // Using 160% to match the container height properly (as user found this works)
+            svg.style.height = '160%';
 
             // Determine scale mode
             const scaleMode = document.querySelector('input[name="oscillator-scale"]:checked')?.value || 'visible';
