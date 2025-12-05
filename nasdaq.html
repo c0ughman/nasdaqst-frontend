@@ -6007,6 +6007,9 @@
                 { key: 'news', color: '#ec4899', label: 'News', eyeBtn: document.getElementById('eye-news') }, // Pink
                 { key: 'indicators', color: '#3b82f6', label: 'Indicators', eyeBtn: document.getElementById('eye-indicators') } // Blue
             ];
+            
+            // Get summary eye button for mutual exclusivity check
+            const summaryEyeBtn = document.getElementById('eye-summary');
 
             // In news mode, draw only the tracking line
             if (newsModeActive) {
@@ -6233,10 +6236,19 @@
                 // Check if this driver should be displayed (check eye button active state)
                 // In signal mode, always show sentiment line regardless of eye button state
                 // In weighted mode, always show sentiment line regardless of eye button state
-                const shouldDisplay = (signalModeActive && driver.key === 'sentiment') || 
-                                     (weightedModeActive && driver.key === 'sentiment')
-                    ? true 
-                    : (!driver.eyeBtn || driver.eyeBtn.classList.contains('active'));
+                let shouldDisplay;
+                if ((signalModeActive && driver.key === 'sentiment') || 
+                    (weightedModeActive && driver.key === 'sentiment')) {
+                    shouldDisplay = true;
+                } else if (driver.key === 'sentiment') {
+                    // For sentiment line, check both eye-sentiment AND eye-summary (they control the same line)
+                    const sentimentActive = driver.eyeBtn && driver.eyeBtn.classList.contains('active');
+                    const summaryActive = summaryEyeBtn && summaryEyeBtn.classList.contains('active');
+                    shouldDisplay = sentimentActive || summaryActive;
+                } else {
+                    // For other drivers, check their own eye button
+                    shouldDisplay = !driver.eyeBtn || driver.eyeBtn.classList.contains('active');
+                }
                 if (!shouldDisplay) return;
 
                 // For sentiment line in signal mode, use pre-attached signal values from global cache
@@ -6605,87 +6617,39 @@
 
                 // Function to handle eye icon clicks with mutual exclusivity
                 function handleEyeClick(clickedBtn, lineType) {
-                    const allEyeBtns = {
-                        sentiment: document.getElementById('eye-sentiment'),
-                        news: document.getElementById('eye-news'),
-                        indicators: document.getElementById('eye-indicators')
-                    };
+                    // Get all eye buttons
+                    const sentimentEyeBtn = document.getElementById('eye-sentiment');
+                    const newsEyeBtn = document.getElementById('eye-news');
+                    const indicatorsEyeBtn = document.getElementById('eye-indicators');
                     const summaryEyeBtn = document.getElementById('eye-summary');
-
-                    // Special handling for summary: it toggles the sentiment eye icon
-                    if (lineType === 'summary') {
-                        const sentimentEyeBtn = document.getElementById('eye-sentiment');
-                        const isCurrentlyActive = clickedBtn.classList.contains('active');
-                        
-                        if (isCurrentlyActive) {
-                            // Close summary and sentiment
-                            toggleEyeIcon(clickedBtn, false);
-                            if (sentimentEyeBtn) {
-                                toggleEyeIcon(sentimentEyeBtn, false);
-                            }
-                        } else {
-                            // Close ALL other buttons first (news, indicators)
-                            Object.keys(allEyeBtns).forEach(key => {
-                                if (allEyeBtns[key]) {
-                                    toggleEyeIcon(allEyeBtns[key], false);
-                                }
-                            });
-                            // Open summary and sentiment
-                            toggleEyeIcon(clickedBtn, true);
-                            if (sentimentEyeBtn) {
-                                toggleEyeIcon(sentimentEyeBtn, true);
-                            }
-                        }
-                        
-                        // Redraw and update display
-                        if (window.currentChartData) {
-                            drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData, window.currentTimeLabels || []);
-                            if (window.currentChartData.length > 0) {
-                                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
-                                const displayValue = lastPoint.sentiment != null ? lastPoint.sentiment : 0;
-                                updateSentimentDisplay({
-                                    composite_score: displayValue
-                                });
-                            }
-                        }
-                        return;
-                    }
-
+                    
                     const isCurrentlyActive = clickedBtn.classList.contains('active');
 
                     // If clicking an active button, close it (toggle off)
                     if (isCurrentlyActive) {
+                        // Close the clicked button
                         toggleEyeIcon(clickedBtn, false);
-                        // Sync summary eye with sentiment eye - close both if sentiment was active
-                        if (lineType === 'sentiment') {
-                            if (summaryEyeBtn) {
-                                toggleEyeIcon(summaryEyeBtn, false);
-                            }
+                        
+                        // If closing summary or sentiment, close both (they're linked)
+                        if (lineType === 'summary' || lineType === 'sentiment') {
+                            if (sentimentEyeBtn) toggleEyeIcon(sentimentEyeBtn, false);
+                            if (summaryEyeBtn) toggleEyeIcon(summaryEyeBtn, false);
                         }
                     } else {
                         // Close ALL other buttons first (mutual exclusivity)
-                        Object.keys(allEyeBtns).forEach(key => {
-                            if (key !== lineType && allEyeBtns[key]) {
-                                toggleEyeIcon(allEyeBtns[key], false);
-                            }
-                        });
-                        // Always close summary and sentiment when clicking news or indicators
-                        if (lineType === 'news' || lineType === 'indicators') {
-                            const sentimentEyeBtn = document.getElementById('eye-sentiment');
-                            if (sentimentEyeBtn) {
-                                toggleEyeIcon(sentimentEyeBtn, false);
-                            }
-                            if (summaryEyeBtn) {
-                                toggleEyeIcon(summaryEyeBtn, false);
-                            }
-                        }
+                        // This ensures only one line is visible at a time
+                        if (newsEyeBtn) toggleEyeIcon(newsEyeBtn, false);
+                        if (indicatorsEyeBtn) toggleEyeIcon(indicatorsEyeBtn, false);
+                        if (sentimentEyeBtn) toggleEyeIcon(sentimentEyeBtn, false);
+                        if (summaryEyeBtn) toggleEyeIcon(summaryEyeBtn, false);
+                        
                         // Open the clicked button
                         toggleEyeIcon(clickedBtn, true);
-                        // Sync summary eye with sentiment eye - open both if sentiment was clicked
-                        if (lineType === 'sentiment') {
-                            if (summaryEyeBtn) {
-                                toggleEyeIcon(summaryEyeBtn, true);
-                            }
+                        
+                        // If opening summary or sentiment, open both (they're linked)
+                        if (lineType === 'summary' || lineType === 'sentiment') {
+                            if (sentimentEyeBtn) toggleEyeIcon(sentimentEyeBtn, true);
+                            if (summaryEyeBtn) toggleEyeIcon(summaryEyeBtn, true);
                         }
                     }
 
