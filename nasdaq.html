@@ -895,16 +895,16 @@
             left: 0;
             background: #ff8c42;
             color: #000;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-size: 9px;
             font-weight: bold;
             font-family: monospace;
             white-space: nowrap;
             pointer-events: none;
             z-index: 9999;
             display: none;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
         }
         
         .chart-time-label.show {
@@ -7048,7 +7048,7 @@
             timeLabel.classList.add('show');
             timeLabel.innerHTML = `<strong>${result.time}</strong>`;
             // Position time label to follow cursor x-position (same as hover line)
-            const labelWidth = 90;
+            const labelWidth = 50;
             const labelXRelativeToCanvas = Math.max(0, Math.min(clampedMouseX - (labelWidth / 2), chartCanvasRect.width - labelWidth));
             const labelX = labelXRelativeToCanvas + chartCanvasOffsetX;
             timeLabel.style.left = labelX + 'px';
