@@ -5921,9 +5921,25 @@
                 // Determine which dataset to use
                 const datasetToUse = scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints);
 
+                // Get eye buttons for checking active state
+                const sentimentEyeBtn = document.getElementById('eye-sentiment');
+                const summaryEyeBtn = document.getElementById('eye-summary');
+                const newsEyeBtn = document.getElementById('eye-news');
+                const indicatorsEyeBtn = document.getElementById('eye-indicators');
+
                 driverKeys.forEach(key => {
-                    const eyeBtn = document.getElementById(`eye-${key}`);
-                    const shouldInclude = !eyeBtn || eyeBtn.classList.contains('active');
+                    let shouldInclude = false;
+                    
+                    if (key === 'sentiment') {
+                        // For sentiment, check both eye-sentiment AND eye-summary (they control the same line)
+                        const sentimentActive = sentimentEyeBtn && sentimentEyeBtn.classList.contains('active');
+                        const summaryActive = summaryEyeBtn && summaryEyeBtn.classList.contains('active');
+                        shouldInclude = sentimentActive || summaryActive;
+                    } else if (key === 'news') {
+                        shouldInclude = !newsEyeBtn || newsEyeBtn.classList.contains('active');
+                    } else if (key === 'indicators') {
+                        shouldInclude = !indicatorsEyeBtn || indicatorsEyeBtn.classList.contains('active');
+                    }
 
                     if (shouldInclude) {
                         datasetToUse.forEach(point => {
@@ -5950,8 +5966,9 @@
             }
 
             // Clamp min/max values to -100/+100 range (cannot display values outside this range)
-            minValue = Math.max(-100, Math.min(100, minValue));
-            maxValue = Math.max(-100, Math.min(100, maxValue));
+            // minValue should be at least -100, maxValue should be at most 100
+            minValue = Math.max(-100, minValue);
+            maxValue = Math.min(100, maxValue);
 
             // Update Y-axis labels
             const yAxisDiv = document.getElementById('oscillator-y-axis');
