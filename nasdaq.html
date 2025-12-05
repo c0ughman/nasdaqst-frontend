@@ -4737,8 +4737,11 @@
 
                     // Track consecutive candles when we're holding a value (not at zero baseline)
                     if (currentValue !== 0) {
-                        const isRedCandle = point.close < point.open;
-                        const isGreenCandle = point.close > point.open;
+                        // Use 'price' as close (that's how the data is structured)
+                        const closePrice = point.close != null ? point.close : point.price;
+                        const openPrice = point.open;
+                        const isRedCandle = closePrice < openPrice;
+                        const isGreenCandle = closePrice > openPrice;
 
                         // DEBUG: Log candle info for first 10 points
                         if (i < 10) {
