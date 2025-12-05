@@ -4937,11 +4937,19 @@
                         processNewsScoresWithHoldDecay(data.dataPoints, initialProcessedNews);
                     }
                     
-                    // Calculate newsPriceValue = price + (processedNews * 0.7)
-                    data.dataPoints.forEach(point => {
-                        const priceValue = point.price != null ? point.price : 0;
+                    // Calculate newsPriceValue = previous candle's price + (processedNews * 0.7)
+                    // Use previous candle's price to allow live replication
+                    data.dataPoints.forEach((point, index) => {
+                        // Get previous candle's price (or current if it's the first point)
+                        let previousPrice = 0;
+                        if (index > 0 && data.dataPoints[index - 1].price != null) {
+                            previousPrice = data.dataPoints[index - 1].price;
+                        } else if (point.price != null) {
+                            // Fallback to current price if no previous candle available
+                            previousPrice = point.price;
+                        }
                         const processedNewsValue = point.processedNews != null ? point.processedNews : 0;
-                        point.newsPriceValue = priceValue + (processedNewsValue * 0.7);
+                        point.newsPriceValue = previousPrice + (processedNewsValue * 0.7);
                     });
                 }
 
@@ -6727,11 +6735,19 @@
                                 }
                                 processNewsScoresWithHoldDecay(window.currentChartData, initialProcessedNews);
                             }
-                            // Calculate newsPriceValue
-                            window.currentChartData.forEach(point => {
-                                const priceValue = point.price != null ? point.price : 0;
+                            // Calculate newsPriceValue = previous candle's price + (processedNews * 0.7)
+                            // Use previous candle's price to allow live replication
+                            window.currentChartData.forEach((point, index) => {
+                                // Get previous candle's price (or current if it's the first point)
+                                let previousPrice = 0;
+                                if (index > 0 && window.currentChartData[index - 1].price != null) {
+                                    previousPrice = window.currentChartData[index - 1].price;
+                                } else if (point.price != null) {
+                                    // Fallback to current price if no previous candle available
+                                    previousPrice = point.price;
+                                }
                                 const processedNewsValue = point.processedNews != null ? point.processedNews : 0;
-                                point.newsPriceValue = priceValue + (processedNewsValue * 0.7);
+                                point.newsPriceValue = previousPrice + (processedNewsValue * 0.7);
                             });
                         }
 
