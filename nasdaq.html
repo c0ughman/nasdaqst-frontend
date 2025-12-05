@@ -4684,9 +4684,8 @@
                                 decayStartTimestamp = null;
                                 decayStartValue = null;
 
-                                // Reset candle counters
-                                consecutiveRedCandles = 0;
-                                consecutiveGreenCandles = 0;
+                                // DON'T reset candle counters - candle counting is independent
+                                // Candles track price action to detect when signal is ending
 
                                 console.log(`   📈 News UP #${newsMovementsDetected} at ${new Date(pointTime).toISOString()}: +${newsMovement.toFixed(2)} → value=${currentValue.toFixed(2)} (indefinite hold)`);
                             }
@@ -4716,9 +4715,8 @@
                                     decayStartTimestamp = null;
                                     decayStartValue = null;
 
-                                    // Reset candle counters
-                                    consecutiveRedCandles = 0;
-                                    consecutiveGreenCandles = 0;
+                                    // DON'T reset candle counters - candle counting is independent
+                                    // Candles track price action to detect when signal is ending
 
                                     console.log(`   ⚠️ Technical penalty #${technicalPenaltiesApplied} applied: -25 → value=${currentValue.toFixed(2)} (indefinite hold)`);
                                 }
