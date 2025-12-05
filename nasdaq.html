@@ -5867,6 +5867,10 @@
                 }
             }
 
+            // Clamp min/max values to -100/+100 range (cannot display values outside this range)
+            minValue = Math.max(-100, Math.min(100, minValue));
+            maxValue = Math.max(-100, Math.min(100, maxValue));
+
             // Update Y-axis labels
             const yAxisDiv = document.getElementById('oscillator-y-axis');
             if (yAxisDiv) {
