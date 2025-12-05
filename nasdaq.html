@@ -2033,6 +2033,28 @@
                         <div class="driver-item">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
+                                    <button type="button" class="eye-icon-btn driver-eye" data-line="summary" id="eye-summary" title="Toggle composite score line">
+                                        <svg class="eye-icon eye-closed" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                                        </svg>
+                                        <svg class="eye-icon eye-open" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                    <span class="driver-name">Summary</span>
+                                </div>
+                                <span class="driver-value positive">+0.0</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill positive" style="width: 50%"></div>
+                            </div>
+                        </div>
+
+                        <div class="driver-item">
+                            <div class="driver-header">
+                                <div style="display: flex; align-items: center; gap: 8px;">
                                     <input type="checkbox" class="driver-checkbox" data-driver="social" id="checkbox-social">
                                     <label for="checkbox-social" class="driver-name" data-i18n="dashboard.driver.social">Social Media</label>
                                 </div>
@@ -3543,6 +3565,9 @@
                 vixScore = Math.max(-100, Math.min(100, ((15 - vxnIndex) / 15) * 100));
             }
 
+            // Get composite score from current data
+            const compositeScore = window.currentCompositeScore || (window.currentChartData && window.currentChartData.length > 0 ? window.currentChartData[window.currentChartData.length - 1].sentiment : 0) || 0;
+
             // Update the drivers with real data from API
             const driverData = [
                 {
@@ -3550,6 +3575,12 @@
                     translationKey: 'dashboard.driver.news',
                     value: drivers.news_sentiment?.score || 0,
                     weight: drivers.news_sentiment?.weight || 40
+                },
+                {
+                    name: 'Summary',
+                    translationKey: null,
+                    value: compositeScore,
+                    weight: 0
                 },
                 {
                     name: t('dashboard.driver.social'),
@@ -6529,11 +6560,48 @@
                         indicators: document.getElementById('eye-indicators')
                     };
 
+                    // Special handling for summary: it toggles the sentiment eye icon
+                    if (lineType === 'summary') {
+                        const sentimentEyeBtn = document.getElementById('eye-sentiment');
+                        if (sentimentEyeBtn) {
+                            const isCurrentlyActive = sentimentEyeBtn.classList.contains('active');
+                            toggleEyeIcon(sentimentEyeBtn, !isCurrentlyActive);
+                            toggleEyeIcon(clickedBtn, !isCurrentlyActive); // Sync summary eye with sentiment eye
+                            
+                            // Close other buttons
+                            Object.keys(allEyeBtns).forEach(key => {
+                                if (key !== 'sentiment' && allEyeBtns[key]) {
+                                    toggleEyeIcon(allEyeBtns[key], false);
+                                }
+                            });
+                            
+                            // Redraw and update display
+                            if (window.currentChartData) {
+                                drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData, window.currentTimeLabels || []);
+                                if (window.currentChartData.length > 0) {
+                                    const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                                    const displayValue = lastPoint.sentiment != null ? lastPoint.sentiment : 0;
+                                    updateSentimentDisplay({
+                                        composite_score: displayValue
+                                    });
+                                }
+                            }
+                        }
+                        return;
+                    }
+
                     const isCurrentlyActive = clickedBtn.classList.contains('active');
 
                     // If clicking an active button, close it (toggle off)
                     if (isCurrentlyActive) {
                         toggleEyeIcon(clickedBtn, false);
+                        // Sync summary eye with sentiment eye
+                        if (lineType === 'sentiment') {
+                            const summaryEyeBtn = document.getElementById('eye-summary');
+                            if (summaryEyeBtn) {
+                                toggleEyeIcon(summaryEyeBtn, false);
+                            }
+                        }
                     } else {
                         // Close all other buttons
                         Object.keys(allEyeBtns).forEach(key => {
@@ -6543,6 +6611,13 @@
                         });
                         // Open the clicked button
                         toggleEyeIcon(clickedBtn, true);
+                        // Sync summary eye with sentiment eye
+                        if (lineType === 'sentiment') {
+                            const summaryEyeBtn = document.getElementById('eye-summary');
+                            if (summaryEyeBtn) {
+                                toggleEyeIcon(summaryEyeBtn, true);
+                            }
+                        }
                     }
 
                     // Redraw oscillator with current data
@@ -6577,12 +6652,18 @@
                 if (sentimentEyeBtn) {
                     toggleEyeIcon(sentimentEyeBtn, true);
                 }
+                // Initialize summary eye to match sentiment eye (both start active)
+                const summaryEyeBtn = document.getElementById('eye-summary');
+                if (summaryEyeBtn) {
+                    toggleEyeIcon(summaryEyeBtn, true);
+                }
 
                 // Add event listeners to all eye icon buttons
                 const allEyeButtons = [
                     { btn: document.getElementById('eye-sentiment'), line: 'sentiment' },
                     { btn: document.getElementById('eye-news'), line: 'news' },
-                    { btn: document.getElementById('eye-indicators'), line: 'indicators' }
+                    { btn: document.getElementById('eye-indicators'), line: 'indicators' },
+                    { btn: document.getElementById('eye-summary'), line: 'summary' }
                 ];
 
                 allEyeButtons.forEach(({ btn, line }) => {
