@@ -4649,12 +4649,11 @@
                         point.candleDecayValue = 0;
                     }
 
-                    // Check if we're in active decay
-                    let isInDecay = false;
+                    // First, update currentValue based on active decay (if any)
+                    // This ensures signals add/subtract from the CURRENT decayed value
                     if (decayStartTimestamp !== null) {
                         const timeSinceDecay = pointTime - decayStartTimestamp;
                         if (timeSinceDecay < DECAY_DURATION_MS) {
-                            isInDecay = true;
                             // Calculate exponential decay
                             const minutesSinceDecay = timeSinceDecay / (60 * 1000);
                             const decayedValue = decayStartValue * Math.exp(-DECAY_RATE * minutesSinceDecay);
@@ -4678,7 +4677,7 @@
                                 newsUpDetected = true;
                                 newsMovementsDetected++;
 
-                                // Add news movement to current value
+                                // Add news movement to current (possibly decayed) value
                                 currentValue = clampValue(currentValue + newsMovement);
 
                                 // Stop any active decay - return to indefinite hold
@@ -4731,9 +4730,8 @@
                         lastIndicatorsValue = point.indicators;
                     }
 
-                    // Track consecutive candles (only when NOT in decay and have a signal active)
-                    // Candles only matter when we're holding a value (not at zero baseline)
-                    if (!isInDecay && currentValue !== 0) {
+                    // Track consecutive candles when we're holding a value (not at zero baseline)
+                    if (currentValue !== 0) {
                         const isRedCandle = point.close < point.open;
                         const isGreenCandle = point.close > point.open;
 
@@ -4749,10 +4747,6 @@
                                 decayStartTimestamp = pointTime;
                                 decayStartValue = currentValue;
                                 consecutiveRedCandles = 0; // Reset counter
-
-                                // Recalculate for this point since decay just started
-                                const minutesSinceDecay = 0;
-                                currentValue = decayStartValue;
                             }
                         } else if (isGreenCandle) {
                             consecutiveGreenCandles++;
@@ -4766,16 +4760,12 @@
                                 decayStartTimestamp = pointTime;
                                 decayStartValue = currentValue;
                                 consecutiveGreenCandles = 0; // Reset counter
-
-                                // Recalculate for this point since decay just started
-                                const minutesSinceDecay = 0;
-                                currentValue = decayStartValue;
                             }
                         }
                         // Doji candles (close == open) don't affect the count
                     }
 
-                    // Store the current value
+                    // Store the current value (currentValue has already been updated with decay at the start of this iteration)
                     point.candleDecayValue = clampValue(currentValue);
                 }
 
