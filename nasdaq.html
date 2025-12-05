@@ -4657,9 +4657,16 @@
                             // Calculate exponential decay
                             const minutesSinceDecay = timeSinceDecay / (60 * 1000);
                             const decayedValue = decayStartValue * Math.exp(-DECAY_RATE * minutesSinceDecay);
+                            const beforeDecay = currentValue;
                             currentValue = Math.abs(decayedValue) < 0.01 ? 0 : decayedValue;
+
+                            // Log decay for first few points or every 10 points
+                            if (i < 5 || i % 10 === 0) {
+                                console.log(`   ⏱️ DECAY: mins=${minutesSinceDecay.toFixed(2)}, startVal=${decayStartValue.toFixed(2)}, decayed=${currentValue.toFixed(2)}`);
+                            }
                         } else {
                             // Decay complete
+                            console.log(`   ✅ Decay COMPLETE at ${new Date(pointTime).toISOString()}`);
                             currentValue = 0;
                             decayStartTimestamp = null;
                             decayStartValue = null;
@@ -4733,9 +4740,16 @@
                         const isRedCandle = point.close < point.open;
                         const isGreenCandle = point.close > point.open;
 
+                        // DEBUG: Log candle info for first 10 points
+                        if (i < 10) {
+                            console.log(`   [DEBUG] Point ${i}: open=${point.open}, close=${point.close}, isRed=${isRedCandle}, isGreen=${isGreenCandle}, redCount=${consecutiveRedCandles}, greenCount=${consecutiveGreenCandles}, value=${currentValue.toFixed(2)}`);
+                        }
+
                         if (isRedCandle) {
                             consecutiveRedCandles++;
                             consecutiveGreenCandles = 0; // Reset green counter
+
+                            console.log(`   🔴 Red candle #${consecutiveRedCandles} at ${new Date(pointTime).toISOString()}, value=${currentValue.toFixed(2)}`);
 
                             // Check if 3 consecutive red candles
                             if (consecutiveRedCandles >= 3) {
@@ -4750,6 +4764,8 @@
                             consecutiveGreenCandles++;
                             consecutiveRedCandles = 0; // Reset red counter
 
+                            console.log(`   🟢 Green candle #${consecutiveGreenCandles} at ${new Date(pointTime).toISOString()}, value=${currentValue.toFixed(2)}`);
+
                             // Check if 3 consecutive green candles AND we're negative
                             if (consecutiveGreenCandles >= 3 && currentValue < 0) {
                                 console.log(`   🕯️ 3 consecutive GREEN candles detected (negative state) at ${new Date(pointTime).toISOString()} → starting decay from ${currentValue.toFixed(2)} to zero`);
@@ -4759,8 +4775,13 @@
                                 decayStartValue = currentValue;
                                 consecutiveGreenCandles = 0; // Reset counter
                             }
+                        } else {
+                            // Doji candle - log it
+                            if (i < 20) console.log(`   ⚪ Doji candle at ${new Date(pointTime).toISOString()}, redCount=${consecutiveRedCandles}, greenCount=${consecutiveGreenCandles}`);
                         }
-                        // Doji candles (close == open) don't affect the count
+                    } else {
+                        // Log when value is zero
+                        if (i < 10) console.log(`   [DEBUG] Point ${i}: value is ZERO, skipping candle tracking`);
                     }
 
                     // Store the current value (currentValue has already been updated with decay at the start of this iteration)
