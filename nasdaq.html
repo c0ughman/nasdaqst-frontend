@@ -1063,6 +1063,48 @@
             cursor: crosshair;
         }
 
+        .oscillator-expand-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .chart-oscillator-container:hover .oscillator-expand-btn {
+            opacity: 1;
+        }
+
+        .oscillator-expand-btn:hover {
+            background: rgba(26, 26, 26, 0.95);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .oscillator-expand-btn svg {
+            stroke: #888;
+            transition: stroke 0.2s ease;
+        }
+
+        .oscillator-expand-btn:hover svg {
+            stroke: #fff;
+        }
+
+        .oscillator-expand-btn .expand-icon,
+        .oscillator-expand-btn .collapse-icon {
+            width: 14px;
+            height: 14px;
+        }
+
         .oscillator-x-axis {
             position: absolute;
             left: 20px;
@@ -2317,22 +2359,20 @@
                     <!-- Oscillator -->
                     <div class="chart-oscillator-container">
                         <div class="oscillator-y-axis" id="oscillator-y-axis"></div>
-                        <div class="chart-oscillator" id="chart-oscillator"></div>
+                        <div class="chart-oscillator" id="chart-oscillator">
+                            <!-- Expand/Collapse Icon in top right corner -->
+                            <button type="button" class="oscillator-expand-btn" id="oscillator-expand-btn" title="Toggle visible window scale">
+                                <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                                </svg>
+                                <svg class="collapse-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                                </svg>
+                            </button>
+                        </div>
                         <div class="oscillator-x-axis" id="oscillator-x-axis"></div>
                         <!-- Current Sentiment Score Panel -->
                         <div class="oscillator-score-panel">
-                            <!-- Composite Score Eye Icon -->
-                            <button type="button" class="eye-icon-btn active" id="eye-sentiment" data-line="sentiment" title="Toggle composite score line">
-                                <svg class="eye-icon eye-open" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
-                                <svg class="eye-icon eye-closed" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                                    <line x1="1" y1="1" x2="23" y2="23"></line>
-                                </svg>
-                            </button>
-
                             <!-- Score Display -->
                             <div class="oscillator-score-display">
                                 <div class="oscillator-score-value" id="oscillator-current-score">+0</div>
@@ -6667,16 +6707,14 @@
                     }
                 }
 
-                // Initialize sentiment score as active (open eye)
-                const sentimentEyeBtn = document.getElementById('eye-sentiment');
-                if (sentimentEyeBtn) {
-                    toggleEyeIcon(sentimentEyeBtn, true);
-                }
                 // Initialize summary eye to match sentiment eye (both start active)
                 const summaryEyeBtn = document.getElementById('eye-summary');
                 if (summaryEyeBtn) {
                     toggleEyeIcon(summaryEyeBtn, true);
                 }
+                
+                // Initialize expand/collapse icon
+                updateExpandIcon();
 
                 // Add event listeners to all eye icon buttons
                 const allEyeButtons = [
@@ -6694,11 +6732,48 @@
                     }
                 });
 
+                // Function to update expand/collapse icon based on scale mode
+                function updateExpandIcon() {
+                    const expandBtn = document.getElementById('oscillator-expand-btn');
+                    const expandIcon = expandBtn?.querySelector('.expand-icon');
+                    const collapseIcon = expandBtn?.querySelector('.collapse-icon');
+                    const visibleRadio = document.getElementById('scale-visible');
+                    const isVisibleMode = visibleRadio?.checked || false;
+                    
+                    if (expandBtn && expandIcon && collapseIcon) {
+                        if (isVisibleMode) {
+                            // Show collapse icon (corners going inside)
+                            expandIcon.style.display = 'none';
+                            collapseIcon.style.display = 'block';
+                        } else {
+                            // Show expand icon (corners going outside)
+                            expandIcon.style.display = 'block';
+                            collapseIcon.style.display = 'none';
+                        }
+                    }
+                }
+
+                // Add click handler for expand/collapse button
+                const expandBtn = document.getElementById('oscillator-expand-btn');
+                if (expandBtn) {
+                    expandBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const visibleRadio = document.getElementById('scale-visible');
+                        if (visibleRadio) {
+                            visibleRadio.checked = !visibleRadio.checked;
+                            visibleRadio.dispatchEvent(new Event('change'));
+                        }
+                    });
+                }
+
                 // Add event listeners to scale mode radio buttons (all 7 buttons are now mutually exclusive)
                 const scaleRadios = document.querySelectorAll('input[name="oscillator-scale"]');
                 scaleRadios.forEach(radio => {
                     radio.addEventListener('change', async () => {
                         console.log(`Scale mode changed to: ${radio.value}`);
+                        
+                        // Update expand/collapse icon
+                        updateExpandIcon();
 
                         // Calculate weighted average if weighted mode is activated
                         const weightedModeActive = radio.value === 'weighted';
