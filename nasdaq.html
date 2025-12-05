@@ -6563,6 +6563,7 @@
                         news: document.getElementById('eye-news'),
                         indicators: document.getElementById('eye-indicators')
                     };
+                    const summaryEyeBtn = document.getElementById('eye-summary');
 
                     // Special handling for summary: it toggles the sentiment eye icon
                     if (lineType === 'summary') {
@@ -6572,7 +6573,7 @@
                             toggleEyeIcon(sentimentEyeBtn, !isCurrentlyActive);
                             toggleEyeIcon(clickedBtn, !isCurrentlyActive); // Sync summary eye with sentiment eye
                             
-                            // Close other buttons
+                            // Close all other buttons (news, indicators)
                             Object.keys(allEyeBtns).forEach(key => {
                                 if (key !== 'sentiment' && allEyeBtns[key]) {
                                     toggleEyeIcon(allEyeBtns[key], false);
@@ -6599,25 +6600,32 @@
                     // If clicking an active button, close it (toggle off)
                     if (isCurrentlyActive) {
                         toggleEyeIcon(clickedBtn, false);
-                        // Sync summary eye with sentiment eye
+                        // Sync summary eye with sentiment eye - close both if sentiment was active
                         if (lineType === 'sentiment') {
-                            const summaryEyeBtn = document.getElementById('eye-summary');
                             if (summaryEyeBtn) {
                                 toggleEyeIcon(summaryEyeBtn, false);
                             }
                         }
                     } else {
-                        // Close all other buttons
+                        // Close all other buttons (including summary/sentiment if they're not the clicked one)
                         Object.keys(allEyeBtns).forEach(key => {
                             if (key !== lineType && allEyeBtns[key]) {
                                 toggleEyeIcon(allEyeBtns[key], false);
                             }
                         });
+                        // Also close summary and sentiment if clicking news or indicators
+                        if (lineType === 'news' || lineType === 'indicators') {
+                            if (allEyeBtns.sentiment) {
+                                toggleEyeIcon(allEyeBtns.sentiment, false);
+                            }
+                            if (summaryEyeBtn) {
+                                toggleEyeIcon(summaryEyeBtn, false);
+                            }
+                        }
                         // Open the clicked button
                         toggleEyeIcon(clickedBtn, true);
-                        // Sync summary eye with sentiment eye
+                        // Sync summary eye with sentiment eye - open both if sentiment was clicked
                         if (lineType === 'sentiment') {
-                            const summaryEyeBtn = document.getElementById('eye-summary');
                             if (summaryEyeBtn) {
                                 toggleEyeIcon(summaryEyeBtn, true);
                             }
