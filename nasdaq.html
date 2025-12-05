@@ -4622,6 +4622,26 @@
                 // Helper function to clamp values to [-100, 100]
                 const clampValue = (value) => Math.min(100, Math.max(-100, value));
 
+                // Constants
+                const RAMP_CANDLES = 5; // Number of candles for exponential ramping
+
+                // Exponential ramping: 50% in first candle, remaining 50% over next 4 candles
+                const calculateRampValue = (candleIndex, totalChange) => {
+                    if (candleIndex >= RAMP_CANDLES) return totalChange;
+
+                    if (candleIndex === 0) {
+                        return totalChange * 0.5; // First candle: 50%
+                    }
+
+                    // Remaining 50% distributed exponentially over candles 1-4
+                    const remainingPortion = 0.5;
+                    const k = 2.5; // Growth rate constant
+                    const x = candleIndex / (RAMP_CANDLES - 1);
+                    const exponentialProgress = 1 - Math.exp(-k * x);
+
+                    return totalChange * (0.5 + remainingPortion * exponentialProgress);
+                };
+
                 // State tracking
                 let currentValue = initialValue != null ? clampValue(initialValue) : 0;
                 let lastNewsValue = null;
@@ -4631,6 +4651,7 @@
                 let technicalDropCount = 0; // Track consecutive technical drops for -25 penalty
                 let decayStartTimestamp = null; // When decay was triggered
                 let decayStartValue = null; // Value when decay started
+                let activeRamp = null; // { startIndex, targetChange, baseValue }
 
                 const DECAY_DURATION_MS = 30 * 60 * 1000; // 30 minutes decay (no hold period)
                 const DECAY_RATE = 0.2303; // Per minute decay rate (same as view 5)
@@ -4673,6 +4694,18 @@
                         }
                     }
 
+                    // Apply active ramp if in progress (BEFORE new signals)
+                    if (activeRamp && decayStartTimestamp === null) {
+                        const candlesIntoRamp = i - activeRamp.startIndex;
+                        if (candlesIntoRamp < RAMP_CANDLES) {
+                            const rampedChange = calculateRampValue(candlesIntoRamp, activeRamp.targetChange);
+                            currentValue = clampValue(activeRamp.baseValue + rampedChange);
+                        } else {
+                            // Ramp complete
+                            activeRamp = null;
+                        }
+                    }
+
                     // Detect NEWS UP signal (news score increases by > 0.01)
                     // News signals ALWAYS apply, even during decay
                     let newsUpDetected = false;
@@ -4684,8 +4717,16 @@
                                 newsUpDetected = true;
                                 newsMovementsDetected++;
 
-                                // Add news movement to current (possibly decayed) value
-                                currentValue = clampValue(currentValue + newsMovement);
+                                // Start a new ramp for this news movement
+                                activeRamp = {
+                                    startIndex: i,
+                                    targetChange: newsMovement,
+                                    baseValue: currentValue
+                                };
+
+                                // Apply first candle of ramp immediately (50%)
+                                const firstRampValue = calculateRampValue(0, newsMovement);
+                                currentValue = clampValue(currentValue + firstRampValue);
 
                                 // Stop any active decay - return to indefinite hold
                                 decayStartTimestamp = null;
@@ -4694,7 +4735,7 @@
                                 // DON'T reset candle counters - candle counting is independent
                                 // Candles track price action to detect when signal is ending
 
-                                console.log(`   📈 News UP #${newsMovementsDetected} at ${new Date(pointTime).toISOString()}: +${newsMovement.toFixed(2)} → value=${currentValue.toFixed(2)} (indefinite hold)`);
+                                console.log(`   📈 News UP #${newsMovementsDetected} at ${new Date(pointTime).toISOString()}: +${newsMovement.toFixed(2)} ramping over ${RAMP_CANDLES} candles, 1st=${firstRampValue.toFixed(2)} → value=${currentValue.toFixed(2)}`);
                             }
                         }
                         lastNewsValue = point.news;
@@ -4715,8 +4756,18 @@
                                 // Check if we have 2 drops
                                 if (technicalDropCount >= 2) {
                                     technicalPenaltiesApplied++;
-                                    currentValue = clampValue(currentValue - 25);
                                     technicalDropCount = 0; // Reset counter
+
+                                    // Start a new ramp for this technical penalty
+                                    activeRamp = {
+                                        startIndex: i,
+                                        targetChange: -25,
+                                        baseValue: currentValue
+                                    };
+
+                                    // Apply first candle of ramp immediately (50%)
+                                    const firstRampValue = calculateRampValue(0, -25);
+                                    currentValue = clampValue(currentValue + firstRampValue);
 
                                     // Stop any active decay - return to indefinite hold
                                     decayStartTimestamp = null;
@@ -4725,7 +4776,7 @@
                                     // DON'T reset candle counters - candle counting is independent
                                     // Candles track price action to detect when signal is ending
 
-                                    console.log(`   ⚠️ Technical penalty #${technicalPenaltiesApplied} applied: -25 → value=${currentValue.toFixed(2)} (indefinite hold)`);
+                                    console.log(`   ⚠️ Technical penalty #${technicalPenaltiesApplied} applied: -25 ramping over ${RAMP_CANDLES} candles, 1st=${firstRampValue.toFixed(2)} → value=${currentValue.toFixed(2)}`);
                                 }
                             } else {
                                 // No drop, reset counter
