@@ -4623,23 +4623,19 @@
                 const clampValue = (value) => Math.min(100, Math.max(-100, value));
 
                 // Constants
-                const RAMP_CANDLES = 5; // Number of candles for exponential ramping
+                const RAMP_CANDLES = 3; // Number of candles for ramping
 
-                // Exponential ramping: 50% in first candle, remaining 50% over next 4 candles
+                // Simple 3-candle ramping: 50% - 25% - 25%
                 const calculateRampValue = (candleIndex, totalChange) => {
                     if (candleIndex >= RAMP_CANDLES) return totalChange;
 
                     if (candleIndex === 0) {
                         return totalChange * 0.5; // First candle: 50%
+                    } else if (candleIndex === 1) {
+                        return totalChange * 0.75; // Second candle: 75% total (first 50% + second 25%)
+                    } else {
+                        return totalChange; // Third candle: 100% (first 50% + second 25% + third 25%)
                     }
-
-                    // Remaining 50% distributed exponentially over candles 1-4
-                    const remainingPortion = 0.5;
-                    const k = 2.5; // Growth rate constant
-                    const x = candleIndex / (RAMP_CANDLES - 1);
-                    const exponentialProgress = 1 - Math.exp(-k * x);
-
-                    return totalChange * (0.5 + remainingPortion * exponentialProgress);
                 };
 
                 // State tracking
