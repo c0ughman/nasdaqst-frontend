@@ -6729,15 +6729,21 @@
                     const expandIcon = expandBtn?.querySelector('.expand-icon');
                     const collapseIcon = expandBtn?.querySelector('.collapse-icon');
                     const visibleRadio = document.getElementById('scale-visible');
+                    const fixedRadio = document.getElementById('scale-fixed');
                     const isVisibleMode = visibleRadio?.checked || false;
+                    const isFixedMode = fixedRadio?.checked || false;
                     
                     if (expandBtn && expandIcon && collapseIcon) {
                         if (isVisibleMode) {
-                            // Show collapse icon (corners going inside)
+                            // Show collapse icon (corners going inside) - expanded/min-max view
                             expandIcon.style.display = 'none';
                             collapseIcon.style.display = 'block';
+                        } else if (isFixedMode) {
+                            // Show expand icon (corners going outside) - collapsed/fixed view
+                            expandIcon.style.display = 'block';
+                            collapseIcon.style.display = 'none';
                         } else {
-                            // Show expand icon (corners going outside)
+                            // Default to expand icon if neither is checked
                             expandIcon.style.display = 'block';
                             collapseIcon.style.display = 'none';
                         }
@@ -6745,14 +6751,29 @@
                 }
 
                 // Add click handler for expand/collapse button
+                // Toggles between fixed (-100 to +100) and visible (min-max) modes
                 const expandBtn = document.getElementById('oscillator-expand-btn');
                 if (expandBtn) {
                     expandBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const visibleRadio = document.getElementById('scale-visible');
-                        if (visibleRadio) {
-                            visibleRadio.checked = !visibleRadio.checked;
-                            visibleRadio.dispatchEvent(new Event('change'));
+                        const fixedRadio = document.getElementById('scale-fixed');
+                        
+                        if (visibleRadio && fixedRadio) {
+                            // Toggle between fixed and visible modes
+                            if (visibleRadio.checked) {
+                                // Currently in visible mode, switch to fixed mode
+                                fixedRadio.checked = true;
+                                visibleRadio.checked = false;
+                            } else {
+                                // Currently in fixed mode (or other mode), switch to visible mode
+                                visibleRadio.checked = true;
+                                fixedRadio.checked = false;
+                            }
+                            
+                            // Dispatch change event to trigger chart update
+                            const activeRadio = visibleRadio.checked ? visibleRadio : fixedRadio;
+                            activeRadio.dispatchEvent(new Event('change'));
                         }
                     });
                 }
