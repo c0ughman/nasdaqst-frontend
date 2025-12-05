@@ -1245,7 +1245,8 @@
         #scale-news:checked + label,
         #scale-weighted:checked + label,
         #scale-news-composite:checked + label,
-        #scale-news-price:checked + label {
+        #scale-news-price:checked + label,
+        #scale-candle-decay:checked + label {
             background: rgba(255, 140, 66, 0.2) !important;
             border-color: #ff8c42 !important;
             color: #ff8c42 !important;
@@ -2459,6 +2460,15 @@
                                             <path d="M2 12 L8 4 L14 12" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.6"/>
                                         </svg>
                                     </label>
+
+                                    <!-- Candle-Based Decay Mode Toggle -->
+                                    <input type="radio" id="scale-candle-decay" name="oscillator-scale" value="candle-decay" style="display: none;">
+                                    <label for="scale-candle-decay" id="candle-decay-mode-toggle" title="Candle-Based Decay Mode - News up signals with candle-triggered decay" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                        <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
+                                            <path d="M4 12 L4 8 L6 6 L6 12" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                            <path d="M10 12 L10 4 L12 6 L12 12" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                        </svg>
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -3414,6 +3424,7 @@
             const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
             const newsCompositeModeActive = document.getElementById('scale-news-composite')?.checked || false;
             const newsPriceModeActive = document.getElementById('scale-news-price')?.checked || false;
+            const candleDecayModeActive = document.getElementById('scale-candle-decay')?.checked || false;
             
             // Check which eye icon is active (for driver toggles)
             const newsEyeActive = document.getElementById('eye-news')?.classList.contains('active') || false;
@@ -3443,6 +3454,12 @@
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                 if (lastPoint && lastPoint.newsPriceValue != null) {
                     sentiment = lastPoint.newsPriceValue;
+                }
+            } else if (candleDecayModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                // Get the most recent data point's candle decay value
+                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                if (lastPoint && lastPoint.candleDecayValue != null) {
+                    sentiment = lastPoint.candleDecayValue;
                 }
             } else if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
                 // Get the most recent data point's processed news value (or fallback to regular news)
@@ -3485,6 +3502,8 @@
                     oscillatorScoreElement.style.color = '#ff8c42'; // Orange for news + composite
                 } else if (newsPriceModeActive) {
                     oscillatorScoreElement.style.color = '#10b981'; // Green for news + price
+                } else if (candleDecayModeActive) {
+                    oscillatorScoreElement.style.color = '#a855f7'; // Purple for candle-based decay
                 } else if (newsModeActive || newsEyeActive) {
                     oscillatorScoreElement.style.color = '#ec4899'; // Pink for news
                 } else if (signalModeActive) {
@@ -4576,7 +4595,217 @@
                 return dataPoints;
             }
         }
-        
+
+        // Process candle-based decay mode (9th view)
+        // News up signals add to value (hold indefinitely until 3 consecutive red candles trigger decay)
+        // Technical drops (2×) subtract 25 points
+        // 3 consecutive green candles (when negative) trigger decay back to zero
+        function processCandleBasedDecay(dataPoints, initialValue = null) {
+            try {
+                if (!dataPoints || dataPoints.length === 0) {
+                    console.warn('⚠️ processCandleBasedDecay: No data points provided');
+                    return dataPoints;
+                }
+
+                console.log('🔄 Processing candle-based decay mode...');
+                console.log(`   Total data points: ${dataPoints.length}`);
+
+                // Sort points by timestamp (oldest to newest)
+                const timestampToDataPoint = new Map();
+                dataPoints.forEach(dp => {
+                    if (dp.timestamp) {
+                        timestampToDataPoint.set(dp.timestamp.getTime(), dp);
+                    }
+                });
+                const sortedPoints = [...dataPoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+                // Helper function to clamp values to [-100, 100]
+                const clampValue = (value) => Math.min(100, Math.max(-100, value));
+
+                // State tracking
+                let currentValue = initialValue != null ? clampValue(initialValue) : 0;
+                let lastNewsValue = null;
+                let lastIndicatorsValue = null;
+                let consecutiveRedCandles = 0;
+                let consecutiveGreenCandles = 0;
+                let technicalDropCount = 0; // Track consecutive technical drops for -25 penalty
+                let decayStartTimestamp = null; // When decay was triggered
+                let decayStartValue = null; // Value when decay started
+
+                const DECAY_DURATION_MS = 30 * 60 * 1000; // 30 minutes decay (no hold period)
+                const DECAY_RATE = 0.2303; // Per minute decay rate (same as view 5)
+                const TECHNICAL_DROP_THRESHOLD = 10; // Technical indicators drop by ≥10
+
+                let newsMovementsDetected = 0;
+                let technicalPenaltiesApplied = 0;
+
+                // Process each point chronologically
+                for (let i = 0; i < sortedPoints.length; i++) {
+                    const point = sortedPoints[i];
+                    const pointTime = point.timestamp.getTime();
+
+                    // Initialize candleDecayValue for all points
+                    if (point.candleDecayValue === undefined) {
+                        point.candleDecayValue = 0;
+                    }
+
+                    // Check if we're in active decay
+                    let isInDecay = false;
+                    if (decayStartTimestamp !== null) {
+                        const timeSinceDecay = pointTime - decayStartTimestamp;
+                        if (timeSinceDecay < DECAY_DURATION_MS) {
+                            isInDecay = true;
+                            // Calculate exponential decay
+                            const minutesSinceDecay = timeSinceDecay / (60 * 1000);
+                            const decayedValue = decayStartValue * Math.exp(-DECAY_RATE * minutesSinceDecay);
+                            currentValue = Math.abs(decayedValue) < 0.01 ? 0 : decayedValue;
+                        } else {
+                            // Decay complete
+                            currentValue = 0;
+                            decayStartTimestamp = null;
+                            decayStartValue = null;
+                        }
+                    }
+
+                    // Detect NEWS UP signal (news score increases by > 0.01)
+                    // News signals ALWAYS apply, even during decay
+                    let newsUpDetected = false;
+                    let newsMovement = 0;
+                    if (point.news != null && !isNaN(point.news)) {
+                        if (lastNewsValue !== null && !isNaN(lastNewsValue)) {
+                            newsMovement = point.news - lastNewsValue;
+                            if (newsMovement > 0.01) {
+                                newsUpDetected = true;
+                                newsMovementsDetected++;
+
+                                // Add news movement to current value
+                                currentValue = clampValue(currentValue + newsMovement);
+
+                                // Stop any active decay - return to indefinite hold
+                                decayStartTimestamp = null;
+                                decayStartValue = null;
+
+                                // Reset candle counters
+                                consecutiveRedCandles = 0;
+                                consecutiveGreenCandles = 0;
+
+                                console.log(`   📈 News UP #${newsMovementsDetected} at ${new Date(pointTime).toISOString()}: +${newsMovement.toFixed(2)} → value=${currentValue.toFixed(2)} (indefinite hold)`);
+                            }
+                        }
+                        lastNewsValue = point.news;
+                    }
+
+                    // Detect TECHNICAL DROP signal (indicators drop by ≥10)
+                    // Technical signals ALWAYS apply, even during decay
+                    let technicalDropDetected = false;
+                    if (point.indicators != null && !isNaN(point.indicators)) {
+                        if (lastIndicatorsValue !== null && !isNaN(lastIndicatorsValue)) {
+                            const technicalChange = point.indicators - lastIndicatorsValue;
+                            if (technicalChange <= -TECHNICAL_DROP_THRESHOLD) {
+                                technicalDropDetected = true;
+                                technicalDropCount++;
+
+                                console.log(`   📉 Technical DROP detected at ${new Date(pointTime).toISOString()}: ${technicalChange.toFixed(2)} (count: ${technicalDropCount})`);
+
+                                // Check if we have 2 drops
+                                if (technicalDropCount >= 2) {
+                                    technicalPenaltiesApplied++;
+                                    currentValue = clampValue(currentValue - 25);
+                                    technicalDropCount = 0; // Reset counter
+
+                                    // Stop any active decay - return to indefinite hold
+                                    decayStartTimestamp = null;
+                                    decayStartValue = null;
+
+                                    // Reset candle counters
+                                    consecutiveRedCandles = 0;
+                                    consecutiveGreenCandles = 0;
+
+                                    console.log(`   ⚠️ Technical penalty #${technicalPenaltiesApplied} applied: -25 → value=${currentValue.toFixed(2)} (indefinite hold)`);
+                                }
+                            } else {
+                                // No drop, reset counter
+                                technicalDropCount = 0;
+                            }
+                        }
+                        lastIndicatorsValue = point.indicators;
+                    }
+
+                    // Track consecutive candles (only when NOT in decay and have a signal active)
+                    // Candles only matter when we're holding a value (not at zero baseline)
+                    if (!isInDecay && currentValue !== 0) {
+                        const isRedCandle = point.close < point.open;
+                        const isGreenCandle = point.close > point.open;
+
+                        if (isRedCandle) {
+                            consecutiveRedCandles++;
+                            consecutiveGreenCandles = 0; // Reset green counter
+
+                            // Check if 3 consecutive red candles
+                            if (consecutiveRedCandles >= 3) {
+                                console.log(`   🕯️ 3 consecutive RED candles detected at ${new Date(pointTime).toISOString()} → starting decay from ${currentValue.toFixed(2)}`);
+
+                                // Start decay to zero (skip hold period)
+                                decayStartTimestamp = pointTime;
+                                decayStartValue = currentValue;
+                                consecutiveRedCandles = 0; // Reset counter
+
+                                // Recalculate for this point since decay just started
+                                const minutesSinceDecay = 0;
+                                currentValue = decayStartValue;
+                            }
+                        } else if (isGreenCandle) {
+                            consecutiveGreenCandles++;
+                            consecutiveRedCandles = 0; // Reset red counter
+
+                            // Check if 3 consecutive green candles AND we're negative
+                            if (consecutiveGreenCandles >= 3 && currentValue < 0) {
+                                console.log(`   🕯️ 3 consecutive GREEN candles detected (negative state) at ${new Date(pointTime).toISOString()} → starting decay from ${currentValue.toFixed(2)} to zero`);
+
+                                // Start decay to zero (skip hold period)
+                                decayStartTimestamp = pointTime;
+                                decayStartValue = currentValue;
+                                consecutiveGreenCandles = 0; // Reset counter
+
+                                // Recalculate for this point since decay just started
+                                const minutesSinceDecay = 0;
+                                currentValue = decayStartValue;
+                            }
+                        }
+                        // Doji candles (close == open) don't affect the count
+                    }
+
+                    // Store the current value
+                    point.candleDecayValue = clampValue(currentValue);
+                }
+
+                console.log(`   ✅ Processing complete. News movements: ${newsMovementsDetected}, Technical penalties: ${technicalPenaltiesApplied}`);
+
+                // Update all dataPoints with candleDecayValue values
+                sortedPoints.forEach(processedPoint => {
+                    if (processedPoint.timestamp) {
+                        const ts = processedPoint.timestamp.getTime();
+                        const originalPoint = timestampToDataPoint.get(ts);
+                        if (originalPoint) {
+                            originalPoint.candleDecayValue = processedPoint.candleDecayValue;
+                        }
+                    }
+                });
+
+                return dataPoints;
+            } catch (error) {
+                console.error('❌ Error in processCandleBasedDecay:', error);
+                console.error('Stack trace:', error.stack);
+                // Set candleDecayValue to 0 for all points on error
+                dataPoints.forEach(point => {
+                    if (point.candleDecayValue === undefined) {
+                        point.candleDecayValue = 0;
+                    }
+                });
+                return dataPoints;
+            }
+        }
+
         async function updateChart(timeframe) {
             try {
                 console.log('=== UPDATE CHART START ===');
@@ -4965,6 +5194,14 @@
                     }
                     
                     processNewsScoresWithHoldDecay(data.dataPoints, initialProcessedNews);
+                }
+
+                // Candle-Based Decay mode: Process news up signals with candle-triggered decay
+                // Only works with minute-by-minute data (not granular)
+                const candleDecayModeActive = document.getElementById('scale-candle-decay')?.checked || false;
+                if (candleDecayModeActive && data.dataPoints && data.dataPoints.length > 0 && !data.usingGranularData) {
+                    console.log(`🕯️ Candle-Based Decay mode active - processing (${data.dataPoints.length} points)`);
+                    processCandleBasedDecay(data.dataPoints);
                 }
 
                 // News + Composite mode: Calculate composite + (processedNews * 0.7)
@@ -5902,7 +6139,7 @@
                 const weightedValues = (scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints))
                     .filter(p => p.weightedValue != null && !isNaN(p.weightedValue))
                     .map(p => p.weightedValue);
-                
+
                 if (weightedValues.length > 0) {
                     minValue = Math.min(...weightedValues);
                     maxValue = Math.max(...weightedValues);
@@ -5915,6 +6152,10 @@
                     minValue = -100;
                     maxValue = 100;
                 }
+            } else if (scaleMode === 'candle-decay') {
+                // Candle-Based Decay mode: Fixed scale -100 to +100
+                minValue = -100;
+                maxValue = 100;
             } else {
                 // Collect all values from enabled drivers
                 const driverKeys = ['sentiment', 'news', 'indicators'];
@@ -6236,6 +6477,73 @@
                     svg.appendChild(centerLine);
                 }
                 
+                oscillatorDiv.appendChild(svg);
+                return;
+            }
+
+            // Candle-Based Decay mode: Draw candleDecayValue line
+            const candleDecayModeActive = scaleMode === 'candle-decay';
+            if (candleDecayModeActive) {
+                console.log(`🕯️ Candle-Based Decay mode: minValue=${minValue.toFixed(2)}, maxValue=${maxValue.toFixed(2)}`);
+
+                const sortedDataPoints = [...dataPoints].sort((a, b) => (a.x || 0) - (b.x || 0));
+                const candlePoints = sortedDataPoints.filter(p => {
+                    const value = p.candleDecayValue != null ? p.candleDecayValue : null;
+                    return value != null && !isNaN(value) && p.x != null;
+                });
+
+                if (candlePoints.length > 0) {
+                    const getCandleValue = (point) => point.candleDecayValue != null ? point.candleDecayValue : 0;
+                    let pathD = `M ${candlePoints[0].x},${valueToY(getCandleValue(candlePoints[0]))}`;
+
+                    for (let i = 1; i < candlePoints.length; i++) {
+                        const x = candlePoints[i].x;
+                        const y = valueToY(getCandleValue(candlePoints[i]));
+                        const prevX = candlePoints[i - 1].x;
+                        const prevY = valueToY(getCandleValue(candlePoints[i - 1]));
+
+                        if (i === 1 && candlePoints.length === 2) {
+                            pathD += ` L ${x},${y}`;
+                        } else {
+                            const dx = x - prevX;
+                            const dy = y - prevY;
+                            const cp1X = prevX + dx * 0.5;
+                            const cp1Y = prevY + dy * 0.15;
+                            const cp2X = x - dx * 0.5;
+                            const cp2Y = y - dy * 0.15;
+                            pathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
+                        }
+                    }
+
+                    const candlePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    candlePath.setAttribute('d', pathD);
+                    candlePath.setAttribute('fill', 'none');
+                    candlePath.setAttribute('stroke', '#a855f7'); // Purple
+                    candlePath.setAttribute('stroke-width', '0.5');
+                    candlePath.setAttribute('stroke-linecap', 'round');
+                    candlePath.setAttribute('stroke-linejoin', 'round');
+                    candlePath.setAttribute('opacity', '0.9');
+                    candlePath.classList.add('oscillator-line-candle-decay');
+                    svg.appendChild(candlePath);
+                    console.log(`✅ Drew candle-based decay line with ${candlePoints.length} points`);
+                }
+
+                // Draw zero line
+                const zeroY = valueToY(0);
+                if (zeroY >= 0 && zeroY <= 100) {
+                    const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    centerLine.setAttribute('x1', '2');
+                    centerLine.setAttribute('y1', zeroY.toString());
+                    centerLine.setAttribute('x2', '98');
+                    centerLine.setAttribute('y2', zeroY.toString());
+                    centerLine.setAttribute('stroke', '#888888');
+                    centerLine.setAttribute('stroke-width', '1.5');
+                    centerLine.setAttribute('stroke-dasharray', '2,2');
+                    centerLine.setAttribute('opacity', '0.8');
+                    centerLine.setAttribute('stroke-linecap', 'round');
+                    svg.appendChild(centerLine);
+                }
+
                 oscillatorDiv.appendChild(svg);
                 return;
             }
@@ -6797,7 +7105,7 @@
                     });
                 }
 
-                // Add event listeners to scale mode radio buttons (all 7 buttons are now mutually exclusive)
+                // Add event listeners to scale mode radio buttons (all 9 buttons are now mutually exclusive)
                 const scaleRadios = document.querySelectorAll('input[name="oscillator-scale"]');
                 scaleRadios.forEach(radio => {
                     radio.addEventListener('change', async () => {
@@ -6940,6 +7248,13 @@
                                 const processedNewsValue = point.processedNews != null ? point.processedNews : 0;
                                 point.newsPriceValue = previousPrice + (processedNewsValue * 0.7);
                             });
+                        }
+
+                        // Candle-Based Decay mode: Process news up signals with candle-triggered decay
+                        const candleDecayModeActive = radio.value === 'candle-decay';
+                        if (candleDecayModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                            console.log('🕯️ Candle-Based Decay mode activated - processing candle-based decay');
+                            processCandleBasedDecay(window.currentChartData);
                         }
 
                         // Signal values are already attached in updateChart(), so no need to attach here
