@@ -2870,7 +2870,7 @@
 
                 // Update sentiment display and drivers
                 updateSentimentDisplay(data);
-                updateSentimentDrivers(data.drivers, data.vxn_index);
+                updateSentimentDrivers(data.drivers, data.vxn_index, data.composite_score);
 
                 // Populate sentimentDataset for chart (24 hours)
                 if (data.historical && data.historical.length > 0) {
@@ -3552,7 +3552,7 @@
         }
 
         // Update sentiment drivers with real data from API
-        function updateSentimentDrivers(drivers, vxnIndex) {
+        function updateSentimentDrivers(drivers, vxnIndex, compositeScore) {
             if (!drivers) return;
 
             // Get driver elements
@@ -3569,15 +3569,15 @@
                 vixScore = Math.max(-100, Math.min(100, ((15 - vxnIndex) / 15) * 100));
             }
 
-            // Get sentiment score (composite score) - prioritize API data, then current chart data
+            // Get sentiment score (composite score) - use passed parameter first, then fallbacks
             let sentimentScore = 0;
-            if (window.currentCompositeScore !== undefined && window.currentCompositeScore !== null) {
+            if (compositeScore !== undefined && compositeScore !== null) {
+                sentimentScore = compositeScore;
+            } else if (window.currentCompositeScore !== undefined && window.currentCompositeScore !== null) {
                 sentimentScore = window.currentCompositeScore;
             } else if (window.currentChartData && window.currentChartData.length > 0) {
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                 sentimentScore = lastPoint.sentiment != null ? lastPoint.sentiment : (lastPoint.composite_score != null ? lastPoint.composite_score : 0);
-            } else if (drivers && drivers.composite_score !== undefined) {
-                sentimentScore = drivers.composite_score;
             }
 
             // Update the drivers with real data from API
