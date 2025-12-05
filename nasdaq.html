@@ -3569,15 +3569,23 @@
                 vixScore = Math.max(-100, Math.min(100, ((15 - vxnIndex) / 15) * 100));
             }
 
-            // Get composite score from current data
-            const compositeScore = window.currentCompositeScore || (window.currentChartData && window.currentChartData.length > 0 ? window.currentChartData[window.currentChartData.length - 1].sentiment : 0) || 0;
+            // Get sentiment score (composite score) - prioritize API data, then current chart data
+            let sentimentScore = 0;
+            if (window.currentCompositeScore !== undefined && window.currentCompositeScore !== null) {
+                sentimentScore = window.currentCompositeScore;
+            } else if (window.currentChartData && window.currentChartData.length > 0) {
+                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                sentimentScore = lastPoint.sentiment != null ? lastPoint.sentiment : (lastPoint.composite_score != null ? lastPoint.composite_score : 0);
+            } else if (drivers && drivers.composite_score !== undefined) {
+                sentimentScore = drivers.composite_score;
+            }
 
             // Update the drivers with real data from API
             const driverData = [
                 {
                     name: 'Summary',
                     translationKey: null,
-                    value: compositeScore,
+                    value: sentimentScore,
                     weight: 0
                 },
                 {
