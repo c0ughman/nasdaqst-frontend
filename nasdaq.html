@@ -3575,16 +3575,16 @@
             // Update the drivers with real data from API
             const driverData = [
                 {
-                    name: t('dashboard.driver.news'),
-                    translationKey: 'dashboard.driver.news',
-                    value: drivers.news_sentiment?.score || 0,
-                    weight: drivers.news_sentiment?.weight || 40
-                },
-                {
                     name: 'Summary',
                     translationKey: null,
                     value: compositeScore,
                     weight: 0
+                },
+                {
+                    name: t('dashboard.driver.news'),
+                    translationKey: 'dashboard.driver.news',
+                    value: drivers.news_sentiment?.score || 0,
+                    weight: drivers.news_sentiment?.weight || 40
                 },
                 {
                     name: t('dashboard.driver.social'),
