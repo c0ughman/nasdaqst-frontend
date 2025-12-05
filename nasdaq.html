@@ -1182,7 +1182,9 @@
         #scale-full:checked + label,
         #scale-signal:checked + label,
         #scale-news:checked + label,
-        #scale-weighted:checked + label {
+        #scale-weighted:checked + label,
+        #scale-news-composite:checked + label,
+        #scale-news-price:checked + label {
             background: rgba(255, 140, 66, 0.2) !important;
             border-color: #ff8c42 !important;
             color: #ff8c42 !important;
@@ -2357,6 +2359,27 @@
                                         </svg>
                                     </label>
                                 </div>
+
+                                <!-- Third Row -->
+                                <div style="display: flex; flex-direction: row; gap: 3px; align-items: center;">
+                                    <!-- News + Composite Mode Toggle -->
+                                    <input type="radio" id="scale-news-composite" name="oscillator-scale" value="news-composite" style="display: none;">
+                                    <label for="scale-news-composite" id="news-composite-mode-toggle" title="News + Composite Mode - Composite score + (news tracking score × 70)" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                        <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
+                                            <path d="M3 8 L6 5 L9 8 L13 4" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                            <path d="M2 8 L6 4 L10 8 L14 4" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.6"/>
+                                        </svg>
+                                    </label>
+
+                                    <!-- News + Price Mode Toggle -->
+                                    <input type="radio" id="scale-news-price" name="oscillator-scale" value="news-price" style="display: none;">
+                                    <label for="scale-news-price" id="news-price-mode-toggle" title="News + Price Mode - Stock price + (news tracking score × 70)" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                        <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
+                                            <path d="M3 8 L6 5 L9 8 L13 4" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                            <path d="M2 12 L8 4 L14 12" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.6"/>
+                                        </svg>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <div class="chart-tooltip" id="oscillator-tooltip">
@@ -3305,10 +3328,12 @@
 
             let sentiment = data.composite_score;
 
-            // Check if signal mode, news mode, or weighted mode is active (radio buttons)
+            // Check if signal mode, news mode, weighted mode, or new composite/price modes are active (radio buttons)
             const signalModeActive = document.getElementById('scale-signal')?.checked || false;
             const newsModeActive = document.getElementById('scale-news')?.checked || false;
             const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
+            const newsCompositeModeActive = document.getElementById('scale-news-composite')?.checked || false;
+            const newsPriceModeActive = document.getElementById('scale-news-price')?.checked || false;
             
             // Check which eye icon is active (for driver toggles)
             const newsEyeActive = document.getElementById('eye-news')?.classList.contains('active') || false;
@@ -3326,6 +3351,18 @@
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                 if (lastPoint && lastPoint.weightedValue != null) {
                     sentiment = lastPoint.weightedValue;
+                }
+            } else if (newsCompositeModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                // Get the most recent data point's news composite value
+                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                if (lastPoint && lastPoint.newsCompositeValue != null) {
+                    sentiment = lastPoint.newsCompositeValue;
+                }
+            } else if (newsPriceModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                // Get the most recent data point's news price value
+                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                if (lastPoint && lastPoint.newsPriceValue != null) {
+                    sentiment = lastPoint.newsPriceValue;
                 }
             } else if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
                 // Get the most recent data point's processed news value (or fallback to regular news)
@@ -3364,7 +3401,11 @@
                 oscillatorScoreElement.textContent = sentimentDisplay;
                 
                 // Update color based on active mode (radio buttons take priority, then eye icons)
-                if (newsModeActive || newsEyeActive) {
+                if (newsCompositeModeActive) {
+                    oscillatorScoreElement.style.color = '#ff8c42'; // Orange for news + composite
+                } else if (newsPriceModeActive) {
+                    oscillatorScoreElement.style.color = '#10b981'; // Green for news + price
+                } else if (newsModeActive || newsEyeActive) {
                     oscillatorScoreElement.style.color = '#ec4899'; // Pink for news
                 } else if (signalModeActive) {
                     oscillatorScoreElement.style.color = '#ffffff'; // White for signal
@@ -4311,7 +4352,7 @@
                                 // Works for both positive and negative values
                                 const decayedValue = clampedLineValue * Math.exp(-DECAY_RATE * minutesSinceDecayStart);
                                 point.processedNews = clampValue(Math.abs(decayedValue) < 0.01 ? 0 : decayedValue);
-                            } else {
+                        } else {
                                 // Decay complete - line is at zero
                                 point.processedNews = 0;
                                 currentLineValue = 0;
@@ -4321,9 +4362,9 @@
                             // No active movement - use initial value if provided, otherwise stay at zero
                             point.processedNews = initialValue != null ? clampValue(initialValue) : 0;
                         }
-                        continue;
-                    }
-                    
+                            continue;
+                        }
+                        
                     // Detect news movement by comparing with last news value
                     // Track BOTH upward movements (> 0.01) and downward movements (<= -5.0)
                     let newsMovement = 0;
@@ -4356,7 +4397,7 @@
                             if (Math.abs(currentDisplayValue) < 0.01) currentDisplayValue = 0;
                             // Clamp during decay too
                             currentDisplayValue = clampValue(currentDisplayValue);
-                        } else {
+                                    } else {
                             // Decay complete - line is at zero
                             currentDisplayValue = 0;
                         }
@@ -4829,6 +4870,70 @@
                     processNewsScoresWithHoldDecay(data.dataPoints, initialProcessedNews);
                 }
 
+                // News + Composite mode: Calculate composite + (processedNews * 70)
+                const newsCompositeModeActive = document.getElementById('scale-news-composite')?.checked || false;
+                if (newsCompositeModeActive && data.dataPoints && data.dataPoints.length > 0) {
+                    console.log('📰 News + Composite mode active - calculating composite + (news tracking × 70)');
+                    // Ensure processedNews is calculated first
+                    if (!document.getElementById('scale-news')?.checked) {
+                        // Process news scores if not already done
+                        let initialProcessedNews = null;
+                        if (data.usingGranularData && sentimentDataset && sentimentDataset.length > 0) {
+                            const latestMinutePoints = [...sentimentDataset]
+                                .filter(p => p.news != null && !isNaN(p.news))
+                                .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+                                .slice(-100);
+                            if (latestMinutePoints.length > 0) {
+                                processNewsScoresWithHoldDecay(latestMinutePoints);
+                                const latestPoint = latestMinutePoints[latestMinutePoints.length - 1];
+                                if (latestPoint.processedNews != null && !isNaN(latestPoint.processedNews)) {
+                                    initialProcessedNews = latestPoint.processedNews;
+                                }
+                            }
+                        }
+                        processNewsScoresWithHoldDecay(data.dataPoints, initialProcessedNews);
+                    }
+                    
+                    // Calculate newsCompositeValue = sentiment + (processedNews * 70)
+                    data.dataPoints.forEach(point => {
+                        const sentimentValue = point.sentiment != null ? point.sentiment : 0;
+                        const processedNewsValue = point.processedNews != null ? point.processedNews : 0;
+                        point.newsCompositeValue = sentimentValue + (processedNewsValue * 70);
+                    });
+                }
+
+                // News + Price mode: Calculate price + (processedNews * 70)
+                const newsPriceModeActive = document.getElementById('scale-news-price')?.checked || false;
+                if (newsPriceModeActive && data.dataPoints && data.dataPoints.length > 0) {
+                    console.log('📰 News + Price mode active - calculating price + (news tracking × 70)');
+                    // Ensure processedNews is calculated first
+                    if (!document.getElementById('scale-news')?.checked && !newsCompositeModeActive) {
+                        // Process news scores if not already done
+                        let initialProcessedNews = null;
+                        if (data.usingGranularData && sentimentDataset && sentimentDataset.length > 0) {
+                            const latestMinutePoints = [...sentimentDataset]
+                                .filter(p => p.news != null && !isNaN(p.news))
+                                .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+                                .slice(-100);
+                            if (latestMinutePoints.length > 0) {
+                                processNewsScoresWithHoldDecay(latestMinutePoints);
+                                const latestPoint = latestMinutePoints[latestMinutePoints.length - 1];
+                                if (latestPoint.processedNews != null && !isNaN(latestPoint.processedNews)) {
+                                    initialProcessedNews = latestPoint.processedNews;
+                                }
+                            }
+                        }
+                        processNewsScoresWithHoldDecay(data.dataPoints, initialProcessedNews);
+                    }
+                    
+                    // Calculate newsPriceValue = price + (processedNews * 70)
+                    data.dataPoints.forEach(point => {
+                        const priceValue = point.price != null ? point.price : 0;
+                        const processedNewsValue = point.processedNews != null ? point.processedNews : 0;
+                        point.newsPriceValue = priceValue + (processedNewsValue * 70);
+                    });
+                }
+
                 // Store current data points for hover functionality
                 window.currentChartData = data.dataPoints;
                 window.currentFullTimeframeData = data.fullTimeframeData;
@@ -4847,6 +4952,8 @@
                     const signalModeActive = document.getElementById('scale-signal')?.checked || false;
                     const newsModeActive = document.getElementById('scale-news')?.checked || false;
                     const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
+                    const newsCompositeModeActive = document.getElementById('scale-news-composite')?.checked || false;
+                    const newsPriceModeActive = document.getElementById('scale-news-price')?.checked || false;
                     
                     if (signalModeActive && lastPoint.signalValue != null) {
                         // In signal mode, use signal value
@@ -4854,6 +4961,12 @@
                     } else if (weightedModeActive && lastPoint.weightedValue != null) {
                         // In weighted mode, use weighted average value
                         displayValue = lastPoint.weightedValue;
+                    } else if (newsCompositeModeActive && lastPoint.newsCompositeValue != null) {
+                        // In news + composite mode, use newsCompositeValue
+                        displayValue = lastPoint.newsCompositeValue;
+                    } else if (newsPriceModeActive && lastPoint.newsPriceValue != null) {
+                        // In news + price mode, use newsPriceValue
+                        displayValue = lastPoint.newsPriceValue;
                     } else if (newsModeActive) {
                         // In news mode, use processedNews if available, otherwise fallback to news
                         displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
@@ -5399,15 +5512,15 @@
                             };
                         } else {
                             // Normal signal (5-9.99) - require 2 signals
-                            activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
-                            if (activeSignal.oppositeCount >= 2) {
-                                // Flip to news up
-                                activeSignal = {
-                                    type: 'news_up',
-                                    value: 100,
-                                    expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
-                                    oppositeCount: 0
-                                };
+                        activeSignal.oppositeCount = (activeSignal.oppositeCount || 0) + 1;
+                        if (activeSignal.oppositeCount >= 2) {
+                            // Flip to news up
+                            activeSignal = {
+                                type: 'news_up',
+                                value: 100,
+                                expiresAt: new Date(current.timestamp.getTime() + 15 * 60 * 1000), // 15 minutes
+                                oppositeCount: 0
+                            };
                             }
                         }
                     } else if ((activeSignal.type === 'news_up' && newsUpDetected) || 
@@ -5616,6 +5729,42 @@
                 // Mode 1: Fixed -100 to +100 (also used for signal mode)
                 minValue = -100;
                 maxValue = 100;
+            } else if (scaleMode === 'news-composite') {
+                // News + Composite mode: Scale based on newsCompositeValue
+                const compositeValues = (scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints))
+                    .filter(p => p.newsCompositeValue != null && !isNaN(p.newsCompositeValue))
+                    .map(p => p.newsCompositeValue);
+                
+                if (compositeValues.length > 0) {
+                    minValue = Math.min(...compositeValues);
+                    maxValue = Math.max(...compositeValues);
+                    // Add 10% padding
+                    const range = maxValue - minValue;
+                    const padding = range * 0.1 || 10;
+                    minValue -= padding;
+                    maxValue += padding;
+                } else {
+                    minValue = -100;
+                    maxValue = 100;
+                }
+            } else if (scaleMode === 'news-price') {
+                // News + Price mode: Scale based on newsPriceValue
+                const priceValues = (scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints))
+                    .filter(p => p.newsPriceValue != null && !isNaN(p.newsPriceValue))
+                    .map(p => p.newsPriceValue);
+                
+                if (priceValues.length > 0) {
+                    minValue = Math.min(...priceValues);
+                    maxValue = Math.max(...priceValues);
+                    // Add 10% padding
+                    const range = maxValue - minValue;
+                    const padding = range * 0.1 || 10;
+                    minValue -= padding;
+                    maxValue += padding;
+                } else {
+                    minValue = -100;
+                    maxValue = 100;
+                }
             } else if (scaleMode === 'news') {
                 // News mode: Scale based on BOTH news values AND processedNews (tracking line) values
                 // But clamp visual scale to [-100, 100]
@@ -5731,10 +5880,12 @@
                 return Math.max(5, Math.min(95, y));
             };
 
-            // Check if signal mode, news mode, or weighted mode is active
+            // Check if signal mode, news mode, weighted mode, or new composite/price modes are active
             const signalModeActive = document.getElementById('scale-signal')?.checked || false;
             const newsModeActive = document.getElementById('scale-news')?.checked || false;
             const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
+            const newsCompositeModeActive = document.getElementById('scale-news-composite')?.checked || false;
+            const newsPriceModeActive = document.getElementById('scale-news-price')?.checked || false;
 
             // Define which drivers to plot and their colors
             // Only include drivers that have historical data from the API
@@ -5821,7 +5972,139 @@
                 // Skip the normal driver loop for news mode since we handled it above
                 return;
             }
-            
+
+            // News + Composite mode: Draw composite + (processedNews * 70) line
+            if (newsCompositeModeActive) {
+                console.log(`📊 News + Composite mode: minValue=${minValue.toFixed(2)}, maxValue=${maxValue.toFixed(2)}`);
+                
+                const sortedDataPoints = [...dataPoints].sort((a, b) => (a.x || 0) - (b.x || 0));
+                const compositePoints = sortedDataPoints.filter(p => {
+                    const value = p.newsCompositeValue != null ? p.newsCompositeValue : null;
+                    return value != null && !isNaN(value) && p.x != null;
+                });
+                
+                if (compositePoints.length > 0) {
+                    const getCompositeValue = (point) => point.newsCompositeValue != null ? point.newsCompositeValue : 0;
+                    let pathD = `M ${compositePoints[0].x},${valueToY(getCompositeValue(compositePoints[0]))}`;
+                    
+                    for (let i = 1; i < compositePoints.length; i++) {
+                        const x = compositePoints[i].x;
+                        const y = valueToY(getCompositeValue(compositePoints[i]));
+                        const prevX = compositePoints[i - 1].x;
+                        const prevY = valueToY(getCompositeValue(compositePoints[i - 1]));
+                        
+                        if (i === 1 && compositePoints.length === 2) {
+                            pathD += ` L ${x},${y}`;
+                        } else {
+                            const dx = x - prevX;
+                            const dy = y - prevY;
+                            const cp1X = prevX + dx * 0.5;
+                            const cp1Y = prevY + dy * 0.15;
+                            const cp2X = x - dx * 0.5;
+                            const cp2Y = y - dy * 0.15;
+                            pathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
+                        }
+                    }
+                    
+                    const compositePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    compositePath.setAttribute('d', pathD);
+                    compositePath.setAttribute('fill', 'none');
+                    compositePath.setAttribute('stroke', '#ff8c42'); // Orange
+                    compositePath.setAttribute('stroke-width', '0.5');
+                    compositePath.setAttribute('stroke-linecap', 'round');
+                    compositePath.setAttribute('stroke-linejoin', 'round');
+                    compositePath.setAttribute('opacity', '0.9');
+                    compositePath.classList.add('oscillator-line-news-composite');
+                    svg.appendChild(compositePath);
+                    console.log(`✅ Drew news + composite line with ${compositePoints.length} points`);
+                }
+                
+                // Draw zero line
+                const zeroY = valueToY(0);
+                if (zeroY >= 0 && zeroY <= 100) {
+                    const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    centerLine.setAttribute('x1', '2');
+                    centerLine.setAttribute('y1', zeroY.toString());
+                    centerLine.setAttribute('x2', '98');
+                    centerLine.setAttribute('y2', zeroY.toString());
+                    centerLine.setAttribute('stroke', '#888888');
+                    centerLine.setAttribute('stroke-width', '1.5');
+                    centerLine.setAttribute('stroke-dasharray', '2,2');
+                    centerLine.setAttribute('opacity', '0.8');
+                    centerLine.setAttribute('stroke-linecap', 'round');
+                    svg.appendChild(centerLine);
+                }
+                
+                oscillatorDiv.appendChild(svg);
+                return;
+            }
+
+            // News + Price mode: Draw price + (processedNews * 70) line
+            if (newsPriceModeActive) {
+                console.log(`📊 News + Price mode: minValue=${minValue.toFixed(2)}, maxValue=${maxValue.toFixed(2)}`);
+                
+                const sortedDataPoints = [...dataPoints].sort((a, b) => (a.x || 0) - (b.x || 0));
+                const pricePoints = sortedDataPoints.filter(p => {
+                    const value = p.newsPriceValue != null ? p.newsPriceValue : null;
+                    return value != null && !isNaN(value) && p.x != null;
+                });
+                
+                if (pricePoints.length > 0) {
+                    const getPriceValue = (point) => point.newsPriceValue != null ? point.newsPriceValue : 0;
+                    let pathD = `M ${pricePoints[0].x},${valueToY(getPriceValue(pricePoints[0]))}`;
+                    
+                    for (let i = 1; i < pricePoints.length; i++) {
+                        const x = pricePoints[i].x;
+                        const y = valueToY(getPriceValue(pricePoints[i]));
+                        const prevX = pricePoints[i - 1].x;
+                        const prevY = valueToY(getPriceValue(pricePoints[i - 1]));
+                        
+                        if (i === 1 && pricePoints.length === 2) {
+                            pathD += ` L ${x},${y}`;
+                        } else {
+                            const dx = x - prevX;
+                            const dy = y - prevY;
+                            const cp1X = prevX + dx * 0.5;
+                            const cp1Y = prevY + dy * 0.15;
+                            const cp2X = x - dx * 0.5;
+                            const cp2Y = y - dy * 0.15;
+                            pathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
+                        }
+                    }
+                    
+                    const pricePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    pricePath.setAttribute('d', pathD);
+                    pricePath.setAttribute('fill', 'none');
+                    pricePath.setAttribute('stroke', '#10b981'); // Green
+                    pricePath.setAttribute('stroke-width', '0.5');
+                    pricePath.setAttribute('stroke-linecap', 'round');
+                    pricePath.setAttribute('stroke-linejoin', 'round');
+                    pricePath.setAttribute('opacity', '0.9');
+                    pricePath.classList.add('oscillator-line-news-price');
+                    svg.appendChild(pricePath);
+                    console.log(`✅ Drew news + price line with ${pricePoints.length} points`);
+                }
+                
+                // Draw zero line
+                const zeroY = valueToY(0);
+                if (zeroY >= 0 && zeroY <= 100) {
+                    const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    centerLine.setAttribute('x1', '2');
+                    centerLine.setAttribute('y1', zeroY.toString());
+                    centerLine.setAttribute('x2', '98');
+                    centerLine.setAttribute('y2', zeroY.toString());
+                    centerLine.setAttribute('stroke', '#888888');
+                    centerLine.setAttribute('stroke-width', '1.5');
+                    centerLine.setAttribute('stroke-dasharray', '2,2');
+                    centerLine.setAttribute('opacity', '0.8');
+                    centerLine.setAttribute('stroke-linecap', 'round');
+                    svg.appendChild(centerLine);
+                }
+                
+                oscillatorDiv.appendChild(svg);
+                return;
+            }
+
             // Draw each enabled driver
             driverConfig.forEach(driver => {
                 // In signal mode, only show sentiment line (with signal values)
@@ -6279,7 +6562,7 @@
                     }
                 });
 
-                // Add event listeners to scale mode radio buttons (all 5 buttons are now mutually exclusive)
+                // Add event listeners to scale mode radio buttons (all 7 buttons are now mutually exclusive)
                 const scaleRadios = document.querySelectorAll('input[name="oscillator-scale"]');
                 scaleRadios.forEach(radio => {
                     radio.addEventListener('change', async () => {
@@ -6353,9 +6636,64 @@
 
                         // News mode: Process news scores with hold/decay logic
                         const newsModeActive = radio.value === 'news';
+                        const newsCompositeModeActive = radio.value === 'news-composite';
+                        const newsPriceModeActive = radio.value === 'news-price';
+                        
                         if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
                             console.log('📰 News mode activated - processing news scores with hold/decay');
                             processNewsScoresWithHoldDecay(window.currentChartData);
+                        } else if (newsCompositeModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                            console.log('📰 News + Composite mode activated');
+                            // Ensure processedNews is calculated
+                            if (!document.getElementById('scale-news')?.checked) {
+                                let initialProcessedNews = null;
+                                if (window.currentChartData[0] && sentimentDataset && sentimentDataset.length > 0) {
+                                    const latestMinutePoints = [...sentimentDataset]
+                                        .filter(p => p.news != null && !isNaN(p.news))
+                                        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+                                        .slice(-100);
+                                    if (latestMinutePoints.length > 0) {
+                                        processNewsScoresWithHoldDecay(latestMinutePoints);
+                                        const latestPoint = latestMinutePoints[latestMinutePoints.length - 1];
+                                        if (latestPoint.processedNews != null && !isNaN(latestPoint.processedNews)) {
+                                            initialProcessedNews = latestPoint.processedNews;
+                                        }
+                                    }
+                                }
+                                processNewsScoresWithHoldDecay(window.currentChartData, initialProcessedNews);
+                            }
+                            // Calculate newsCompositeValue
+                            window.currentChartData.forEach(point => {
+                                const sentimentValue = point.sentiment != null ? point.sentiment : 0;
+                                const processedNewsValue = point.processedNews != null ? point.processedNews : 0;
+                                point.newsCompositeValue = sentimentValue + (processedNewsValue * 70);
+                            });
+                        } else if (newsPriceModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                            console.log('📰 News + Price mode activated');
+                            // Ensure processedNews is calculated
+                            if (!document.getElementById('scale-news')?.checked && !newsCompositeModeActive) {
+                                let initialProcessedNews = null;
+                                if (window.currentChartData[0] && sentimentDataset && sentimentDataset.length > 0) {
+                                    const latestMinutePoints = [...sentimentDataset]
+                                        .filter(p => p.news != null && !isNaN(p.news))
+                                        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+                                        .slice(-100);
+                                    if (latestMinutePoints.length > 0) {
+                                        processNewsScoresWithHoldDecay(latestMinutePoints);
+                                        const latestPoint = latestMinutePoints[latestMinutePoints.length - 1];
+                                        if (latestPoint.processedNews != null && !isNaN(latestPoint.processedNews)) {
+                                            initialProcessedNews = latestPoint.processedNews;
+                                        }
+                                    }
+                                }
+                                processNewsScoresWithHoldDecay(window.currentChartData, initialProcessedNews);
+                            }
+                            // Calculate newsPriceValue
+                            window.currentChartData.forEach(point => {
+                                const priceValue = point.price != null ? point.price : 0;
+                                const processedNewsValue = point.processedNews != null ? point.processedNews : 0;
+                                point.newsPriceValue = priceValue + (processedNewsValue * 70);
+                            });
                         }
 
                         // Signal values are already attached in updateChart(), so no need to attach here
@@ -6377,6 +6715,12 @@
                             } else if (weightedModeActive && lastPoint.weightedValue != null) {
                                 // In weighted mode, use weighted average value
                                 displayValue = lastPoint.weightedValue;
+                            } else if (newsCompositeModeActive && lastPoint.newsCompositeValue != null) {
+                                // In news + composite mode, use newsCompositeValue
+                                displayValue = lastPoint.newsCompositeValue;
+                            } else if (newsPriceModeActive && lastPoint.newsPriceValue != null) {
+                                // In news + price mode, use newsPriceValue
+                                displayValue = lastPoint.newsPriceValue;
                             } else if (newsModeActive) {
                                 // In news mode, use processedNews if available, otherwise fallback to news
                                 displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
@@ -6578,6 +6922,8 @@
             const processedNews = closestPoint.processedNews != null ? closestPoint.processedNews : null;
             const indicators = closestPoint.indicators != null ? closestPoint.indicators : null;
             const weightedValue = closestPoint.weightedValue != null ? closestPoint.weightedValue : null;
+            const newsCompositeValue = closestPoint.newsCompositeValue != null ? closestPoint.newsCompositeValue : null;
+            const newsPriceValue = closestPoint.newsPriceValue != null ? closestPoint.newsPriceValue : null;
 
             // Use the closest data point's time
             const time = closestPoint.timeLabel || closestPoint.timestamp?.toLocaleTimeString('en-US', {
@@ -6595,6 +6941,8 @@
                 processedNews: processedNews,
                 indicators: indicators,
                 weightedValue: weightedValue,
+                newsCompositeValue: newsCompositeValue,
+                newsPriceValue: newsPriceValue,
                 time: time, 
                 timestamp: closestPoint.timestamp 
             };
@@ -6716,10 +7064,12 @@
                 oscillatorTooltip.style.display = 'block';
                 mainTooltip.style.display = 'none';
 
-                // Check if signal mode, news mode, or weighted mode is active (radio buttons)
+                // Check if signal mode, news mode, weighted mode, or new composite/price modes are active (radio buttons)
                 const signalModeActive = document.getElementById('scale-signal')?.checked || false;
                 const newsModeActive = document.getElementById('scale-news')?.checked || false;
                 const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
+                const newsCompositeModeActive = document.getElementById('scale-news-composite')?.checked || false;
+                const newsPriceModeActive = document.getElementById('scale-news-price')?.checked || false;
                 
                 // Check which eye icon is active (for driver toggles)
                 const newsEyeActive = document.getElementById('eye-news')?.classList.contains('active') || false;
@@ -6739,6 +7089,14 @@
                     displayValue = result.weightedValue; // Use weighted average value
                     tooltipLabel = 'Weighted Score';
                     tooltipColor = '#ff8c42'; // Orange for weighted
+                } else if (newsCompositeModeActive && result.newsCompositeValue != null) {
+                    displayValue = result.newsCompositeValue; // Use news + composite value
+                    tooltipLabel = 'News + Composite';
+                    tooltipColor = '#ff8c42'; // Orange
+                } else if (newsPriceModeActive && result.newsPriceValue != null) {
+                    displayValue = result.newsPriceValue; // Use news + price value
+                    tooltipLabel = 'News + Price';
+                    tooltipColor = '#10b981'; // Green
                 } else if (newsModeActive || newsEyeActive) {
                     // Use processedNews if available, otherwise fallback to news
                     displayValue = result.processedNews != null ? result.processedNews : (result.news != null ? result.news : 0);
