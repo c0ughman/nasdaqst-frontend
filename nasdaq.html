@@ -5722,13 +5722,34 @@
             // Determine scale mode
             const scaleMode = document.querySelector('input[name="oscillator-scale"]:checked')?.value || 'visible';
 
-            // Calculate min/max range based on scale mode
+            // Calculate min/max range based on scale mode - use actual data min/max for all modes
             let minValue, maxValue;
 
-            if (scaleMode === 'fixed' || scaleMode === 'signal' || scaleMode === 'weighted') {
-                // Mode 1: Fixed -100 to +100 (also used for signal mode)
-                minValue = -100;
-                maxValue = 100;
+            if (scaleMode === 'fixed' || scaleMode === 'signal') {
+                // Fixed/Signal mode: Collect all relevant values from the dataset
+                const allValues = [];
+                const datasetToUse = scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints);
+                
+                datasetToUse.forEach(point => {
+                    // Collect sentiment, news, indicators, and signal values
+                    if (point.sentiment != null && !isNaN(point.sentiment)) allValues.push(point.sentiment);
+                    if (point.news != null && !isNaN(point.news)) allValues.push(point.news);
+                    if (point.indicators != null && !isNaN(point.indicators)) allValues.push(point.indicators);
+                    if (point.signal != null && !isNaN(point.signal)) allValues.push(point.signal);
+                });
+                
+                if (allValues.length > 0) {
+                    minValue = Math.min(...allValues);
+                    maxValue = Math.max(...allValues);
+                    // Add 10% padding
+                    const range = maxValue - minValue;
+                    const padding = range * 0.1 || 10;
+                    minValue -= padding;
+                    maxValue += padding;
+                } else {
+                    minValue = -100;
+                    maxValue = 100;
+                }
             } else if (scaleMode === 'news-composite') {
                 // News + Composite mode: Scale based on newsCompositeValue
                 const compositeValues = (scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints))
@@ -5767,32 +5788,29 @@
                 }
             } else if (scaleMode === 'news') {
                 // News mode: Scale based on BOTH news values AND processedNews (tracking line) values
-                // But clamp visual scale to [-100, 100]
+                // Use actual values without clamping
                 const allNewsValues = [];
                 const datasetToUse = scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints);
                 
                 datasetToUse.forEach(p => {
-                    // Include original news values (clamped)
+                    // Include original news values (use actual values, not clamped)
                     if (p.news != null && !isNaN(p.news)) {
-                        allNewsValues.push(Math.min(100, Math.max(-100, p.news)));
+                        allNewsValues.push(p.news);
                     }
-                    // Include processedNews (tracking line) values (already clamped in processing)
+                    // Include processedNews (tracking line) values (use actual values)
                     if (p.processedNews != null && !isNaN(p.processedNews)) {
-                        allNewsValues.push(Math.min(100, Math.max(-100, p.processedNews)));
+                        allNewsValues.push(p.processedNews);
                     }
                 });
                 
                 if (allNewsValues.length > 0) {
                     minValue = Math.min(...allNewsValues);
                     maxValue = Math.max(...allNewsValues);
-                    // Clamp to [-100, 100] range
-                    minValue = Math.max(-100, minValue);
-                    maxValue = Math.min(100, maxValue);
-                    // Add 10% padding to ensure both lines are fully visible, but stay within bounds
+                    // Add 10% padding to ensure both lines are fully visible
                     const range = maxValue - minValue;
                     const padding = range * 0.1 || 10;
-                    minValue = Math.max(-100, minValue - padding);
-                    maxValue = Math.min(100, maxValue + padding);
+                    minValue -= padding;
+                    maxValue += padding;
                 } else {
                     minValue = -100;
                     maxValue = 100;
@@ -5806,6 +5824,11 @@
                 if (weightedValues.length > 0) {
                     minValue = Math.min(...weightedValues);
                     maxValue = Math.max(...weightedValues);
+                    // Add 10% padding
+                    const range = maxValue - minValue;
+                    const padding = range * 0.1 || 10;
+                    minValue -= padding;
+                    maxValue += padding;
                 } else {
                     minValue = -100;
                     maxValue = 100;
@@ -5834,6 +5857,11 @@
                 if (allValues.length > 0) {
                     minValue = Math.min(...allValues);
                     maxValue = Math.max(...allValues);
+                    // Add 10% padding
+                    const range = maxValue - minValue;
+                    const padding = range * 0.1 || 10;
+                    minValue -= padding;
+                    maxValue += padding;
                 } else {
                     // Fallback to fixed scale
                     minValue = -100;
