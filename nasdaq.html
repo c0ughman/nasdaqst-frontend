@@ -2364,7 +2364,7 @@
                                 <div style="display: flex; flex-direction: row; gap: 3px; align-items: center;">
                                     <!-- News + Composite Mode Toggle -->
                                     <input type="radio" id="scale-news-composite" name="oscillator-scale" value="news-composite" style="display: none;">
-                                    <label for="scale-news-composite" id="news-composite-mode-toggle" title="News + Composite Mode - Composite score + (news tracking score × 70)" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                    <label for="scale-news-composite" id="news-composite-mode-toggle" title="News + Composite Mode - Composite score + (news tracking score × 0.7)" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
                                         <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
                                             <path d="M3 8 L6 5 L9 8 L13 4" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                             <path d="M2 8 L6 4 L10 8 L14 4" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.6"/>
@@ -2373,7 +2373,7 @@
 
                                     <!-- News + Price Mode Toggle -->
                                     <input type="radio" id="scale-news-price" name="oscillator-scale" value="news-price" style="display: none;">
-                                    <label for="scale-news-price" id="news-price-mode-toggle" title="News + Price Mode - Stock price + (news tracking score × 70)" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
+                                    <label for="scale-news-price" id="news-price-mode-toggle" title="News + Price Mode - Stock price + (news tracking score × 0.7)" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 2px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; cursor: pointer; color: #888; transition: all 0.2s ease;">
                                         <svg width="9" height="9" viewBox="0 0 16 16" fill="none">
                                             <path d="M3 8 L6 5 L9 8 L13 4" stroke="currentColor" stroke-width="1.5" fill="none"/>
                                             <path d="M2 12 L8 4 L14 12" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.6"/>
@@ -4870,10 +4870,10 @@
                     processNewsScoresWithHoldDecay(data.dataPoints, initialProcessedNews);
                 }
 
-                // News + Composite mode: Calculate composite + (processedNews * 70)
+                // News + Composite mode: Calculate composite + (processedNews * 0.7)
                 const newsCompositeModeActive = document.getElementById('scale-news-composite')?.checked || false;
                 if (newsCompositeModeActive && data.dataPoints && data.dataPoints.length > 0) {
-                    console.log('📰 News + Composite mode active - calculating composite + (news tracking × 70)');
+                    console.log('📰 News + Composite mode active - calculating composite + (news tracking × 0.7)');
                     // Ensure processedNews is calculated first
                     if (!document.getElementById('scale-news')?.checked) {
                         // Process news scores if not already done
@@ -4894,18 +4894,18 @@
                         processNewsScoresWithHoldDecay(data.dataPoints, initialProcessedNews);
                     }
                     
-                    // Calculate newsCompositeValue = sentiment + (processedNews * 70)
+                    // Calculate newsCompositeValue = sentiment + (processedNews * 0.7)
                     data.dataPoints.forEach(point => {
                         const sentimentValue = point.sentiment != null ? point.sentiment : 0;
                         const processedNewsValue = point.processedNews != null ? point.processedNews : 0;
-                        point.newsCompositeValue = sentimentValue + (processedNewsValue * 70);
+                        point.newsCompositeValue = sentimentValue + (processedNewsValue * 0.7);
                     });
                 }
 
-                // News + Price mode: Calculate price + (processedNews * 70)
+                // News + Price mode: Calculate price + (processedNews * 0.7)
                 const newsPriceModeActive = document.getElementById('scale-news-price')?.checked || false;
                 if (newsPriceModeActive && data.dataPoints && data.dataPoints.length > 0) {
-                    console.log('📰 News + Price mode active - calculating price + (news tracking × 70)');
+                    console.log('📰 News + Price mode active - calculating price + (news tracking × 0.7)');
                     // Ensure processedNews is calculated first
                     if (!document.getElementById('scale-news')?.checked && !newsCompositeModeActive) {
                         // Process news scores if not already done
@@ -4926,11 +4926,11 @@
                         processNewsScoresWithHoldDecay(data.dataPoints, initialProcessedNews);
                     }
                     
-                    // Calculate newsPriceValue = price + (processedNews * 70)
+                    // Calculate newsPriceValue = price + (processedNews * 0.7)
                     data.dataPoints.forEach(point => {
                         const priceValue = point.price != null ? point.price : 0;
                         const processedNewsValue = point.processedNews != null ? point.processedNews : 0;
-                        point.newsPriceValue = priceValue + (processedNewsValue * 70);
+                        point.newsPriceValue = priceValue + (processedNewsValue * 0.7);
                     });
                 }
 
@@ -5973,7 +5973,7 @@
                 return;
             }
 
-            // News + Composite mode: Draw composite + (processedNews * 70) line
+            // News + Composite mode: Draw composite + (processedNews * 0.7) line
             if (newsCompositeModeActive) {
                 console.log(`📊 News + Composite mode: minValue=${minValue.toFixed(2)}, maxValue=${maxValue.toFixed(2)}`);
                 
@@ -6039,7 +6039,7 @@
                 return;
             }
 
-            // News + Price mode: Draw price + (processedNews * 70) line
+            // News + Price mode: Draw price + (processedNews * 0.7) line
             if (newsPriceModeActive) {
                 console.log(`📊 News + Price mode: minValue=${minValue.toFixed(2)}, maxValue=${maxValue.toFixed(2)}`);
                 
@@ -6666,7 +6666,7 @@
                             window.currentChartData.forEach(point => {
                                 const sentimentValue = point.sentiment != null ? point.sentiment : 0;
                                 const processedNewsValue = point.processedNews != null ? point.processedNews : 0;
-                                point.newsCompositeValue = sentimentValue + (processedNewsValue * 70);
+                                point.newsCompositeValue = sentimentValue + (processedNewsValue * 0.7);
                             });
                         } else if (newsPriceModeActive && window.currentChartData && window.currentChartData.length > 0) {
                             console.log('📰 News + Price mode activated');
@@ -6692,7 +6692,7 @@
                             window.currentChartData.forEach(point => {
                                 const priceValue = point.price != null ? point.price : 0;
                                 const processedNewsValue = point.processedNews != null ? point.processedNews : 0;
-                                point.newsPriceValue = priceValue + (processedNewsValue * 70);
+                                point.newsPriceValue = priceValue + (processedNewsValue * 0.7);
                             });
                         }
 
