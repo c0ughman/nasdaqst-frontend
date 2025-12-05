@@ -1178,6 +1178,15 @@
             stroke: #3b82f6;
         }
 
+        .info-icon {
+            stroke: #888;
+            transition: stroke 0.2s ease;
+        }
+
+        #eye-summary.active .info-icon {
+            stroke: #ff8c42;
+        }
+
         /* Oscillator Scale Selector in Score Panel */
         .oscillator-scale-selector-container {
             display: none;
@@ -2011,6 +2020,25 @@
                         <div class="driver-item">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
+                                    <button type="button" class="eye-icon-btn driver-eye" data-line="summary" id="eye-summary" title="Toggle composite score line">
+                                        <svg class="info-icon" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                        </svg>
+                                    </button>
+                                    <span class="driver-name">Summary</span>
+                                </div>
+                                <span class="driver-value positive">+0.0</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill positive" style="width: 50%"></div>
+                            </div>
+                        </div>
+
+                        <div class="driver-item">
+                            <div class="driver-header">
+                                <div style="display: flex; align-items: center; gap: 8px;">
                                     <button type="button" class="eye-icon-btn driver-eye" data-line="news" id="eye-news" title="Toggle news sentiment line">
                                         <svg class="eye-icon eye-closed" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
@@ -2030,29 +2058,8 @@
                             </div>
                         </div>
 
-                        <div class="driver-item">
-                            <div class="driver-header">
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <button type="button" class="eye-icon-btn driver-eye" data-line="summary" id="eye-summary" title="Toggle composite score line">
-                                        <svg class="eye-icon eye-closed" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                                            <line x1="1" y1="1" x2="23" y2="23"></line>
-                                        </svg>
-                                        <svg class="eye-icon eye-open" width="12.8" height="12.8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                    </button>
-                                    <span class="driver-name">Summary</span>
-                                </div>
-                                <span class="driver-value positive">+0.0</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill positive" style="width: 50%"></div>
-                            </div>
-                        </div>
-
-                        <div class="driver-item">
+                        <!-- Other drivers hidden - only showing Summary and News -->
+                        <div class="driver-item" style="display: none;">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <input type="checkbox" class="driver-checkbox" data-driver="social" id="checkbox-social">
@@ -2065,7 +2072,7 @@
                             </div>
                         </div>
 
-                        <div class="driver-item">
+                        <div class="driver-item" style="display: none;">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <button type="button" class="eye-icon-btn driver-eye" data-line="indicators" id="eye-indicators" title="Toggle technical indicators line">
@@ -2088,7 +2095,7 @@
                         </div>
 
                         <!-- New Driver 1 -->
-                        <div class="driver-item">
+                        <div class="driver-item" style="display: none;">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <input type="checkbox" class="driver-checkbox" data-driver="recommendations" id="checkbox-recommendations">
@@ -2102,7 +2109,7 @@
                         </div>
 
                         <!-- VIX Driver -->
-                        <div class="driver-item">
+                        <div class="driver-item" style="display: none;">
                             <div class="driver-header">
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <input type="checkbox" class="driver-checkbox" data-driver="vix" id="checkbox-vix">
@@ -3568,14 +3575,8 @@
             // Get composite score from current data
             const compositeScore = window.currentCompositeScore || (window.currentChartData && window.currentChartData.length > 0 ? window.currentChartData[window.currentChartData.length - 1].sentiment : 0) || 0;
 
-            // Update the drivers with real data from API
+            // Update only Summary (first) and News (second) drivers
             const driverData = [
-                {
-                    name: t('dashboard.driver.news'),
-                    translationKey: 'dashboard.driver.news',
-                    value: drivers.news_sentiment?.score || 0,
-                    weight: drivers.news_sentiment?.weight || 40
-                },
                 {
                     name: 'Summary',
                     translationKey: null,
@@ -3583,34 +3584,16 @@
                     weight: 0
                 },
                 {
-                    name: t('dashboard.driver.social'),
-                    translationKey: 'dashboard.driver.social',
-                    value: drivers.social_media?.score || 0,
-                    weight: drivers.social_media?.weight || 30
-                },
-                {
-                    name: t('dashboard.driver.indicators'),
-                    translationKey: 'dashboard.driver.indicators',
-                    value: drivers.technical_indicators?.score || 0,
-                    weight: drivers.technical_indicators?.weight || 30
-                },
-                {
-                    name: t('dashboard.driver.recommendations'),
-                    translationKey: 'dashboard.driver.recommendations',
-                    value: drivers.analyst_recommendations?.score || 0,
-                    weight: drivers.analyst_recommendations?.weight || 0
-                },
-                {
-                    name: t('dashboard.driver.vix'),
-                    translationKey: 'dashboard.driver.vix',
-                    value: vixScore,
-                    weight: 0,
-                    rawValue: vxnIndex // Store raw VXN value for display
+                    name: t('dashboard.driver.news'),
+                    translationKey: 'dashboard.driver.news',
+                    value: drivers.news_sentiment?.score || 0,
+                    weight: drivers.news_sentiment?.weight || 40
                 }
             ];
 
+            // Only update the first two driver items (Summary and News)
             driverData.forEach((driver, index) => {
-                if (driverItems[index]) {
+                if (driverItems[index] && index < 2) {
                     const driverItem = driverItems[index];
                     const nameElement = driverItem.querySelector('.driver-name');
                     const valueElement = driverItem.querySelector('.driver-value');
