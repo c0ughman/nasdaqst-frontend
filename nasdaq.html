@@ -5749,30 +5749,9 @@
             let minValue, maxValue;
 
             if (scaleMode === 'fixed' || scaleMode === 'signal') {
-                // Fixed/Signal mode: Collect all relevant values from the dataset
-                const allValues = [];
-                const datasetToUse = scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints);
-                
-                datasetToUse.forEach(point => {
-                    // Collect sentiment, news, indicators, and signal values
-                    if (point.sentiment != null && !isNaN(point.sentiment)) allValues.push(point.sentiment);
-                    if (point.news != null && !isNaN(point.news)) allValues.push(point.news);
-                    if (point.indicators != null && !isNaN(point.indicators)) allValues.push(point.indicators);
-                    if (point.signal != null && !isNaN(point.signal)) allValues.push(point.signal);
-                });
-                
-                if (allValues.length > 0) {
-                    minValue = Math.min(...allValues);
-                    maxValue = Math.max(...allValues);
-                    // Add 10% padding
-                    const range = maxValue - minValue;
-                    const padding = range * 0.1 || 10;
-                    minValue -= padding;
-                    maxValue += padding;
-                } else {
-                    minValue = -100;
-                    maxValue = 100;
-                }
+                // Fixed/Signal mode: Always use -100 to +100 range (fixed scale)
+                minValue = -100;
+                maxValue = 100;
             } else if (scaleMode === 'news-composite') {
                 // News + Composite mode: Scale based on newsCompositeValue
                 const compositeValues = (scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints))
@@ -5810,19 +5789,15 @@
                     maxValue = 100;
                 }
             } else if (scaleMode === 'news') {
-                // News mode: Scale based on BOTH news values AND processedNews (tracking line) values
+                // News mode: Scale based on raw news values from backend only
                 // Use actual values without clamping
                 const allNewsValues = [];
                 const datasetToUse = scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints);
                 
                 datasetToUse.forEach(p => {
-                    // Include original news values (use actual values, not clamped)
+                    // Include only raw news values from backend (not processedNews)
                     if (p.news != null && !isNaN(p.news)) {
                         allNewsValues.push(p.news);
-                    }
-                    // Include processedNews (tracking line) values (use actual values)
-                    if (p.processedNews != null && !isNaN(p.processedNews)) {
-                        allNewsValues.push(p.processedNews);
                     }
                 });
                 
@@ -5898,7 +5873,8 @@
                 // Display: max at top, min at bottom (no zero label)
                 const formatValue = (val) => {
                     if (val === 0) return '0';
-                    return val > 0 ? `+${val.toFixed(0)}` : val.toFixed(0);
+                    const rounded = Math.round(val);
+                    return rounded > 0 ? `+${rounded}` : `${rounded}`;
                 };
 
                 yAxisDiv.innerHTML = `
