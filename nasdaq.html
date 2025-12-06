@@ -4749,20 +4749,20 @@
 
                                 console.log(`   📉 Technical DROP detected at ${new Date(pointTime).toISOString()}: ${technicalChange.toFixed(2)} (count: ${technicalDropCount})`);
 
-                                // Check if we have 2 drops
-                                if (technicalDropCount >= 2) {
+                                // Apply penalty on FIRST drop (not second)
+                                if (technicalDropCount >= 1) {
                                     technicalPenaltiesApplied++;
                                     technicalDropCount = 0; // Reset counter
 
                                     // Start a new ramp for this technical penalty
                                     activeRamp = {
                                         startIndex: i,
-                                        targetChange: -25,
+                                        targetChange: -50,
                                         baseValue: currentValue
                                     };
 
                                     // Apply first candle of ramp immediately (50%)
-                                    const firstRampValue = calculateRampValue(0, -25);
+                                    const firstRampValue = calculateRampValue(0, -50);
                                     currentValue = clampValue(currentValue + firstRampValue);
 
                                     // Stop any active decay - return to indefinite hold
@@ -4772,7 +4772,7 @@
                                     // DON'T reset candle counters - candle counting is independent
                                     // Candles track price action to detect when signal is ending
 
-                                    console.log(`   ⚠️ Technical penalty #${technicalPenaltiesApplied} applied: -25 ramping over ${RAMP_CANDLES} candles, 1st=${firstRampValue.toFixed(2)} → value=${currentValue.toFixed(2)}`);
+                                    console.log(`   ⚠️ Technical penalty #${technicalPenaltiesApplied} applied: -50 ramping over ${RAMP_CANDLES} candles, 1st=${firstRampValue.toFixed(2)} → value=${currentValue.toFixed(2)}`);
                                 }
                             } else {
                                 // No drop, reset counter
