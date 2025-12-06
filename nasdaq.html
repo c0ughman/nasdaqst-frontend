@@ -6249,9 +6249,9 @@
                 const isExpanded = expandBtn?.dataset.candleDecayExpanded === 'true';
 
                 if (isExpanded) {
-                    // Expanded: Use min-max of candleDecayValue from full dataset
-                    const datasetToUse = fullTimeframeData || dataPoints;
-                    const candleValues = datasetToUse
+                    // Expanded: Use min-max of candleDecayValue from visible dataPoints
+                    // (candleDecayValue is copied from sentimentDataset to dataPoints)
+                    const candleValues = dataPoints
                         .filter(p => p.candleDecayValue != null && !isNaN(p.candleDecayValue))
                         .map(p => p.candleDecayValue);
 
@@ -7147,6 +7147,12 @@
                     toggleEyeIcon(indicatorsEyeBtn, false);
                 }
                 
+                // Initialize candle-decay expanded state (collapsed/fixed by default)
+                const expandBtn = document.getElementById('oscillator-expand-btn');
+                if (expandBtn && !expandBtn.dataset.candleDecayExpanded) {
+                    expandBtn.dataset.candleDecayExpanded = 'false';
+                }
+
                 // Initialize expand/collapse icon
                 updateExpandIcon();
 
