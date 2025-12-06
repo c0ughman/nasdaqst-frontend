@@ -4749,8 +4749,8 @@
 
                                 console.log(`   📉 Technical DROP detected at ${new Date(pointTime).toISOString()}: ${technicalChange.toFixed(2)} (count: ${technicalDropCount})`);
 
-                                // Apply penalty on FIRST drop (not second)
-                                if (technicalDropCount >= 1) {
+                                // Check if we have 2 drops
+                                if (technicalDropCount >= 2) {
                                     technicalPenaltiesApplied++;
                                     technicalDropCount = 0; // Reset counter
 
