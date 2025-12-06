@@ -883,7 +883,7 @@
             bottom: 0;
             width: 1px;
             background: transparent;
-            border-left: 2px dashed rgba(255, 140, 66, 0.5);
+            border-left: 1px dashed rgba(255, 140, 66, 0.5);
             pointer-events: none;
             display: none;
             z-index: 10;
@@ -1015,9 +1015,9 @@
             position: absolute;
             top: 0;
             bottom: 20px;
-            width: 2px;
+            width: 1px;
             background: none;
-            border-left: 2px dashed rgba(255, 193, 7, 0.4);
+            border-left: 1px dashed rgba(255, 193, 7, 0.4);
             pointer-events: none;
             z-index: 5;
         }
@@ -5486,7 +5486,7 @@
                 path.setAttribute('d', pathD);
                 path.setAttribute('fill', 'none');
                 path.setAttribute('stroke', '#ffffff');
-                path.setAttribute('stroke-width', '0.25');
+                path.setAttribute('stroke-width', '1');
                 path.setAttribute('stroke-linecap', 'round');
                 path.setAttribute('stroke-linejoin', 'round');
                 path.setAttribute('opacity', '0.9');
@@ -5617,7 +5617,7 @@
                 wick.setAttribute('x2', x);
                 wick.setAttribute('y2', lowY);
                 wick.setAttribute('stroke', candleColor);
-                wick.setAttribute('stroke-width', wickWidth);
+                wick.setAttribute('stroke-width', '1');
                 wick.setAttribute('opacity', '0.9');
                 dotsContainer.appendChild(wick);
 
@@ -6431,7 +6431,7 @@
                     trackingPath.setAttribute('d', pathD);
                     trackingPath.setAttribute('fill', 'none');
                     trackingPath.setAttribute('stroke', '#ec4899'); // Pink to match news color
-                    trackingPath.setAttribute('stroke-width', '0.5'); // Thinner line
+                    trackingPath.setAttribute('stroke-width', '1');
                     trackingPath.setAttribute('stroke-linecap', 'round');
                     trackingPath.setAttribute('stroke-linejoin', 'round');
                     trackingPath.setAttribute('opacity', '0.9'); // Full opacity
@@ -6449,7 +6449,7 @@
                     centerLine.setAttribute('x2', '98');
                     centerLine.setAttribute('y2', zeroY.toString());
                     centerLine.setAttribute('stroke', '#888888');
-                    centerLine.setAttribute('stroke-width', '1.5');
+                    centerLine.setAttribute('stroke-width', '1');
                     centerLine.setAttribute('stroke-dasharray', '2,2');
                     centerLine.setAttribute('opacity', '0.8');
                     centerLine.setAttribute('stroke-linecap', 'round');
@@ -6503,7 +6503,7 @@
                     candlePath.setAttribute('d', pathD);
                     candlePath.setAttribute('fill', 'none');
                     candlePath.setAttribute('stroke', '#a855f7'); // Purple
-                    candlePath.setAttribute('stroke-width', '0.5');
+                    candlePath.setAttribute('stroke-width', '1');
                     candlePath.setAttribute('stroke-linecap', 'round');
                     candlePath.setAttribute('stroke-linejoin', 'round');
                     candlePath.setAttribute('opacity', '0.9');
@@ -6521,7 +6521,7 @@
                     centerLine.setAttribute('x2', '98');
                     centerLine.setAttribute('y2', zeroY.toString());
                     centerLine.setAttribute('stroke', '#888888');
-                    centerLine.setAttribute('stroke-width', '1.5');
+                    centerLine.setAttribute('stroke-width', '1');
                     centerLine.setAttribute('stroke-dasharray', '2,2');
                     centerLine.setAttribute('opacity', '0.8');
                     centerLine.setAttribute('stroke-linecap', 'round');
@@ -6569,7 +6569,7 @@
                     compositePath.setAttribute('d', pathD);
                     compositePath.setAttribute('fill', 'none');
                     compositePath.setAttribute('stroke', '#ff8c42'); // Orange
-                    compositePath.setAttribute('stroke-width', '0.5');
+                    compositePath.setAttribute('stroke-width', '1');
                     compositePath.setAttribute('stroke-linecap', 'round');
                     compositePath.setAttribute('stroke-linejoin', 'round');
                     compositePath.setAttribute('opacity', '0.9');
@@ -6587,7 +6587,7 @@
                     centerLine.setAttribute('x2', '98');
                     centerLine.setAttribute('y2', zeroY.toString());
                     centerLine.setAttribute('stroke', '#888888');
-                    centerLine.setAttribute('stroke-width', '1.5');
+                    centerLine.setAttribute('stroke-width', '1');
                     centerLine.setAttribute('stroke-dasharray', '2,2');
                     centerLine.setAttribute('opacity', '0.8');
                     centerLine.setAttribute('stroke-linecap', 'round');
@@ -6635,7 +6635,7 @@
                     pricePath.setAttribute('d', pathD);
                     pricePath.setAttribute('fill', 'none');
                     pricePath.setAttribute('stroke', '#10b981'); // Green
-                    pricePath.setAttribute('stroke-width', '0.5');
+                    pricePath.setAttribute('stroke-width', '1');
                     pricePath.setAttribute('stroke-linecap', 'round');
                     pricePath.setAttribute('stroke-linejoin', 'round');
                     pricePath.setAttribute('opacity', '0.9');
@@ -6653,7 +6653,7 @@
                     centerLine.setAttribute('x2', '98');
                     centerLine.setAttribute('y2', zeroY.toString());
                     centerLine.setAttribute('stroke', '#888888');
-                    centerLine.setAttribute('stroke-width', '1.5');
+                    centerLine.setAttribute('stroke-width', '1');
                     centerLine.setAttribute('stroke-dasharray', '2,2');
                     centerLine.setAttribute('opacity', '0.8');
                     centerLine.setAttribute('stroke-linecap', 'round');
@@ -6841,8 +6841,8 @@
                     // In signal mode, use white for the line; otherwise use driver color
                     const lineColor = (driver.key === 'sentiment' && signalModeActive) ? '#ffffff' : driver.color;
                     path.setAttribute('stroke', lineColor);
-                    // All oscillator lines use 0.3 pixel width for visibility
-                    path.setAttribute('stroke-width', '0.3');
+                    // All oscillator lines use 1 pixel width for consistent rendering
+                    path.setAttribute('stroke-width', '1');
                     path.setAttribute('stroke-linecap', 'round');
                     path.setAttribute('stroke-linejoin', 'round');
                     path.setAttribute('opacity', '0.9');
@@ -6862,9 +6862,9 @@
                 centerLine.setAttribute('y1', zeroY.toString());
                 centerLine.setAttribute('x2', '98');
                 centerLine.setAttribute('y2', zeroY.toString());
-                // Make zero line more visible: solid color, higher opacity, thicker stroke
+                // Make zero line more visible: solid color, higher opacity
                 centerLine.setAttribute('stroke', '#888888'); // Solid gray color
-                centerLine.setAttribute('stroke-width', '1.5'); // Thicker than data lines (0.3)
+                centerLine.setAttribute('stroke-width', '1');
                 centerLine.setAttribute('stroke-dasharray', '2,2'); // Dashed line pattern
                 centerLine.setAttribute('opacity', '0.8'); // Higher opacity for visibility
                 centerLine.setAttribute('stroke-linecap', 'round');
