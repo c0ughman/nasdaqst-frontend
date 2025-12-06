@@ -5257,10 +5257,42 @@
 
                 // Candle-Based Decay mode: Process news up signals with candle-triggered decay
                 // Only works with minute-by-minute data (not granular)
+                // CRITICAL: Process FULL sentimentDataset once, then copy to visible points
                 const candleDecayModeActive = document.getElementById('scale-candle-decay')?.checked || false;
-                if (candleDecayModeActive && data.dataPoints && data.dataPoints.length > 0 && !data.usingGranularData) {
-                    console.log(`🕯️ Candle-Based Decay mode active - processing (${data.dataPoints.length} points)`);
-                    processCandleBasedDecay(data.dataPoints);
+                if (candleDecayModeActive && !data.usingGranularData) {
+                    // Process the full dataset ONCE
+                    if (sentimentDataset && sentimentDataset.length > 0) {
+                        const firstPoint = sentimentDataset[0];
+                        if (!firstPoint._candleDecayProcessed) {
+                            console.log(`🕯️ Candle-Based Decay: Processing FULL dataset (${sentimentDataset.length} points)`);
+                            processCandleBasedDecay(sentimentDataset);
+                            // Mark all points as processed
+                            sentimentDataset.forEach(p => p._candleDecayProcessed = true);
+                        } else {
+                            console.log(`✅ Candle-Based Decay: Already processed, skipping`);
+                        }
+
+                        // Copy candleDecayValue from sentimentDataset to visible dataPoints
+                        if (data.dataPoints && data.dataPoints.length > 0) {
+                            const sentimentMap = new Map();
+                            sentimentDataset.forEach(p => {
+                                if (p.timestamp) {
+                                    sentimentMap.set(p.timestamp.getTime(), p.candleDecayValue);
+                                }
+                            });
+                            let copiedCount = 0;
+                            data.dataPoints.forEach(p => {
+                                if (p.timestamp) {
+                                    const value = sentimentMap.get(p.timestamp.getTime());
+                                    if (value !== undefined) {
+                                        p.candleDecayValue = value;
+                                        copiedCount++;
+                                    }
+                                }
+                            });
+                            console.log(`✅ Copied candleDecayValue to ${copiedCount}/${data.dataPoints.length} visible points`);
+                        }
+                    }
                 }
 
                 // News + Composite mode: Calculate composite + (processedNews * 0.7)
@@ -7310,10 +7342,42 @@
                         }
 
                         // Candle-Based Decay mode: Process news up signals with candle-triggered decay
+                        // CRITICAL: Process FULL sentimentDataset once, then copy to visible points
                         const candleDecayModeActive = radio.value === 'candle-decay';
-                        if (candleDecayModeActive && window.currentChartData && window.currentChartData.length > 0) {
-                            console.log('🕯️ Candle-Based Decay mode activated - processing candle-based decay');
-                            processCandleBasedDecay(window.currentChartData);
+                        if (candleDecayModeActive) {
+                            // Process the full dataset ONCE
+                            if (sentimentDataset && sentimentDataset.length > 0) {
+                                const firstPoint = sentimentDataset[0];
+                                if (!firstPoint._candleDecayProcessed) {
+                                    console.log(`🕯️ Candle-Based Decay mode activated: Processing FULL dataset (${sentimentDataset.length} points)`);
+                                    processCandleBasedDecay(sentimentDataset);
+                                    // Mark all points as processed
+                                    sentimentDataset.forEach(p => p._candleDecayProcessed = true);
+                                } else {
+                                    console.log(`✅ Candle-Based Decay: Already processed, skipping`);
+                                }
+
+                                // Copy candleDecayValue from sentimentDataset to visible currentChartData
+                                if (window.currentChartData && window.currentChartData.length > 0) {
+                                    const sentimentMap = new Map();
+                                    sentimentDataset.forEach(p => {
+                                        if (p.timestamp) {
+                                            sentimentMap.set(p.timestamp.getTime(), p.candleDecayValue);
+                                        }
+                                    });
+                                    let copiedCount = 0;
+                                    window.currentChartData.forEach(p => {
+                                        if (p.timestamp) {
+                                            const value = sentimentMap.get(p.timestamp.getTime());
+                                            if (value !== undefined) {
+                                                p.candleDecayValue = value;
+                                                copiedCount++;
+                                            }
+                                        }
+                                    });
+                                    console.log(`✅ Copied candleDecayValue to ${copiedCount}/${window.currentChartData.length} visible points`);
+                                }
+                            }
                         }
 
                         // Signal values are already attached in updateChart(), so no need to attach here
