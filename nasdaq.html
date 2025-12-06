@@ -6244,9 +6244,34 @@
                     maxValue = 100;
                 }
             } else if (scaleMode === 'candle-decay') {
-                // Candle-Based Decay mode: Fixed scale -100 to +100
-                minValue = -100;
-                maxValue = 100;
+                // Candle-Based Decay mode: Check expand state
+                const expandBtn = document.getElementById('oscillator-expand-btn');
+                const isExpanded = expandBtn?.dataset.candleDecayExpanded === 'true';
+
+                if (isExpanded) {
+                    // Expanded: Use min-max of candleDecayValue from full dataset
+                    const datasetToUse = fullTimeframeData || dataPoints;
+                    const candleValues = datasetToUse
+                        .filter(p => p.candleDecayValue != null && !isNaN(p.candleDecayValue))
+                        .map(p => p.candleDecayValue);
+
+                    if (candleValues.length > 0) {
+                        minValue = Math.min(...candleValues);
+                        maxValue = Math.max(...candleValues);
+                        // Add 10% padding
+                        const range = maxValue - minValue;
+                        const padding = range * 0.1 || 10;
+                        minValue -= padding;
+                        maxValue += padding;
+                    } else {
+                        minValue = -100;
+                        maxValue = 100;
+                    }
+                } else {
+                    // Collapsed: Fixed scale -100 to +100
+                    minValue = -100;
+                    maxValue = 100;
+                }
             } else {
                 // Collect all values from enabled drivers
                 const driverKeys = ['sentiment', 'news', 'indicators'];
@@ -7148,11 +7173,25 @@
                     const collapseIcon = expandBtn?.querySelector('.collapse-icon');
                     const visibleRadio = document.getElementById('scale-visible');
                     const fixedRadio = document.getElementById('scale-fixed');
+                    const candleDecayRadio = document.getElementById('scale-candle-decay');
                     const isVisibleMode = visibleRadio?.checked || false;
                     const isFixedMode = fixedRadio?.checked || false;
-                    
+                    const isCandleDecayMode = candleDecayRadio?.checked || false;
+
                     if (expandBtn && expandIcon && collapseIcon) {
-                        if (isVisibleMode) {
+                        if (isCandleDecayMode) {
+                            // Candle-decay mode: check expanded state
+                            const isExpanded = expandBtn.dataset.candleDecayExpanded === 'true';
+                            if (isExpanded) {
+                                // Show collapse icon - expanded/min-max view
+                                expandIcon.style.display = 'none';
+                                collapseIcon.style.display = 'block';
+                            } else {
+                                // Show expand icon - collapsed/fixed view
+                                expandIcon.style.display = 'block';
+                                collapseIcon.style.display = 'none';
+                            }
+                        } else if (isVisibleMode) {
                             // Show collapse icon (corners going inside) - expanded/min-max view
                             expandIcon.style.display = 'none';
                             collapseIcon.style.display = 'block';
@@ -7176,9 +7215,23 @@
                         e.stopPropagation();
                         const visibleRadio = document.getElementById('scale-visible');
                         const fixedRadio = document.getElementById('scale-fixed');
-                        
-                        if (visibleRadio && fixedRadio) {
-                            // Toggle between fixed and visible modes
+                        const candleDecayRadio = document.getElementById('scale-candle-decay');
+
+                        // Check if in candle-decay mode
+                        if (candleDecayRadio?.checked) {
+                            // Toggle candle-decay expanded state
+                            const isExpanded = expandBtn.dataset.candleDecayExpanded === 'true';
+                            expandBtn.dataset.candleDecayExpanded = isExpanded ? 'false' : 'true';
+
+                            // Update icon
+                            updateExpandIcon();
+
+                            // Redraw chart with new scale
+                            if (window.currentChartData) {
+                                drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData, window.currentTimeLabels || []);
+                            }
+                        } else if (visibleRadio && fixedRadio) {
+                            // Toggle between fixed and visible modes for other modes
                             if (visibleRadio.checked) {
                                 // Currently in visible mode, switch to fixed mode
                                 fixedRadio.checked = true;
@@ -7188,7 +7241,7 @@
                                 visibleRadio.checked = true;
                                 fixedRadio.checked = false;
                             }
-                            
+
                             // Dispatch change event to trigger chart update
                             const activeRadio = visibleRadio.checked ? visibleRadio : fixedRadio;
                             activeRadio.dispatchEvent(new Event('change'));
