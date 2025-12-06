@@ -305,6 +305,97 @@
             border-color: rgba(16, 185, 129, 0.3);
         }
 
+        .news-search-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #1a1a1a;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .search-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-label {
+            font-size: 11px;
+            color: #888;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .search-input {
+            padding: 10px 14px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: rgba(16, 185, 129, 0.5);
+            background: #1f1f1f;
+        }
+
+        .search-input::placeholder {
+            color: #666;
+        }
+
+        .time-range-group {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .publication-select {
+            padding: 10px 14px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 180px;
+        }
+
+        .publication-select:focus {
+            outline: none;
+            border-color: rgba(16, 185, 129, 0.5);
+            background: #1f1f1f;
+        }
+
+        .clear-filters-btn {
+            padding: 10px 16px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            color: #888;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .clear-filters-btn:hover {
+            background: #1f1f1f;
+            color: #ccc;
+            border-color: #2a2a2a;
+        }
 
         .news-list {
             display: flex;
@@ -429,6 +520,27 @@
                 gap: 16px;
             }
 
+            .news-search-section {
+                flex-direction: column;
+            }
+
+            .search-input-group {
+                width: 100%;
+            }
+
+            .time-range-group {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .time-range-group > div {
+                width: 100%;
+            }
+
+            .publication-select {
+                width: 100%;
+            }
+
             .article-header {
                 flex-direction: column;
             }
@@ -487,6 +599,35 @@
                             <button class="filter-btn active" data-filter="all" data-i18n="news.filter.all">All</button>
                             <button class="filter-btn" data-filter="most-impactful" data-i18n="news.filter.most-impactful">Most Impactful</button>
                         </div>
+                    </div>
+
+                    <!-- Search Section -->
+                    <div class="news-search-section">
+                        <div class="search-input-group">
+                            <label class="search-label">Search Keywords</label>
+                            <input type="text" id="keyword-search" class="search-input" placeholder="Search title, summary, or source...">
+                        </div>
+                        <div class="search-input-group">
+                            <label class="search-label">Time (e.g., 11:55)</label>
+                            <input type="text" id="time-search" class="search-input" placeholder="11:55 or 11:55 AM">
+                        </div>
+                        <div class="search-input-group time-range-group">
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <label class="search-label">Start Time</label>
+                                <input type="datetime-local" id="time-range-start" class="search-input" style="min-width: 180px;">
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <label class="search-label">End Time</label>
+                                <input type="datetime-local" id="time-range-end" class="search-input" style="min-width: 180px;">
+                            </div>
+                        </div>
+                        <div class="search-input-group">
+                            <label class="search-label">Publication</label>
+                            <select id="publication-filter" class="publication-select">
+                                <option value="">All Publications</option>
+                            </select>
+                        </div>
+                        <button class="clear-filters-btn" id="clear-filters">Clear All</button>
                     </div>
 
                     <!-- News Articles List -->
@@ -580,6 +721,14 @@
         let currentTimezoneData = null;
         let allArticles = [];
         let currentFilter = 'all';
+        let filteredArticles = [];
+        let searchFilters = {
+            keyword: '',
+            time: '',
+            timeRangeStart: '',
+            timeRangeEnd: '',
+            publication: ''
+        };
 
         // API Configuration
         const API_BASE_URL = (
@@ -721,9 +870,11 @@
                 console.log('News articles received:', data);
 
                 allArticles = data.articles || [];
+                filteredArticles = [...allArticles];
 
+                populatePublicationDropdown();
                 updateStats();
-                displayArticles(allArticles);
+                applySearchFilters();
 
                 return data;
             } catch (error) {
@@ -735,7 +886,16 @@
 
         // Update statistics
         function updateStats() {
-            document.getElementById('total-articles').textContent = allArticles.length;
+            const totalEl = document.getElementById('total-articles');
+            if (totalEl) {
+                const hasActiveFilters = searchFilters.keyword || searchFilters.time || 
+                    searchFilters.timeRangeStart || searchFilters.timeRangeEnd || searchFilters.publication;
+                if (hasActiveFilters) {
+                    totalEl.textContent = `${filteredArticles.length} of ${allArticles.length}`;
+                } else {
+                    totalEl.textContent = allArticles.length;
+                }
+            }
         }
 
         // Display articles
@@ -822,20 +982,201 @@
                 }
             });
 
-            // Filter and display
-            if (filter === 'all') {
-                displayArticles(allArticles);
-            } else if (filter === 'most-impactful') {
-                // Sort by absolute sentiment score (highest impact first)
-                const filtered = [...allArticles].filter(a => 
+            // Apply search filters after setting the base filter
+            applySearchFilters();
+        }
+
+        // Populate publication dropdown with unique sources
+        function populatePublicationDropdown() {
+            const dropdown = document.getElementById('publication-filter');
+            if (!dropdown || !allArticles || allArticles.length === 0) return;
+
+            // Get unique sources, sorted alphabetically
+            const sources = [...new Set(allArticles.map(a => a.source || 'Unknown Source'))]
+                .filter(s => s) // Remove empty strings
+                .sort();
+
+            // Clear existing options except "All Publications"
+            dropdown.innerHTML = '<option value="">All Publications</option>';
+
+            // Add each source as an option
+            sources.forEach(source => {
+                const option = document.createElement('option');
+                option.value = source;
+                option.textContent = source;
+                dropdown.appendChild(option);
+            });
+        }
+
+        // Parse time input (handles formats like "11:55", "11:55 AM", "23:55", etc.)
+        function parseTimeInput(timeStr) {
+            if (!timeStr || !timeStr.trim()) return null;
+
+            const trimmed = timeStr.trim();
+            const now = new Date();
+            let hours = 0;
+            let minutes = 0;
+
+            // Try to parse different formats
+            // Format 1: "11:55" or "11:55:30"
+            const timeMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?$/i);
+            if (timeMatch) {
+                hours = parseInt(timeMatch[1]);
+                minutes = parseInt(timeMatch[2]);
+                const ampm = timeMatch[4];
+
+                // Handle AM/PM
+                if (ampm) {
+                    const isPM = ampm.toUpperCase() === 'PM';
+                    if (isPM && hours !== 12) hours += 12;
+                    if (!isPM && hours === 12) hours = 0;
+                }
+            } else {
+                // Try just numbers like "1155" -> 11:55
+                const numMatch = trimmed.match(/^(\d{1,4})$/);
+                if (numMatch) {
+                    const num = parseInt(numMatch[1]);
+                    if (num < 100) {
+                        hours = num;
+                        minutes = 0;
+                    } else {
+                        hours = Math.floor(num / 100);
+                        minutes = num % 100;
+                    }
+                } else {
+                    return null;
+                }
+            }
+
+            // Validate hours and minutes
+            if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+                return null;
+            }
+
+            // Create date with today's date and the parsed time
+            const date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+            return date;
+        }
+
+        // Filter articles by search criteria
+        function filterArticlesBySearch(articles) {
+            let filtered = [...articles];
+
+            // Keyword search
+            if (searchFilters.keyword) {
+                const keyword = searchFilters.keyword.toLowerCase();
+                filtered = filtered.filter(article => {
+                    const title = (article.title || '').toLowerCase();
+                    const summary = (article.summary || '').toLowerCase();
+                    const source = (article.source || '').toLowerCase();
+                    return title.includes(keyword) || summary.includes(keyword) || source.includes(keyword);
+                });
+            }
+
+            // Time search (single time with ±5 minute window, matches across all dates)
+            if (searchFilters.time) {
+                const targetTime = parseTimeInput(searchFilters.time);
+                if (targetTime) {
+                    const targetHours = targetTime.getHours();
+                    const targetMinutes = targetTime.getMinutes();
+                    const windowMs = 5 * 60 * 1000; // 5 minutes in milliseconds
+                    
+                    filtered = filtered.filter(article => {
+                        const articleTime = new Date(article.published_at);
+                        const articleHours = articleTime.getHours();
+                        const articleMinutes = articleTime.getMinutes();
+                        
+                        // Create a date object with the article's date but target time for comparison
+                        const articleDateWithTargetTime = new Date(articleTime);
+                        articleDateWithTargetTime.setHours(targetHours, targetMinutes, 0, 0);
+                        
+                        const timeDiff = Math.abs(articleTime.getTime() - articleDateWithTargetTime.getTime());
+                        return timeDiff <= windowMs;
+                    });
+                }
+            }
+
+            // Time range filter
+            if (searchFilters.timeRangeStart) {
+                const startTime = new Date(searchFilters.timeRangeStart);
+                filtered = filtered.filter(article => {
+                    const articleTime = new Date(article.published_at);
+                    return articleTime >= startTime;
+                });
+            }
+
+            if (searchFilters.timeRangeEnd) {
+                const endTime = new Date(searchFilters.timeRangeEnd);
+                filtered = filtered.filter(article => {
+                    const articleTime = new Date(article.published_at);
+                    return articleTime <= endTime;
+                });
+            }
+
+            // Publication filter
+            if (searchFilters.publication) {
+                filtered = filtered.filter(article => {
+                    return (article.source || 'Unknown Source') === searchFilters.publication;
+                });
+            }
+
+            return filtered;
+        }
+
+        // Apply all search filters and update display
+        function applySearchFilters() {
+            // First apply the base filter (all or most-impactful)
+            let articlesToFilter = [];
+            if (currentFilter === 'all') {
+                articlesToFilter = [...allArticles];
+            } else if (currentFilter === 'most-impactful') {
+                articlesToFilter = [...allArticles].filter(a => 
                     a.sentiment_score !== null && a.sentiment_score !== undefined
                 ).sort((a, b) => {
                     const absA = Math.abs(a.sentiment_score);
                     const absB = Math.abs(b.sentiment_score);
-                    return absB - absA; // Descending order
+                    return absB - absA;
                 });
-                displayArticles(filtered);
             }
+
+            // Then apply search filters
+            filteredArticles = filterArticlesBySearch(articlesToFilter);
+
+            // Update display
+            updateStats();
+            displayArticles(filteredArticles);
+        }
+
+        // Clear all search filters
+        function clearAllFilters() {
+            searchFilters = {
+                keyword: '',
+                time: '',
+                timeRangeStart: '',
+                timeRangeEnd: '',
+                publication: ''
+            };
+
+            document.getElementById('keyword-search').value = '';
+            document.getElementById('time-search').value = '';
+            document.getElementById('time-range-start').value = '';
+            document.getElementById('time-range-end').value = '';
+            document.getElementById('publication-filter').value = '';
+
+            applySearchFilters();
+        }
+
+        // Debounce function for search inputs
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
 
         // Initialize the page
@@ -849,6 +1190,54 @@
                     filterArticles(btn.dataset.filter);
                 });
             });
+
+            // Setup search inputs with debouncing
+            const keywordSearch = document.getElementById('keyword-search');
+            if (keywordSearch) {
+                const debouncedKeywordSearch = debounce(() => {
+                    searchFilters.keyword = keywordSearch.value;
+                    applySearchFilters();
+                }, 300);
+                keywordSearch.addEventListener('input', debouncedKeywordSearch);
+            }
+
+            const timeSearch = document.getElementById('time-search');
+            if (timeSearch) {
+                const debouncedTimeSearch = debounce(() => {
+                    searchFilters.time = timeSearch.value;
+                    applySearchFilters();
+                }, 500);
+                timeSearch.addEventListener('input', debouncedTimeSearch);
+            }
+
+            const timeRangeStart = document.getElementById('time-range-start');
+            if (timeRangeStart) {
+                timeRangeStart.addEventListener('change', () => {
+                    searchFilters.timeRangeStart = timeRangeStart.value;
+                    applySearchFilters();
+                });
+            }
+
+            const timeRangeEnd = document.getElementById('time-range-end');
+            if (timeRangeEnd) {
+                timeRangeEnd.addEventListener('change', () => {
+                    searchFilters.timeRangeEnd = timeRangeEnd.value;
+                    applySearchFilters();
+                });
+            }
+
+            const publicationFilter = document.getElementById('publication-filter');
+            if (publicationFilter) {
+                publicationFilter.addEventListener('change', () => {
+                    searchFilters.publication = publicationFilter.value;
+                    applySearchFilters();
+                });
+            }
+
+            const clearFiltersBtn = document.getElementById('clear-filters');
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', clearAllFilters);
+            }
 
             // Timezone dropdown toggle
             const timezoneSelector = document.getElementById('timezone-selector');
