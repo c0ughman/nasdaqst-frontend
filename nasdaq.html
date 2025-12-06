@@ -6408,6 +6408,73 @@
                 return;
             }
 
+            // Candle-Based Decay mode: Draw candleDecayValue line
+            const candleDecayModeActive = scaleMode === 'candle-decay';
+            if (candleDecayModeActive) {
+                console.log(`🕯️ Candle-Based Decay mode: minValue=${minValue.toFixed(2)}, maxValue=${maxValue.toFixed(2)}`);
+
+                const sortedDataPoints = [...dataPoints].sort((a, b) => (a.x || 0) - (b.x || 0));
+                const candlePoints = sortedDataPoints.filter(p => {
+                    const value = p.candleDecayValue != null ? p.candleDecayValue : null;
+                    return value != null && !isNaN(value) && p.x != null;
+                });
+
+                if (candlePoints.length > 0) {
+                    const getCandleValue = (point) => point.candleDecayValue != null ? point.candleDecayValue : 0;
+                    let pathD = `M ${candlePoints[0].x},${valueToY(getCandleValue(candlePoints[0]))}`;
+
+                    for (let i = 1; i < candlePoints.length; i++) {
+                        const x = candlePoints[i].x;
+                        const y = valueToY(getCandleValue(candlePoints[i]));
+                        const prevX = candlePoints[i - 1].x;
+                        const prevY = valueToY(getCandleValue(candlePoints[i - 1]));
+
+                        if (i === 1 && candlePoints.length === 2) {
+                            pathD += ` L ${x},${y}`;
+                        } else {
+                            const dx = x - prevX;
+                            const dy = y - prevY;
+                            const cp1X = prevX + dx * 0.5;
+                            const cp1Y = prevY + dy * 0.15;
+                            const cp2X = x - dx * 0.5;
+                            const cp2Y = y - dy * 0.15;
+                            pathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
+                        }
+                    }
+
+                    const candlePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    candlePath.setAttribute('d', pathD);
+                    candlePath.setAttribute('fill', 'none');
+                    candlePath.setAttribute('stroke', '#a855f7'); // Purple
+                    candlePath.setAttribute('stroke-width', '0.5');
+                    candlePath.setAttribute('stroke-linecap', 'round');
+                    candlePath.setAttribute('stroke-linejoin', 'round');
+                    candlePath.setAttribute('opacity', '0.9');
+                    candlePath.classList.add('oscillator-line-candle-decay');
+                    svg.appendChild(candlePath);
+                    console.log(`✅ Drew candle-based decay line with ${candlePoints.length} points`);
+                }
+
+                // Draw zero line
+                const zeroY = valueToY(0);
+                if (zeroY >= 0 && zeroY <= 100) {
+                    const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    centerLine.setAttribute('x1', '2');
+                    centerLine.setAttribute('y1', zeroY.toString());
+                    centerLine.setAttribute('x2', '98');
+                    centerLine.setAttribute('y2', zeroY.toString());
+                    centerLine.setAttribute('stroke', '#888888');
+                    centerLine.setAttribute('stroke-width', '1.5');
+                    centerLine.setAttribute('stroke-dasharray', '2,2');
+                    centerLine.setAttribute('opacity', '0.8');
+                    centerLine.setAttribute('stroke-linecap', 'round');
+                    svg.appendChild(centerLine);
+                }
+
+                oscillatorDiv.appendChild(svg);
+                return;
+            }
+
             // News + Composite mode: Draw composite + (processedNews * 0.7) line
             if (newsCompositeModeActive) {
                 console.log(`📊 News + Composite mode: minValue=${minValue.toFixed(2)}, maxValue=${maxValue.toFixed(2)}`);
@@ -6536,73 +6603,6 @@
                     svg.appendChild(centerLine);
                 }
                 
-                oscillatorDiv.appendChild(svg);
-                return;
-            }
-
-            // Candle-Based Decay mode: Draw candleDecayValue line
-            const candleDecayModeActive = scaleMode === 'candle-decay';
-            if (candleDecayModeActive) {
-                console.log(`🕯️ Candle-Based Decay mode: minValue=${minValue.toFixed(2)}, maxValue=${maxValue.toFixed(2)}`);
-
-                const sortedDataPoints = [...dataPoints].sort((a, b) => (a.x || 0) - (b.x || 0));
-                const candlePoints = sortedDataPoints.filter(p => {
-                    const value = p.candleDecayValue != null ? p.candleDecayValue : null;
-                    return value != null && !isNaN(value) && p.x != null;
-                });
-
-                if (candlePoints.length > 0) {
-                    const getCandleValue = (point) => point.candleDecayValue != null ? point.candleDecayValue : 0;
-                    let pathD = `M ${candlePoints[0].x},${valueToY(getCandleValue(candlePoints[0]))}`;
-
-                    for (let i = 1; i < candlePoints.length; i++) {
-                        const x = candlePoints[i].x;
-                        const y = valueToY(getCandleValue(candlePoints[i]));
-                        const prevX = candlePoints[i - 1].x;
-                        const prevY = valueToY(getCandleValue(candlePoints[i - 1]));
-
-                        if (i === 1 && candlePoints.length === 2) {
-                            pathD += ` L ${x},${y}`;
-                        } else {
-                            const dx = x - prevX;
-                            const dy = y - prevY;
-                            const cp1X = prevX + dx * 0.5;
-                            const cp1Y = prevY + dy * 0.15;
-                            const cp2X = x - dx * 0.5;
-                            const cp2Y = y - dy * 0.15;
-                            pathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
-                        }
-                    }
-
-                    const candlePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    candlePath.setAttribute('d', pathD);
-                    candlePath.setAttribute('fill', 'none');
-                    candlePath.setAttribute('stroke', '#a855f7'); // Purple
-                    candlePath.setAttribute('stroke-width', '0.5');
-                    candlePath.setAttribute('stroke-linecap', 'round');
-                    candlePath.setAttribute('stroke-linejoin', 'round');
-                    candlePath.setAttribute('opacity', '0.9');
-                    candlePath.classList.add('oscillator-line-candle-decay');
-                    svg.appendChild(candlePath);
-                    console.log(`✅ Drew candle-based decay line with ${candlePoints.length} points`);
-                }
-
-                // Draw zero line
-                const zeroY = valueToY(0);
-                if (zeroY >= 0 && zeroY <= 100) {
-                    const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                    centerLine.setAttribute('x1', '2');
-                    centerLine.setAttribute('y1', zeroY.toString());
-                    centerLine.setAttribute('x2', '98');
-                    centerLine.setAttribute('y2', zeroY.toString());
-                    centerLine.setAttribute('stroke', '#888888');
-                    centerLine.setAttribute('stroke-width', '1.5');
-                    centerLine.setAttribute('stroke-dasharray', '2,2');
-                    centerLine.setAttribute('opacity', '0.8');
-                    centerLine.setAttribute('stroke-linecap', 'round');
-                    svg.appendChild(centerLine);
-                }
-
                 oscillatorDiv.appendChild(svg);
                 return;
             }
