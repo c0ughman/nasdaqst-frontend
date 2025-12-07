@@ -352,6 +352,33 @@
             color: #666;
         }
 
+        .time-input {
+            min-width: 140px;
+        }
+
+        /* Custom styling for time inputs */
+        .time-input::-webkit-calendar-picker-indicator {
+            filter: invert(0.5);
+            cursor: pointer;
+        }
+
+        .time-input::-webkit-datetime-edit {
+            color: #fff;
+        }
+
+        .time-input::-webkit-datetime-edit-fields-wrapper {
+            color: #fff;
+        }
+
+        .time-input::-webkit-datetime-edit-text {
+            color: #888;
+        }
+
+        .time-input::-webkit-datetime-edit-hour-field,
+        .time-input::-webkit-datetime-edit-minute-field {
+            color: #fff;
+        }
+
         .time-range-group {
             display: flex;
             gap: 8px;
@@ -603,22 +630,18 @@
 
                     <!-- Search Section -->
                     <div class="news-search-section">
-                        <div class="search-input-group">
-                            <label class="search-label">Search Keywords</label>
-                            <input type="text" id="keyword-search" class="search-input" placeholder="Search title, summary, or source...">
-                        </div>
-                        <div class="search-input-group">
-                            <label class="search-label">Time (e.g., 11:55)</label>
-                            <input type="text" id="time-search" class="search-input" placeholder="11:55 or 11:55 AM">
+                        <div class="search-input-group" style="flex: 2; min-width: 300px;">
+                            <label class="search-label">Search</label>
+                            <input type="text" id="keyword-search" class="search-input" placeholder="Search keywords, time (e.g., 11:55), title, summary, or source...">
                         </div>
                         <div class="search-input-group time-range-group">
                             <div style="display: flex; flex-direction: column; gap: 6px;">
                                 <label class="search-label">Start Time</label>
-                                <input type="datetime-local" id="time-range-start" class="search-input" style="min-width: 180px;">
+                                <input type="time" id="time-range-start" class="search-input time-input">
                             </div>
                             <div style="display: flex; flex-direction: column; gap: 6px;">
                                 <label class="search-label">End Time</label>
-                                <input type="datetime-local" id="time-range-end" class="search-input" style="min-width: 180px;">
+                                <input type="time" id="time-range-end" class="search-input time-input">
                             </div>
                         </div>
                         <div class="search-input-group">
@@ -724,7 +747,6 @@
         let filteredArticles = [];
         let searchFilters = {
             keyword: '',
-            time: '',
             timeRangeStart: '',
             timeRangeEnd: '',
             publication: ''
@@ -888,7 +910,7 @@
         function updateStats() {
             const totalEl = document.getElementById('total-articles');
             if (totalEl) {
-                const hasActiveFilters = searchFilters.keyword || searchFilters.time || 
+                const hasActiveFilters = searchFilters.keyword || 
                     searchFilters.timeRangeStart || searchFilters.timeRangeEnd || searchFilters.publication;
                 if (hasActiveFilters) {
                     totalEl.textContent = `${filteredArticles.length} of ${allArticles.length}`;
@@ -1058,57 +1080,104 @@
             return date;
         }
 
+        // Check if a string looks like a time pattern
+        function isTimePattern(str) {
+            if (!str || !str.trim()) return false;
+            const trimmed = str.trim();
+            // Match patterns like "11:55", "11:55 AM", "1155", etc.
+            return /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?$/i.test(trimmed) ||
+                   /^(\d{1,4})$/i.test(trimmed);
+        }
+
+        // Extract time pattern from keyword string
+        function extractTimeFromKeyword(keyword) {
+            if (!keyword) return { timeMatch: null, keywordWithoutTime: keyword };
+            
+            // Try to find time patterns in the keyword
+            const timePatterns = [
+                /\b(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?\b/i,
+                /\b(\d{3,4})\b/
+            ];
+            
+            for (const pattern of timePatterns) {
+                const match = keyword.match(pattern);
+                if (match) {
+                    const timeStr = match[0];
+                    const timeMatch = parseTimeInput(timeStr);
+                    if (timeMatch) {
+                        const keywordWithoutTime = keyword.replace(timeStr, '').trim();
+                        return { timeMatch, keywordWithoutTime };
+                    }
+                }
+            }
+            
+            return { timeMatch: null, keywordWithoutTime: keyword };
+        }
+
         // Filter articles by search criteria
         function filterArticlesBySearch(articles) {
             let filtered = [...articles];
+            const keyword = searchFilters.keyword.trim();
 
-            // Keyword search
-            if (searchFilters.keyword) {
-                const keyword = searchFilters.keyword.toLowerCase();
+            // Extract time pattern from keyword if present
+            const { timeMatch, keywordWithoutTime } = extractTimeFromKeyword(keyword);
+
+            // Keyword search (on remaining text after removing time pattern)
+            if (keywordWithoutTime) {
+                const keywordLower = keywordWithoutTime.toLowerCase();
                 filtered = filtered.filter(article => {
                     const title = (article.title || '').toLowerCase();
                     const summary = (article.summary || '').toLowerCase();
                     const source = (article.source || '').toLowerCase();
-                    return title.includes(keyword) || summary.includes(keyword) || source.includes(keyword);
+                    return title.includes(keywordLower) || summary.includes(keywordLower) || source.includes(keywordLower);
                 });
             }
 
-            // Time search (single time with ±5 minute window, matches across all dates)
-            if (searchFilters.time) {
-                const targetTime = parseTimeInput(searchFilters.time);
-                if (targetTime) {
-                    const targetHours = targetTime.getHours();
-                    const targetMinutes = targetTime.getMinutes();
-                    const windowMs = 5 * 60 * 1000; // 5 minutes in milliseconds
-                    
-                    filtered = filtered.filter(article => {
-                        const articleTime = new Date(article.published_at);
-                        const articleHours = articleTime.getHours();
-                        const articleMinutes = articleTime.getMinutes();
-                        
-                        // Create a date object with the article's date but target time for comparison
-                        const articleDateWithTargetTime = new Date(articleTime);
-                        articleDateWithTargetTime.setHours(targetHours, targetMinutes, 0, 0);
-                        
-                        const timeDiff = Math.abs(articleTime.getTime() - articleDateWithTargetTime.getTime());
-                        return timeDiff <= windowMs;
-                    });
-                }
-            }
-
-            // Time range filter
-            if (searchFilters.timeRangeStart) {
-                const startTime = new Date(searchFilters.timeRangeStart);
+            // Time search (if time pattern was found in keyword)
+            if (timeMatch) {
+                const targetHours = timeMatch.getHours();
+                const targetMinutes = timeMatch.getMinutes();
+                const windowMs = 5 * 60 * 1000; // 5 minutes in milliseconds
+                
                 filtered = filtered.filter(article => {
                     const articleTime = new Date(article.published_at);
+                    
+                    // Create a date object with the article's date but target time for comparison
+                    const articleDateWithTargetTime = new Date(articleTime);
+                    articleDateWithTargetTime.setHours(targetHours, targetMinutes, 0, 0);
+                    
+                    const timeDiff = Math.abs(articleTime.getTime() - articleDateWithTargetTime.getTime());
+                    return timeDiff <= windowMs;
+                });
+            }
+
+            // Time range filter (time-only, applies to current day)
+            if (searchFilters.timeRangeStart) {
+                const today = new Date();
+                const [hours, minutes] = searchFilters.timeRangeStart.split(':');
+                const startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(hours), parseInt(minutes), 0);
+                
+                filtered = filtered.filter(article => {
+                    const articleTime = new Date(article.published_at);
+                    // Check if article is from today and after start time
+                    const articleDate = new Date(articleTime.getFullYear(), articleTime.getMonth(), articleTime.getDate());
+                    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    if (articleDate.getTime() !== todayDate.getTime()) return false;
                     return articleTime >= startTime;
                 });
             }
 
             if (searchFilters.timeRangeEnd) {
-                const endTime = new Date(searchFilters.timeRangeEnd);
+                const today = new Date();
+                const [hours, minutes] = searchFilters.timeRangeEnd.split(':');
+                const endTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(hours), parseInt(minutes), 0);
+                
                 filtered = filtered.filter(article => {
                     const articleTime = new Date(article.published_at);
+                    // Check if article is from today and before end time
+                    const articleDate = new Date(articleTime.getFullYear(), articleTime.getMonth(), articleTime.getDate());
+                    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    if (articleDate.getTime() !== todayDate.getTime()) return false;
                     return articleTime <= endTime;
                 });
             }
@@ -1151,14 +1220,12 @@
         function clearAllFilters() {
             searchFilters = {
                 keyword: '',
-                time: '',
                 timeRangeStart: '',
                 timeRangeEnd: '',
                 publication: ''
             };
 
             document.getElementById('keyword-search').value = '';
-            document.getElementById('time-search').value = '';
             document.getElementById('time-range-start').value = '';
             document.getElementById('time-range-end').value = '';
             document.getElementById('publication-filter').value = '';
@@ -1199,15 +1266,6 @@
                     applySearchFilters();
                 }, 300);
                 keywordSearch.addEventListener('input', debouncedKeywordSearch);
-            }
-
-            const timeSearch = document.getElementById('time-search');
-            if (timeSearch) {
-                const debouncedTimeSearch = debounce(() => {
-                    searchFilters.time = timeSearch.value;
-                    applySearchFilters();
-                }, 500);
-                timeSearch.addEventListener('input', debouncedTimeSearch);
             }
 
             const timeRangeStart = document.getElementById('time-range-start');
