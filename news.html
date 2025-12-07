@@ -1015,6 +1015,57 @@
             });
         }
 
+        // Format time to military time (HH:MM)
+        function formatTimeToMilitary(timeStr) {
+            if (!timeStr || !timeStr.trim()) return '';
+            
+            const parsed = parseTimeInput(timeStr);
+            if (!parsed) return timeStr; // Return original if can't parse
+            
+            const hours = String(parsed.getHours()).padStart(2, '0');
+            const minutes = String(parsed.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+
+        // Auto-format time input as user types
+        function autoFormatTimeInput(input) {
+            const value = input.value.trim();
+            if (!value) return;
+            
+            // If it's just a number (1-23), format it
+            const singleDigitMatch = value.match(/^(\d{1,2})$/);
+            if (singleDigitMatch) {
+                const num = parseInt(singleDigitMatch[1]);
+                if (num >= 0 && num <= 23) {
+                    input.value = String(num).padStart(2, '0') + ':00';
+                    return;
+                }
+            }
+            
+            // If it's like "9:" or "9:3", complete it
+            const partialMatch = value.match(/^(\d{1,2}):?(\d{0,2})$/);
+            if (partialMatch) {
+                let hours = parseInt(partialMatch[1]);
+                let minutes = partialMatch[2] || '00';
+                
+                if (hours >= 0 && hours <= 23) {
+                    hours = String(hours).padStart(2, '0');
+                    if (minutes.length === 1) {
+                        minutes = minutes + '0';
+                    } else if (minutes.length === 0) {
+                        minutes = '00';
+                    }
+                    minutes = minutes.padStart(2, '0');
+                    
+                    // Validate minutes
+                    const minNum = parseInt(minutes);
+                    if (minNum >= 0 && minNum <= 59) {
+                        input.value = `${hours}:${minutes}`;
+                    }
+                }
+            }
+        }
+
         // Parse time input (handles formats like "11:55", "11:55 AM", "23:55", etc.)
         function parseTimeInput(timeStr) {
             if (!timeStr || !timeStr.trim()) return null;
@@ -1039,14 +1090,16 @@
                     if (!isPM && hours === 12) hours = 0;
                 }
             } else {
-                // Try just numbers like "1155" -> 11:55
+                // Try just numbers like "1155" -> 11:55 or "9" -> 09:00
                 const numMatch = trimmed.match(/^(\d{1,4})$/);
                 if (numMatch) {
                     const num = parseInt(numMatch[1]);
                     if (num < 100) {
+                        // Single or double digit = hours only
                         hours = num;
                         minutes = 0;
                     } else {
+                        // 3-4 digits = hours:minutes
                         hours = Math.floor(num / 100);
                         minutes = num % 100;
                     }
@@ -1140,17 +1193,18 @@
             if (searchFilters.timeRangeStart) {
                 const startTimeParsed = parseTimeInput(searchFilters.timeRangeStart);
                 if (startTimeParsed) {
-                    const today = new Date();
-                    const startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
-                        startTimeParsed.getHours(), startTimeParsed.getMinutes(), 0);
+                    const startHours = startTimeParsed.getHours();
+                    const startMinutes = startTimeParsed.getMinutes();
                     
                     filtered = filtered.filter(article => {
                         const articleTime = new Date(article.published_at);
-                        // Check if article is from today and after start time
-                        const articleDate = new Date(articleTime.getFullYear(), articleTime.getMonth(), articleTime.getDate());
-                        const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                        if (articleDate.getTime() !== todayDate.getTime()) return false;
-                        return articleTime >= startTime;
+                        const articleHours = articleTime.getHours();
+                        const articleMinutes = articleTime.getMinutes();
+                        
+                        // Compare time only (hours and minutes)
+                        if (articleHours > startHours) return true;
+                        if (articleHours === startHours && articleMinutes >= startMinutes) return true;
+                        return false;
                     });
                 }
             }
@@ -1158,17 +1212,18 @@
             if (searchFilters.timeRangeEnd) {
                 const endTimeParsed = parseTimeInput(searchFilters.timeRangeEnd);
                 if (endTimeParsed) {
-                    const today = new Date();
-                    const endTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
-                        endTimeParsed.getHours(), endTimeParsed.getMinutes(), 0);
+                    const endHours = endTimeParsed.getHours();
+                    const endMinutes = endTimeParsed.getMinutes();
                     
                     filtered = filtered.filter(article => {
                         const articleTime = new Date(article.published_at);
-                        // Check if article is from today and before end time
-                        const articleDate = new Date(articleTime.getFullYear(), articleTime.getMonth(), articleTime.getDate());
-                        const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                        if (articleDate.getTime() !== todayDate.getTime()) return false;
-                        return articleTime <= endTime;
+                        const articleHours = articleTime.getHours();
+                        const articleMinutes = articleTime.getMinutes();
+                        
+                        // Compare time only (hours and minutes)
+                        if (articleHours < endHours) return true;
+                        if (articleHours === endHours && articleMinutes <= endMinutes) return true;
+                        return false;
                     });
                 }
             }
@@ -1261,20 +1316,48 @@
 
             const timeRangeStart = document.getElementById('time-range-start');
             if (timeRangeStart) {
-                const debouncedTimeRangeStart = debounce(() => {
-                    searchFilters.timeRangeStart = timeRangeStart.value;
-                    applySearchFilters();
-                }, 500);
-                timeRangeStart.addEventListener('input', debouncedTimeRangeStart);
+                // Auto-format as user types
+                timeRangeStart.addEventListener('input', (e) => {
+                    autoFormatTimeInput(e.target);
+                    const debouncedApply = debounce(() => {
+                        searchFilters.timeRangeStart = timeRangeStart.value;
+                        applySearchFilters();
+                    }, 500);
+                    debouncedApply();
+                });
+                
+                // Format to military time on blur
+                timeRangeStart.addEventListener('blur', (e) => {
+                    const formatted = formatTimeToMilitary(e.target.value);
+                    if (formatted && formatted !== e.target.value) {
+                        e.target.value = formatted;
+                        searchFilters.timeRangeStart = formatted;
+                        applySearchFilters();
+                    }
+                });
             }
 
             const timeRangeEnd = document.getElementById('time-range-end');
             if (timeRangeEnd) {
-                const debouncedTimeRangeEnd = debounce(() => {
-                    searchFilters.timeRangeEnd = timeRangeEnd.value;
-                    applySearchFilters();
-                }, 500);
-                timeRangeEnd.addEventListener('input', debouncedTimeRangeEnd);
+                // Auto-format as user types
+                timeRangeEnd.addEventListener('input', (e) => {
+                    autoFormatTimeInput(e.target);
+                    const debouncedApply = debounce(() => {
+                        searchFilters.timeRangeEnd = timeRangeEnd.value;
+                        applySearchFilters();
+                    }, 500);
+                    debouncedApply();
+                });
+                
+                // Format to military time on blur
+                timeRangeEnd.addEventListener('blur', (e) => {
+                    const formatted = formatTimeToMilitary(e.target.value);
+                    if (formatted && formatted !== e.target.value) {
+                        e.target.value = formatted;
+                        searchFilters.timeRangeEnd = formatted;
+                        applySearchFilters();
+                    }
+                });
             }
 
             const publicationFilter = document.getElementById('publication-filter');
