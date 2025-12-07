@@ -1150,29 +1150,48 @@
         function isTimePattern(str) {
             if (!str || !str.trim()) return false;
             const trimmed = str.trim();
-            // Match patterns like "11:55", "11:55 AM", "1155", etc.
+            // Match patterns like "11:55", "11:55 AM", "1155", "9", "23", etc.
+            // Single/double digits (0-23) are valid hours
+            // 3-4 digits can be HHMM format
             return /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?$/i.test(trimmed) ||
-                   /^(\d{1,4})$/i.test(trimmed);
+                   /^(\d{3,4})$/i.test(trimmed) ||
+                   /^(\d{1,2})$/i.test(trimmed); // Single/double digit (0-23 for hours)
         }
 
         // Extract time pattern from keyword string
         function extractTimeFromKeyword(keyword) {
             if (!keyword) return { timeMatch: null, keywordWithoutTime: keyword };
             
-            // Try to find time patterns in the keyword
+            const trimmed = keyword.trim();
+            
+            // First, check if the entire keyword is just a time pattern (like "9" or "9:59")
+            // This handles cases where user types just a time
+            const entireKeywordAsTime = parseTimeInput(trimmed);
+            if (entireKeywordAsTime) {
+                // Verify it's a valid time pattern (not just any number)
+                if (isTimePattern(trimmed)) {
+                    return { timeMatch: entireKeywordAsTime, keywordWithoutTime: '' };
+                }
+            }
+            
+            // Try to find time patterns within the keyword (for mixed searches like "tech 9:30")
             const timePatterns = [
-                /\b(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?\b/i,
-                /\b(\d{3,4})\b/
+                /\b(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?\b/i,  // "9:59", "11:55 AM"
+                /\b(\d{3,4})\b/,  // "1155", "955"
+                /\b(\d{1,2})\b/   // "9", "11" (single/double digit hours)
             ];
             
             for (const pattern of timePatterns) {
-                const match = keyword.match(pattern);
+                const match = trimmed.match(pattern);
                 if (match) {
                     const timeStr = match[0];
                     const timeMatch = parseTimeInput(timeStr);
                     if (timeMatch) {
-                        const keywordWithoutTime = keyword.replace(timeStr, '').trim();
-                        return { timeMatch, keywordWithoutTime };
+                        // Only treat as time if it's a valid time pattern
+                        if (isTimePattern(timeStr)) {
+                            const keywordWithoutTime = trimmed.replace(timeStr, '').trim();
+                            return { timeMatch, keywordWithoutTime };
+                        }
                     }
                 }
             }
@@ -1203,17 +1222,29 @@
             if (timeMatch) {
                 const targetHours = timeMatch.getHours();
                 const targetMinutes = timeMatch.getMinutes();
-                const windowMs = 5 * 60 * 1000; // 5 minutes in milliseconds
+                const keywordTrimmed = keyword.trim();
+                
+                // Check if the search was just a single/double digit (like "9")
+                // If so, match the entire hour (9:00 to 9:59)
+                const isHourOnlySearch = /^(\d{1,2})$/.test(keywordTrimmed) && targetMinutes === 0;
                 
                 filtered = filtered.filter(article => {
                     const articleTime = new Date(article.published_at);
+                    const articleHours = articleTime.getHours();
+                    const articleMinutes = articleTime.getMinutes();
                     
-                    // Create a date object with the article's date but target time for comparison
-                    const articleDateWithTargetTime = new Date(articleTime);
-                    articleDateWithTargetTime.setHours(targetHours, targetMinutes, 0, 0);
-                    
-                    const timeDiff = Math.abs(articleTime.getTime() - articleDateWithTargetTime.getTime());
-                    return timeDiff <= windowMs;
+                    if (isHourOnlySearch) {
+                        // Match entire hour (e.g., "9" matches 9:00 to 9:59)
+                        return articleHours === targetHours;
+                    } else {
+                        // Match specific time with 5-minute window (e.g., "9:59" matches 9:54 to 10:04)
+                        const windowMs = 5 * 60 * 1000; // 5 minutes in milliseconds
+                        const articleDateWithTargetTime = new Date(articleTime);
+                        articleDateWithTargetTime.setHours(targetHours, targetMinutes, 0, 0);
+                        
+                        const timeDiff = Math.abs(articleTime.getTime() - articleDateWithTargetTime.getTime());
+                        return timeDiff <= windowMs;
+                    }
                 });
             }
 
