@@ -350,42 +350,6 @@
             color: #666;
         }
 
-        .time-input {
-            min-width: 140px;
-        }
-
-        /* Custom styling for time inputs */
-        .time-input::-webkit-calendar-picker-indicator {
-            filter: invert(0.5);
-            cursor: pointer;
-        }
-
-        .time-input::-webkit-datetime-edit {
-            color: #fff;
-        }
-
-        .time-input::-webkit-datetime-edit-fields-wrapper {
-            color: #fff;
-        }
-
-        .time-input::-webkit-datetime-edit-text {
-            color: #888;
-        }
-
-        .time-input::-webkit-datetime-edit-hour-field,
-        .time-input::-webkit-datetime-edit-minute-field {
-            color: #fff;
-        }
-
-        .time-range-group {
-            display: flex;
-            gap: 8px;
-            align-items: flex-end;
-        }
-
-        .time-range-group .search-input-group {
-            flex: 0 0 auto;
-        }
 
         .publication-select {
             padding: 10px 14px;
@@ -659,11 +623,11 @@
                         </div>
                         <div class="search-input-group">
                             <label class="search-label">Start Time</label>
-                            <input type="time" id="time-range-start" class="search-input time-input">
+                            <input type="text" id="time-range-start" class="search-input" placeholder="e.g., 9:00 AM or 09:00">
                         </div>
                         <div class="search-input-group">
                             <label class="search-label">End Time</label>
-                            <input type="time" id="time-range-end" class="search-input time-input">
+                            <input type="text" id="time-range-end" class="search-input" placeholder="e.g., 5:00 PM or 17:00">
                         </div>
                         <div class="search-input-group">
                             <label class="search-label">Publication</label>
@@ -1174,33 +1138,39 @@
 
             // Time range filter (time-only, applies to current day)
             if (searchFilters.timeRangeStart) {
-                const today = new Date();
-                const [hours, minutes] = searchFilters.timeRangeStart.split(':');
-                const startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(hours), parseInt(minutes), 0);
-                
-                filtered = filtered.filter(article => {
-                    const articleTime = new Date(article.published_at);
-                    // Check if article is from today and after start time
-                    const articleDate = new Date(articleTime.getFullYear(), articleTime.getMonth(), articleTime.getDate());
-                    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                    if (articleDate.getTime() !== todayDate.getTime()) return false;
-                    return articleTime >= startTime;
-                });
+                const startTimeParsed = parseTimeInput(searchFilters.timeRangeStart);
+                if (startTimeParsed) {
+                    const today = new Date();
+                    const startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                        startTimeParsed.getHours(), startTimeParsed.getMinutes(), 0);
+                    
+                    filtered = filtered.filter(article => {
+                        const articleTime = new Date(article.published_at);
+                        // Check if article is from today and after start time
+                        const articleDate = new Date(articleTime.getFullYear(), articleTime.getMonth(), articleTime.getDate());
+                        const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                        if (articleDate.getTime() !== todayDate.getTime()) return false;
+                        return articleTime >= startTime;
+                    });
+                }
             }
 
             if (searchFilters.timeRangeEnd) {
-                const today = new Date();
-                const [hours, minutes] = searchFilters.timeRangeEnd.split(':');
-                const endTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(hours), parseInt(minutes), 0);
-                
-                filtered = filtered.filter(article => {
-                    const articleTime = new Date(article.published_at);
-                    // Check if article is from today and before end time
-                    const articleDate = new Date(articleTime.getFullYear(), articleTime.getMonth(), articleTime.getDate());
-                    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                    if (articleDate.getTime() !== todayDate.getTime()) return false;
-                    return articleTime <= endTime;
-                });
+                const endTimeParsed = parseTimeInput(searchFilters.timeRangeEnd);
+                if (endTimeParsed) {
+                    const today = new Date();
+                    const endTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 
+                        endTimeParsed.getHours(), endTimeParsed.getMinutes(), 0);
+                    
+                    filtered = filtered.filter(article => {
+                        const articleTime = new Date(article.published_at);
+                        // Check if article is from today and before end time
+                        const articleDate = new Date(articleTime.getFullYear(), articleTime.getMonth(), articleTime.getDate());
+                        const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                        if (articleDate.getTime() !== todayDate.getTime()) return false;
+                        return articleTime <= endTime;
+                    });
+                }
             }
 
             // Publication filter
@@ -1291,18 +1261,20 @@
 
             const timeRangeStart = document.getElementById('time-range-start');
             if (timeRangeStart) {
-                timeRangeStart.addEventListener('change', () => {
+                const debouncedTimeRangeStart = debounce(() => {
                     searchFilters.timeRangeStart = timeRangeStart.value;
                     applySearchFilters();
-                });
+                }, 500);
+                timeRangeStart.addEventListener('input', debouncedTimeRangeStart);
             }
 
             const timeRangeEnd = document.getElementById('time-range-end');
             if (timeRangeEnd) {
-                timeRangeEnd.addEventListener('change', () => {
+                const debouncedTimeRangeEnd = debounce(() => {
                     searchFilters.timeRangeEnd = timeRangeEnd.value;
                     applySearchFilters();
-                });
+                }, 500);
+                timeRangeEnd.addEventListener('input', debouncedTimeRangeEnd);
             }
 
             const publicationFilter = document.getElementById('publication-filter');
