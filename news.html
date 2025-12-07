@@ -245,15 +245,17 @@
             padding: 32px;
             max-width: 1400px;
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
 
         .news-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 32px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid #1a1a1a;
+            margin-bottom: 0;
+            padding-bottom: 0;
         }
 
         .news-title-wrapper {
@@ -306,20 +308,25 @@
         }
 
         .news-search-section {
-            margin-top: 24px;
-            padding-top: 24px;
-            border-top: 1px solid #1a1a1a;
             display: flex;
             flex-wrap: wrap;
             gap: 12px;
-            align-items: center;
+            align-items: flex-end;
         }
 
         .search-input-group {
             display: flex;
             flex-direction: column;
-            gap: 0;
+            gap: 6px;
             flex: 0 0 auto;
+        }
+
+        .search-label {
+            font-size: 11px;
+            color: #888;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .search-input {
@@ -370,6 +377,15 @@
             color: #fff;
         }
 
+        .time-range-group {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .time-range-group .search-input-group {
+            flex: 0 0 auto;
+        }
 
         .publication-select {
             padding: 10px 14px;
@@ -637,12 +653,24 @@
 
                     <!-- Search Section -->
                     <div class="news-search-section">
-                        <input type="text" id="keyword-search" class="search-input" style="flex: 1; min-width: 300px;" placeholder="Search keywords, time (e.g., 11:55), title, summary, or source...">
-                        <input type="time" id="time-range-start" class="search-input time-input" placeholder="Start time">
-                        <input type="time" id="time-range-end" class="search-input time-input" placeholder="End time">
-                        <select id="publication-filter" class="publication-select">
-                            <option value="">All Publications</option>
-                        </select>
+                        <div class="search-input-group" style="flex: 1; min-width: 300px;">
+                            <label class="search-label">Search</label>
+                            <input type="text" id="keyword-search" class="search-input" placeholder="Search keywords, time (e.g., 11:55), title, summary, or source...">
+                        </div>
+                        <div class="search-input-group">
+                            <label class="search-label">Start Time</label>
+                            <input type="time" id="time-range-start" class="search-input time-input">
+                        </div>
+                        <div class="search-input-group">
+                            <label class="search-label">End Time</label>
+                            <input type="time" id="time-range-end" class="search-input time-input">
+                        </div>
+                        <div class="search-input-group">
+                            <label class="search-label">Publication</label>
+                            <select id="publication-filter" class="publication-select">
+                                <option value="">All Publications</option>
+                            </select>
+                        </div>
                         <button class="clear-filters-btn" id="clear-filters">Clear All</button>
                     </div>
 
