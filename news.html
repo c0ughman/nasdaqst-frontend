@@ -1316,17 +1316,14 @@
 
             const timeRangeStart = document.getElementById('time-range-start');
             if (timeRangeStart) {
-                // Auto-format as user types
-                timeRangeStart.addEventListener('input', (e) => {
-                    autoFormatTimeInput(e.target);
-                    const debouncedApply = debounce(() => {
-                        searchFilters.timeRangeStart = timeRangeStart.value;
-                        applySearchFilters();
-                    }, 500);
-                    debouncedApply();
-                });
+                // Apply filter as user types (without auto-formatting)
+                const debouncedTimeRangeStart = debounce(() => {
+                    searchFilters.timeRangeStart = timeRangeStart.value;
+                    applySearchFilters();
+                }, 500);
+                timeRangeStart.addEventListener('input', debouncedTimeRangeStart);
                 
-                // Format to military time on blur
+                // Format to military time on blur only
                 timeRangeStart.addEventListener('blur', (e) => {
                     const formatted = formatTimeToMilitary(e.target.value);
                     if (formatted && formatted !== e.target.value) {
@@ -1339,17 +1336,14 @@
 
             const timeRangeEnd = document.getElementById('time-range-end');
             if (timeRangeEnd) {
-                // Auto-format as user types
-                timeRangeEnd.addEventListener('input', (e) => {
-                    autoFormatTimeInput(e.target);
-                    const debouncedApply = debounce(() => {
-                        searchFilters.timeRangeEnd = timeRangeEnd.value;
-                        applySearchFilters();
-                    }, 500);
-                    debouncedApply();
-                });
+                // Apply filter as user types (without auto-formatting)
+                const debouncedTimeRangeEnd = debounce(() => {
+                    searchFilters.timeRangeEnd = timeRangeEnd.value;
+                    applySearchFilters();
+                }, 500);
+                timeRangeEnd.addEventListener('input', debouncedTimeRangeEnd);
                 
-                // Format to military time on blur
+                // Format to military time on blur only
                 timeRangeEnd.addEventListener('blur', (e) => {
                     const formatted = formatTimeToMilitary(e.target.value);
                     if (formatted && formatted !== e.target.value) {
