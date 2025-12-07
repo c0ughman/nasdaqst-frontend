@@ -312,15 +312,14 @@
             display: flex;
             flex-wrap: wrap;
             gap: 12px;
-            align-items: center;
+            align-items: flex-end;
         }
 
         .search-input-group {
             display: flex;
             flex-direction: column;
             gap: 6px;
-            flex: 1;
-            min-width: 200px;
+            flex: 0 0 auto;
         }
 
         .search-label {
@@ -385,6 +384,10 @@
             align-items: flex-end;
         }
 
+        .time-range-group .search-input-group {
+            flex: 0 0 auto;
+        }
+
         .publication-select {
             padding: 10px 14px;
             background: #1a1a1a;
@@ -396,12 +399,33 @@
             cursor: pointer;
             transition: all 0.2s ease;
             min-width: 180px;
+            height: 40px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
         }
 
         .publication-select:focus {
             outline: none;
             border-color: rgba(16, 185, 129, 0.5);
-            background: #1f1f1f;
+            background-color: #1f1f1f;
+            background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+
+        .publication-select:hover {
+            background-color: #1f1f1f;
+        }
+
+        .publication-select option {
+            background: #1a1a1a;
+            color: #fff;
+            padding: 10px;
         }
 
         .clear-filters-btn {
@@ -630,19 +654,17 @@
 
                     <!-- Search Section -->
                     <div class="news-search-section">
-                        <div class="search-input-group" style="flex: 2; min-width: 300px;">
+                        <div class="search-input-group" style="flex: 1; min-width: 300px;">
                             <label class="search-label">Search</label>
                             <input type="text" id="keyword-search" class="search-input" placeholder="Search keywords, time (e.g., 11:55), title, summary, or source...">
                         </div>
-                        <div class="search-input-group time-range-group">
-                            <div style="display: flex; flex-direction: column; gap: 6px;">
-                                <label class="search-label">Start Time</label>
-                                <input type="time" id="time-range-start" class="search-input time-input">
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 6px;">
-                                <label class="search-label">End Time</label>
-                                <input type="time" id="time-range-end" class="search-input time-input">
-                            </div>
+                        <div class="search-input-group">
+                            <label class="search-label">Start Time</label>
+                            <input type="time" id="time-range-start" class="search-input time-input">
+                        </div>
+                        <div class="search-input-group">
+                            <label class="search-label">End Time</label>
+                            <input type="time" id="time-range-end" class="search-input time-input">
                         </div>
                         <div class="search-input-group">
                             <label class="search-label">Publication</label>
