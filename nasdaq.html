@@ -32,7 +32,8 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: black;
+            background: radial-gradient(ellipse at top, #0a0a0a 0%, #000000 50%);
+            background-attachment: fixed;
             min-height: 100vh;
             max-height: 100vh;
             margin: 0;
@@ -40,11 +41,28 @@
             padding: 10px 0px;
             overflow: hidden;
             height: 100%;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 140, 66, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
         }
 
         .main-wrapper {
             width: 100%;
             max-width: 100%;
+            position: relative;
+            z-index: 1;
         }
 
         .container {
@@ -58,11 +76,19 @@
         }
 
         .card {
-            background: #333333;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 16px;
             padding: 22px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .card.right-top {
@@ -113,7 +139,8 @@
         }
 
         .right-top-item {
-            background: #282828;
+            background: linear-gradient(135deg, #1f1f1f 0%, #2a2a2a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 12px;
             padding: 8px 10px;
             display: flex;
@@ -122,6 +149,15 @@
             height: 70%;
             min-height: 44px;
             position: relative;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .right-top-item:hover {
+            background: linear-gradient(135deg, #2a2a2a 0%, #333333 100%);
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
 
@@ -171,13 +207,20 @@
         .score-value {
             font-size: 64px;
             font-weight: 700;
-            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #10b981 100%);
+            background-size: 200% 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             line-height: 1;
             margin-bottom: 6px;
-            filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.3));
+            filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.4));
+            animation: gradient-shift 3s ease infinite;
+        }
+
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
         }
 
         .score-status {
@@ -209,12 +252,32 @@
             font-weight: 500;
             text-decoration: none;
             cursor: pointer;
-            transition: color 0.2s ease;
+            transition: all 0.2s ease;
             white-space: nowrap;
+            position: relative;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
         }
 
         .nav-link:hover {
-            color: #ccc;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .nav-link:hover::after {
+            width: 80%;
         }
 
         .time-zone-group {
@@ -553,18 +616,23 @@
         }
 
         .driver-item {
-            background: transparent;
+            background: rgba(255, 255, 255, 0.02);
             padding: 14px 18px;
             border-radius: 12px;
-            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
             flex-direction: column;
             justify-content: space-between;
         }
 
         .driver-item:hover {
-            background: transparent;
-            transform: none;
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .driver-header {
@@ -608,27 +676,61 @@
         }
 
         .progress-bar {
-            height: 6px;
-            background: #0f0f0f;
-            border-radius: 6px;
+            height: 8px;
+            background: rgba(15, 15, 15, 0.8);
+            border-radius: 8px;
             overflow: hidden;
             position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .progress-fill {
             height: 100%;
-            border-radius: 6px;
-            transition: width 1s ease;
+            border-radius: 8px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
 
         .progress-fill.positive {
-            background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            background: linear-gradient(90deg, #10b981 0%, #34d399 50%, #10b981 100%);
+            background-size: 200% 100%;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            animation: gradient-flow 3s ease infinite;
+        }
+
+        @keyframes gradient-flow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
         }
 
         .progress-fill.negative {
-            background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+            background: linear-gradient(90deg, #ef4444 0%, #f87171 50%, #ef4444 100%);
+            background-size: 200% 100%;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            animation: gradient-flow 3s ease infinite;
+        }
+
+        .progress-fill.neutral {
+            background: linear-gradient(90deg, #888 0%, #aaa 50%, #888 100%);
+            background-size: 200% 100%;
+            box-shadow: 0 0 12px rgba(136, 136, 136, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
         /* Chart Section */
@@ -650,26 +752,50 @@
         }
 
         .chart-type-toggle {
-            background: rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            padding: 2px 4px;
+            border-radius: 6px;
+            padding: 4px 6px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #e0e0e0;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
-        
+
+        .chart-type-toggle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .chart-type-toggle:hover::before {
+            left: 100%;
+        }
+
         .chart-type-toggle svg {
             width: 12px;
             height: 12px;
+            transition: transform 0.3s ease;
         }
 
         .chart-type-toggle:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);
             border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .chart-type-toggle:active {
+            transform: scale(0.95);
         }
 
         /* Granular data toggle (Second/Tick) */
@@ -759,28 +885,52 @@
         }
 
         .timeframe-btn {
-            padding: 4px 10px;
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
-            border-radius: 10px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
             color: #888;
             font-size: 12px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timeframe-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .timeframe-btn:hover::before {
+            left: 100%;
         }
 
         .timeframe-btn:hover {
-            background: #1f1f1f;
-            border-color: #333;
-            color: #ccc;
+            background: linear-gradient(135deg, #2a2a2a 0%, #333333 100%);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         .timeframe-btn.active {
-            background: rgba(255, 140, 66, 0.1);
+            background: linear-gradient(135deg, rgba(255, 140, 66, 0.2) 0%, rgba(255, 140, 66, 0.1) 100%);
             color: #ff8c42;
-            border: 2px solid rgba(255, 140, 66, 0.3);
+            border: 1px solid rgba(255, 140, 66, 0.4);
+            box-shadow: 0 0 12px rgba(255, 140, 66, 0.3);
+        }
+
+        .timeframe-btn.active:hover {
+            box-shadow: 0 0 16px rgba(255, 140, 66, 0.5);
         }
 
         .timezone-select {
@@ -1369,25 +1519,50 @@
 
         .filter-btn {
             padding: 6px 14px;
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
-            border-radius: 10px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
             color: #888;
             font-size: 12px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .filter-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .filter-btn:hover::before {
+            left: 100%;
         }
 
         .filter-btn:hover {
-            background: #1f1f1f;
-            color: #ccc;
+            background: linear-gradient(135deg, #2a2a2a 0%, #333333 100%);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         .filter-btn.active {
-            background: rgba(16, 185, 129, 0.1);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
             color: #10b981;
-            border-color: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .filter-btn.active:hover {
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.5);
         }
 
         .news-items {
@@ -2368,14 +2543,14 @@
                         <!-- Current Sentiment Score Panel -->
                         <div class="oscillator-score-panel">
                             <!-- Expand/Collapse Icon -->
-                            <button type="button" class="oscillator-expand-btn" id="oscillator-expand-btn" title="Toggle visible window scale">
-                                <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                                    </svg>
-                                <svg class="collapse-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-                                    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-                                    </svg>
-                                </button>
+                        <button type="button" class="oscillator-expand-btn" id="oscillator-expand-btn" title="Toggle visible window scale">
+                            <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                                </svg>
+                            <svg class="collapse-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                                <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                                </svg>
+                            </button>
                             <!-- Score Display -->
                             <div class="oscillator-score-display">
                                 <div class="oscillator-score-value" id="oscillator-current-score">+0</div>
