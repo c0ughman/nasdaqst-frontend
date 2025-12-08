@@ -494,6 +494,11 @@
             color: #fff;
             line-height: 1.4;
             margin-bottom: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
         }
 
         .article-summary {
@@ -501,19 +506,36 @@
             color: #aaa;
             line-height: 1.6;
             margin-bottom: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
         }
 
-        /* Style links in article content - grey, underlined, not blue */
+        /* Style links in article content - grey, underlined, not blue - override all states */
         .article-summary a,
-        .article-title a {
+        .article-summary a:link,
+        .article-summary a:visited,
+        .article-summary a:active,
+        .article-summary a:focus,
+        .article-title a,
+        .article-title a:link,
+        .article-title a:visited,
+        .article-title a:active,
+        .article-title a:focus {
             color: #888 !important;
             text-decoration: underline !important;
+            background-color: transparent !important;
+            border: none !important;
+            outline: none !important;
             transition: color 0.2s ease;
         }
 
         .article-summary a:hover,
         .article-title a:hover {
             color: #aaa !important;
+            text-decoration: underline !important;
         }
 
         /* Hide images in news articles */
@@ -976,21 +998,50 @@
             }
         }
 
+        // Remove emojis from text
+        function removeEmojis(text) {
+            if (!text) return '';
+            // Remove emoji characters using regex
+            // This covers most emoji ranges in Unicode
+            return text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]|[\u{200D}]|[\u{FE0F}]/gu, '')
+                .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+                .trim();
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Sanitize text: remove emojis and escape HTML
+        function sanitizeText(text) {
+            if (!text) return '';
+            return escapeHtml(removeEmojis(text));
+        }
+
         // Create HTML for a single article
         function createArticleHTML(article) {
             const publishedDate = new Date(article.published_at);
             const formattedTimestamp = formatTimestamp(publishedDate);
+            
+            // Sanitize title and summary
+            const sanitizedTitle = sanitizeText(article.title || '');
+            const sanitizedSummary = article.summary ? sanitizeText(article.summary) : '';
+            const sanitizedSource = escapeHtml(article.source || 'Unknown Source');
 
             return `
                 <div class="news-article" onclick="window.open('${article.url}', '_blank')">
                     <div class="article-header">
                         <div class="article-meta">
-                            <span class="article-source">${article.source || 'Unknown Source'}</span>
+                            <span class="article-source">${sanitizedSource}</span>
                             <span class="article-time">${formattedTimestamp}</span>
                         </div>
                     </div>
-                    <h2 class="article-title">${article.title}</h2>
-                    ${article.summary ? `<p class="article-summary">${article.summary}</p>` : ''}
+                    <h2 class="article-title">${sanitizedTitle}</h2>
+                    ${sanitizedSummary ? `<p class="article-summary">${sanitizedSummary}</p>` : ''}
                     <div class="article-footer">
                         <a href="${article.url}" class="article-link" onclick="event.stopPropagation()" data-i18n="news.article.read-more">
                             Read full article →
