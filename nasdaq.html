@@ -4903,6 +4903,7 @@
 
                     // Detect NEWS UP signal (news score increases by > 0.01)
                     // News signals ALWAYS apply, even during decay
+                    // IMPORTANT: Up movements count by half in 9th view
                     let newsUpDetected = false;
                     let newsMovement = 0;
                     if (point.news != null && !isNaN(point.news)) {
@@ -4912,15 +4913,18 @@
                                 newsUpDetected = true;
                                 newsMovementsDetected++;
 
-                                // Start a new ramp for this news movement
+                                // HALVE the up movement for 9th view
+                                const halvedMovement = newsMovement * 0.5;
+
+                                // Start a new ramp for this news movement (using halved value)
                                 activeRamp = {
                                     startIndex: i,
-                                    targetChange: newsMovement,
+                                    targetChange: halvedMovement,
                                     baseValue: currentValue
                                 };
 
-                                // Apply first candle of ramp immediately (50%)
-                                const firstRampValue = calculateRampValue(0, newsMovement);
+                                // Apply first candle of ramp immediately (50% of halved movement)
+                                const firstRampValue = calculateRampValue(0, halvedMovement);
                                 currentValue = clampValue(currentValue + firstRampValue);
 
                                 // Stop any active decay - return to indefinite hold
@@ -4930,7 +4934,7 @@
                                 // DON'T reset candle counters - candle counting is independent
                                 // Candles track price action to detect when signal is ending
 
-                                console.log(`   📈 News UP #${newsMovementsDetected} at ${new Date(pointTime).toISOString()}: +${newsMovement.toFixed(2)} ramping over ${RAMP_CANDLES} candles, 1st=${firstRampValue.toFixed(2)} → value=${currentValue.toFixed(2)}`);
+                                console.log(`   📈 News UP #${newsMovementsDetected} at ${new Date(pointTime).toISOString()}: +${newsMovement.toFixed(2)} (halved to ${halvedMovement.toFixed(2)}) ramping over ${RAMP_CANDLES} candles, 1st=${firstRampValue.toFixed(2)} → value=${currentValue.toFixed(2)}`);
                             }
                         }
                         lastNewsValue = point.news;
