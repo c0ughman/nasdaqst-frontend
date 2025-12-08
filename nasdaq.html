@@ -7462,6 +7462,20 @@
                     });
                 }
 
+                // Candle-Decay Quick Button (9th View) - Setup
+                const candleDecayQuickBtn = document.getElementById('candle-decay-quick-btn');
+                const candleDecayRadio = document.getElementById('scale-candle-decay');
+                
+                function updateCandleDecayQuickButton() {
+                    if (candleDecayQuickBtn && candleDecayRadio) {
+                        if (candleDecayRadio.checked) {
+                            candleDecayQuickBtn.classList.add('active');
+                        } else {
+                            candleDecayQuickBtn.classList.remove('active');
+                        }
+                    }
+                }
+
                 // Add event listeners to scale mode radio buttons (all 9 buttons are now mutually exclusive)
                 const scaleRadios = document.querySelectorAll('input[name="oscillator-scale"]');
                 scaleRadios.forEach(radio => {
@@ -7472,9 +7486,7 @@
                         updateExpandIcon();
                         
                         // Update candle-decay quick button state
-                        if (candleDecayQuickBtn) {
-                            updateCandleDecayQuickButton();
-                        }
+                        updateCandleDecayQuickButton();
 
                         // Calculate weighted average if weighted mode is activated
                         const weightedModeActive = radio.value === 'weighted';
@@ -7700,20 +7712,7 @@
                     });
                 });
 
-                // Candle-Decay Quick Button (9th View) - Click handler and state sync
-                const candleDecayQuickBtn = document.getElementById('candle-decay-quick-btn');
-                const candleDecayRadio = document.getElementById('scale-candle-decay');
-                
-                function updateCandleDecayQuickButton() {
-                    if (candleDecayQuickBtn && candleDecayRadio) {
-                        if (candleDecayRadio.checked) {
-                            candleDecayQuickBtn.classList.add('active');
-                        } else {
-                            candleDecayQuickBtn.classList.remove('active');
-                        }
-                    }
-                }
-                
+                // Candle-Decay Quick Button (9th View) - Click handler
                 if (candleDecayQuickBtn && candleDecayRadio) {
                     // Click handler: toggle the radio button
                     candleDecayQuickBtn.addEventListener('click', () => {
