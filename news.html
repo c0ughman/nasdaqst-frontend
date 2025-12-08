@@ -503,6 +503,26 @@
             margin-bottom: 12px;
         }
 
+        /* Style links in article content - grey, underlined, not blue */
+        .article-summary a,
+        .article-title a {
+            color: #888 !important;
+            text-decoration: underline !important;
+            transition: color 0.2s ease;
+        }
+
+        .article-summary a:hover,
+        .article-title a:hover {
+            color: #aaa !important;
+        }
+
+        /* Hide images in news articles */
+        .article-summary img,
+        .article-title img,
+        .news-article img {
+            display: none !important;
+        }
+
         .article-footer {
             display: flex;
             justify-content: space-between;
