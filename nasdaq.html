@@ -1306,6 +1306,7 @@
             align-items: center;
             justify-content: center;
             flex: 1;
+            margin-top: 20px;
         }
 
         .oscillator-score-value {
@@ -7714,15 +7715,35 @@
 
                 // Candle-Decay Quick Button (9th View) - Click handler
                 if (candleDecayQuickBtn && candleDecayRadio) {
-                    // Click handler: toggle the radio button
+                    // Click handler: toggle the radio button on/off
                     candleDecayQuickBtn.addEventListener('click', () => {
-                        candleDecayRadio.checked = true;
-                        candleDecayRadio.dispatchEvent(new Event('change'));
+                        // Toggle: if currently checked, uncheck it (switch to visible mode)
+                        // If not checked, check it (switch to candle-decay mode)
+                        if (candleDecayRadio.checked) {
+                            // Uncheck and switch to visible mode (default)
+                            const visibleRadio = document.getElementById('scale-visible');
+                            if (visibleRadio) {
+                                visibleRadio.checked = true;
+                                visibleRadio.dispatchEvent(new Event('change'));
+                            }
+                        } else {
+                            // Check candle-decay mode
+                            candleDecayRadio.checked = true;
+                            candleDecayRadio.dispatchEvent(new Event('change'));
+                        }
                         updateCandleDecayQuickButton();
                     });
                     
                     // Sync state when radio button changes
                     candleDecayRadio.addEventListener('change', updateCandleDecayQuickButton);
+                    
+                    // Also sync when visible mode is selected (to uncheck candle-decay)
+                    const visibleRadio = document.getElementById('scale-visible');
+                    if (visibleRadio) {
+                        visibleRadio.addEventListener('change', () => {
+                            updateCandleDecayQuickButton();
+                        });
+                    }
                     
                     // Initial state sync
                     updateCandleDecayQuickButton();
