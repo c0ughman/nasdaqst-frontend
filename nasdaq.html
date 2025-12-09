@@ -5069,11 +5069,11 @@
         }
 
         // Granular version of candle-based decay processing
-        // Uses 5 consecutive candles for 1m/5m/15m, 3 consecutive candles for 30m/1h
+        // Uses 3 consecutive candles for all timeframes (increased sensitivity)
         // Red candles trigger positive decay to zero
         // Green candles (when negative) trigger negative decay to zero
         // News signals: halved and ramped over 3 candles
-        // Technical penalties: 2 consecutive drops of ≥7, applying -70 over 3 candles
+        // Technical penalties: 2 consecutive drops of ≥3, applying -70 over 3 candles
         function processGranularCandleBasedDecay(dataPoints, initialValue = null, timeframe = '1m') {
             try {
                 if (!dataPoints || dataPoints.length === 0) {
@@ -5100,8 +5100,8 @@
                 // Constants - vary based on timeframe
                 const RAMP_CANDLES = 3; // Number of candles for ramping (same for all timeframes)
 
-                // Consecutive candle threshold: 5 for 1m/5m/15m, 3 for 30m/1h
-                const CONSECUTIVE_CANDLE_THRESHOLD = (timeframe === '30m' || timeframe === '1h') ? 3 : 5;
+                // Consecutive candle threshold: 3 for all timeframes (increased sensitivity)
+                const CONSECUTIVE_CANDLE_THRESHOLD = 3;
 
                 console.log(`   Using ${CONSECUTIVE_CANDLE_THRESHOLD} consecutive candle threshold for ${timeframe}`);
 
@@ -5131,7 +5131,7 @@
 
                 const DECAY_DURATION_MS = 30 * 60 * 1000; // 30 minutes decay (no hold period)
                 const DECAY_RATE = 0.2303; // Per minute decay rate (same as view 5)
-                const TECHNICAL_DROP_THRESHOLD = 7; // Technical indicators drop by ≥7
+                const TECHNICAL_DROP_THRESHOLD = 3; // Technical indicators drop by ≥3 (increased sensitivity)
 
                 let newsMovementsDetected = 0;
                 let technicalPenaltiesApplied = 0;
