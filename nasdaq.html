@@ -5072,7 +5072,7 @@
         // Uses 3 consecutive candles for all timeframes (increased sensitivity)
         // Red candles trigger positive decay to zero
         // Green candles (when negative) trigger negative decay to zero
-        // News signals: halved and ramped over 3 candles
+        // News signals: multiplied by 0.25 and ramped over 3 candles (TESTING)
         // Technical penalties: 2 consecutive drops of ≥3, applying -70 over 3 candles
         function processGranularCandleBasedDecay(dataPoints, initialValue = null, timeframe = '1m') {
             try {
@@ -5184,7 +5184,7 @@
 
                     // Detect NEWS UP signal (news score increases by > 0.01)
                     // News signals ALWAYS apply, even during decay
-                    // IMPORTANT: Up movements count by half in granular candle-decay view
+                    // IMPORTANT: Up movements multiplied by 0.25 for granular candle-decay view (testing)
                     let newsUpDetected = false;
                     let newsMovement = 0;
                     if (point.news != null && !isNaN(point.news)) {
@@ -5194,18 +5194,18 @@
                                 newsUpDetected = true;
                                 newsMovementsDetected++;
 
-                                // HALVE the up movement for granular candle-decay view
-                                const halvedMovement = newsMovement * 0.5;
+                                // Multiply by 0.25 for granular candle-decay view (testing)
+                                const reducedMovement = newsMovement * 0.25;
 
-                                // Start a new ramp for this news movement (using halved value)
+                                // Start a new ramp for this news movement (using reduced value)
                                 activeRamp = {
                                     startIndex: i,
-                                    targetChange: halvedMovement,
+                                    targetChange: reducedMovement,
                                     baseValue: currentValue
                                 };
 
-                                // Apply first candle of ramp immediately (50% of halved movement)
-                                const firstRampValue = calculateRampValue(0, halvedMovement);
+                                // Apply first candle of ramp immediately (50% of reduced movement)
+                                const firstRampValue = calculateRampValue(0, reducedMovement);
                                 currentValue = clampValue(currentValue + firstRampValue);
 
                                 // Stop any active decay - return to indefinite hold
@@ -5215,7 +5215,7 @@
                                 // DON'T reset candle counters - candle counting is independent
                                 // Candles track price action to detect when signal is ending
 
-                                console.log(`   📈 News UP #${newsMovementsDetected} at ${new Date(pointTime).toISOString()}: +${newsMovement.toFixed(2)} (halved to ${halvedMovement.toFixed(2)}) ramping over ${RAMP_CANDLES} candles, 1st=${firstRampValue.toFixed(2)} → value=${currentValue.toFixed(2)}`);
+                                console.log(`   📈 News UP #${newsMovementsDetected} at ${new Date(pointTime).toISOString()}: +${newsMovement.toFixed(2)} (reduced to ${reducedMovement.toFixed(2)}) ramping over ${RAMP_CANDLES} candles, 1st=${firstRampValue.toFixed(2)} → value=${currentValue.toFixed(2)}`);
                             }
                         }
                         lastNewsValue = point.news;
