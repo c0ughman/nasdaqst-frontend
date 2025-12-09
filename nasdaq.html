@@ -5068,6 +5068,291 @@
             }
         }
 
+        // Granular version of candle-based decay processing
+        // Uses 5 consecutive candles for 1m/5m/15m, 3 consecutive candles for 30m/1h
+        // Red candles trigger positive decay to zero
+        // Green candles (when negative) trigger negative decay to zero
+        // News signals: halved and ramped over 3 candles
+        // Technical penalties: 2 consecutive drops of ≥7, applying -70 over 3 candles
+        function processGranularCandleBasedDecay(dataPoints, initialValue = null, timeframe = '1m') {
+            try {
+                if (!dataPoints || dataPoints.length === 0) {
+                    console.warn('⚠️ processGranularCandleBasedDecay: No data points provided');
+                    return dataPoints;
+                }
+
+                console.log('🔄 Processing GRANULAR candle-based decay mode...');
+                console.log(`   Timeframe: ${timeframe}`);
+                console.log(`   Total data points: ${dataPoints.length}`);
+
+                // Sort points by timestamp (oldest to newest)
+                const timestampToDataPoint = new Map();
+                dataPoints.forEach(dp => {
+                    if (dp.timestamp) {
+                        timestampToDataPoint.set(dp.timestamp.getTime(), dp);
+                    }
+                });
+                const sortedPoints = [...dataPoints].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+                // Helper function to clamp values to [-100, 100]
+                const clampValue = (value) => Math.min(100, Math.max(-100, value));
+
+                // Constants - vary based on timeframe
+                const RAMP_CANDLES = 3; // Number of candles for ramping (same for all timeframes)
+
+                // Consecutive candle threshold: 5 for 1m/5m/15m, 3 for 30m/1h
+                const CONSECUTIVE_CANDLE_THRESHOLD = (timeframe === '30m' || timeframe === '1h') ? 3 : 5;
+
+                console.log(`   Using ${CONSECUTIVE_CANDLE_THRESHOLD} consecutive candle threshold for ${timeframe}`);
+
+                // Simple 3-candle ramping: 50% - 25% - 25%
+                const calculateRampValue = (candleIndex, totalChange) => {
+                    if (candleIndex >= RAMP_CANDLES) return totalChange;
+
+                    if (candleIndex === 0) {
+                        return totalChange * 0.5; // First candle: 50%
+                    } else if (candleIndex === 1) {
+                        return totalChange * 0.75; // Second candle: 75% total (first 50% + second 25%)
+                    } else {
+                        return totalChange; // Third candle: 100% (first 50% + second 25% + third 25%)
+                    }
+                };
+
+                // State tracking
+                let currentValue = initialValue != null ? clampValue(initialValue) : 0;
+                let lastNewsValue = null;
+                let lastIndicatorsValue = null;
+                let consecutiveRedCandles = 0;
+                let consecutiveGreenCandles = 0;
+                let technicalDropCount = 0; // Track consecutive technical drops for -70 penalty
+                let decayStartTimestamp = null; // When decay was triggered
+                let decayStartValue = null; // Value when decay started
+                let activeRamp = null; // { startIndex, targetChange, baseValue }
+
+                const DECAY_DURATION_MS = 30 * 60 * 1000; // 30 minutes decay (no hold period)
+                const DECAY_RATE = 0.2303; // Per minute decay rate (same as view 5)
+                const TECHNICAL_DROP_THRESHOLD = 7; // Technical indicators drop by ≥7
+
+                let newsMovementsDetected = 0;
+                let technicalPenaltiesApplied = 0;
+
+                // Process each point chronologically
+                for (let i = 0; i < sortedPoints.length; i++) {
+                    const point = sortedPoints[i];
+                    const pointTime = point.timestamp.getTime();
+
+                    // Initialize candleDecayValue for all points
+                    if (point.candleDecayValue === undefined) {
+                        point.candleDecayValue = 0;
+                    }
+
+                    // First, update currentValue based on active decay (if any)
+                    // This ensures signals add/subtract from the CURRENT decayed value
+                    if (decayStartTimestamp !== null) {
+                        const timeSinceDecay = pointTime - decayStartTimestamp;
+                        if (timeSinceDecay < DECAY_DURATION_MS) {
+                            // Calculate exponential decay
+                            const minutesSinceDecay = timeSinceDecay / (60 * 1000);
+                            const decayedValue = decayStartValue * Math.exp(-DECAY_RATE * minutesSinceDecay);
+                            const beforeDecay = currentValue;
+                            currentValue = Math.abs(decayedValue) < 0.01 ? 0 : decayedValue;
+
+                            // Log decay for first few points or every 10 points
+                            if (i < 5 || i % 10 === 0) {
+                                console.log(`   ⏱️ DECAY: mins=${minutesSinceDecay.toFixed(2)}, startVal=${decayStartValue.toFixed(2)}, decayed=${currentValue.toFixed(2)}`);
+                            }
+                        } else {
+                            // Decay complete
+                            console.log(`   ✅ Decay COMPLETE at ${new Date(pointTime).toISOString()}`);
+                            currentValue = 0;
+                            decayStartTimestamp = null;
+                            decayStartValue = null;
+                        }
+                    }
+
+                    // Apply active ramp if in progress (BEFORE new signals)
+                    if (activeRamp && decayStartTimestamp === null) {
+                        const candlesIntoRamp = i - activeRamp.startIndex;
+                        if (candlesIntoRamp < RAMP_CANDLES) {
+                            const rampedChange = calculateRampValue(candlesIntoRamp, activeRamp.targetChange);
+                            currentValue = clampValue(activeRamp.baseValue + rampedChange);
+                        } else {
+                            // Ramp complete
+                            activeRamp = null;
+                        }
+                    }
+
+                    // Detect NEWS UP signal (news score increases by > 0.01)
+                    // News signals ALWAYS apply, even during decay
+                    // IMPORTANT: Up movements count by half in granular candle-decay view
+                    let newsUpDetected = false;
+                    let newsMovement = 0;
+                    if (point.news != null && !isNaN(point.news)) {
+                        if (lastNewsValue !== null && !isNaN(lastNewsValue)) {
+                            newsMovement = point.news - lastNewsValue;
+                            if (newsMovement > 0.01) {
+                                newsUpDetected = true;
+                                newsMovementsDetected++;
+
+                                // HALVE the up movement for granular candle-decay view
+                                const halvedMovement = newsMovement * 0.5;
+
+                                // Start a new ramp for this news movement (using halved value)
+                                activeRamp = {
+                                    startIndex: i,
+                                    targetChange: halvedMovement,
+                                    baseValue: currentValue
+                                };
+
+                                // Apply first candle of ramp immediately (50% of halved movement)
+                                const firstRampValue = calculateRampValue(0, halvedMovement);
+                                currentValue = clampValue(currentValue + firstRampValue);
+
+                                // Stop any active decay - return to indefinite hold
+                                decayStartTimestamp = null;
+                                decayStartValue = null;
+
+                                // DON'T reset candle counters - candle counting is independent
+                                // Candles track price action to detect when signal is ending
+
+                                console.log(`   📈 News UP #${newsMovementsDetected} at ${new Date(pointTime).toISOString()}: +${newsMovement.toFixed(2)} (halved to ${halvedMovement.toFixed(2)}) ramping over ${RAMP_CANDLES} candles, 1st=${firstRampValue.toFixed(2)} → value=${currentValue.toFixed(2)}`);
+                            }
+                        }
+                        lastNewsValue = point.news;
+                    }
+
+                    // Detect TECHNICAL DROP signal (indicators drop by ≥7)
+                    // Technical signals ALWAYS apply, even during decay
+                    let technicalDropDetected = false;
+                    if (point.indicators != null && !isNaN(point.indicators)) {
+                        if (lastIndicatorsValue !== null && !isNaN(lastIndicatorsValue)) {
+                            const technicalChange = point.indicators - lastIndicatorsValue;
+                            if (technicalChange <= -TECHNICAL_DROP_THRESHOLD) {
+                                technicalDropDetected = true;
+                                technicalDropCount++;
+
+                                console.log(`   📉 Technical DROP detected at ${new Date(pointTime).toISOString()}: ${technicalChange.toFixed(2)} (count: ${technicalDropCount})`);
+
+                                // Check if we have 2 drops
+                                if (technicalDropCount >= 2) {
+                                    technicalPenaltiesApplied++;
+                                    technicalDropCount = 0; // Reset counter
+
+                                    // Start a new ramp for this technical penalty
+                                    activeRamp = {
+                                        startIndex: i,
+                                        targetChange: -70,
+                                        baseValue: currentValue
+                                    };
+
+                                    // Apply first candle of ramp immediately (50%)
+                                    const firstRampValue = calculateRampValue(0, -70);
+                                    currentValue = clampValue(currentValue + firstRampValue);
+
+                                    // Stop any active decay - return to indefinite hold
+                                    decayStartTimestamp = null;
+                                    decayStartValue = null;
+
+                                    // DON'T reset candle counters - candle counting is independent
+                                    // Candles track price action to detect when signal is ending
+
+                                    console.log(`   ⚠️ Technical penalty #${technicalPenaltiesApplied} applied: -70 ramping over ${RAMP_CANDLES} candles, 1st=${firstRampValue.toFixed(2)} → value=${currentValue.toFixed(2)}`);
+                                }
+                            } else {
+                                // No drop, reset counter
+                                technicalDropCount = 0;
+                            }
+                        }
+                        lastIndicatorsValue = point.indicators;
+                    }
+
+                    // Track consecutive candles when we're holding a value (not at zero baseline)
+                    if (currentValue !== 0) {
+                        // Use 'price' as close (that's how the data is structured)
+                        const closePrice = point.close != null ? point.close : point.price;
+                        const openPrice = point.open;
+                        const isRedCandle = closePrice < openPrice;
+                        const isGreenCandle = closePrice > openPrice;
+
+                        // DEBUG: Log candle info for first 10 points
+                        if (i < 10) {
+                            console.log(`   [DEBUG] Point ${i}: open=${point.open}, close=${point.close}, isRed=${isRedCandle}, isGreen=${isGreenCandle}, redCount=${consecutiveRedCandles}, greenCount=${consecutiveGreenCandles}, value=${currentValue.toFixed(2)}`);
+                        }
+
+                        if (isRedCandle) {
+                            consecutiveRedCandles++;
+                            consecutiveGreenCandles = 0; // Reset green counter
+
+                            if (i < 20 || consecutiveRedCandles >= CONSECUTIVE_CANDLE_THRESHOLD - 1) {
+                                console.log(`   🔴 Red candle #${consecutiveRedCandles} at ${new Date(pointTime).toISOString()}, value=${currentValue.toFixed(2)}`);
+                            }
+
+                            // Check if threshold consecutive red candles
+                            if (consecutiveRedCandles >= CONSECUTIVE_CANDLE_THRESHOLD) {
+                                console.log(`   🕯️ ${CONSECUTIVE_CANDLE_THRESHOLD} consecutive RED candles detected at ${new Date(pointTime).toISOString()} → starting decay from ${currentValue.toFixed(2)}`);
+
+                                // Start decay to zero (skip hold period)
+                                decayStartTimestamp = pointTime;
+                                decayStartValue = currentValue;
+                                consecutiveRedCandles = 0; // Reset counter
+                            }
+                        } else if (isGreenCandle) {
+                            consecutiveGreenCandles++;
+                            consecutiveRedCandles = 0; // Reset red counter
+
+                            if (i < 20 || consecutiveGreenCandles >= CONSECUTIVE_CANDLE_THRESHOLD - 1) {
+                                console.log(`   🟢 Green candle #${consecutiveGreenCandles} at ${new Date(pointTime).toISOString()}, value=${currentValue.toFixed(2)}`);
+                            }
+
+                            // Check if threshold consecutive green candles AND we're negative
+                            if (consecutiveGreenCandles >= CONSECUTIVE_CANDLE_THRESHOLD && currentValue < 0) {
+                                console.log(`   🕯️ ${CONSECUTIVE_CANDLE_THRESHOLD} consecutive GREEN candles detected (negative state) at ${new Date(pointTime).toISOString()} → starting decay from ${currentValue.toFixed(2)} to zero`);
+
+                                // Start decay to zero (skip hold period)
+                                decayStartTimestamp = pointTime;
+                                decayStartValue = currentValue;
+                                consecutiveGreenCandles = 0; // Reset counter
+                            }
+                        } else {
+                            // Doji candle - log it
+                            if (i < 20) console.log(`   ⚪ Doji candle at ${new Date(pointTime).toISOString()}, redCount=${consecutiveRedCandles}, greenCount=${consecutiveGreenCandles}`);
+                        }
+                    } else {
+                        // Log when value is zero
+                        if (i < 10) console.log(`   [DEBUG] Point ${i}: value is ZERO, skipping candle tracking`);
+                    }
+
+                    // Store the current value (currentValue has already been updated with decay at the start of this iteration)
+                    point.candleDecayValue = clampValue(currentValue);
+                }
+
+                console.log(`   ✅ Processing complete. News movements: ${newsMovementsDetected}, Technical penalties: ${technicalPenaltiesApplied}`);
+
+                // Update all dataPoints with candleDecayValue values
+                sortedPoints.forEach(processedPoint => {
+                    if (processedPoint.timestamp) {
+                        const ts = processedPoint.timestamp.getTime();
+                        const originalPoint = timestampToDataPoint.get(ts);
+                        if (originalPoint) {
+                            originalPoint.candleDecayValue = processedPoint.candleDecayValue;
+                        }
+                    }
+                });
+
+                return dataPoints;
+            } catch (error) {
+                console.error('❌ Error in processGranularCandleBasedDecay:', error);
+                console.error('Stack trace:', error.stack);
+                // Set candleDecayValue to 0 for all points on error
+                dataPoints.forEach(point => {
+                    if (point.candleDecayValue === undefined) {
+                        point.candleDecayValue = 0;
+                    }
+                });
+                return dataPoints;
+            }
+        }
+
         async function updateChart(timeframe) {
             try {
                 console.log('=== UPDATE CHART START ===');
@@ -5459,41 +5744,77 @@
                 }
 
                 // Candle-Based Decay mode: Process news up signals with candle-triggered decay
-                // Only works with minute-by-minute data (not granular)
-                // CRITICAL: Process FULL sentimentDataset once, then copy to visible points
+                // Works with both minute-by-minute data AND granular data
+                // CRITICAL: Process FULL sentimentDataset once for minute data, then copy to visible points
+                // For granular data: Process granular dataset directly with inheritance
                 const candleDecayModeActive = document.getElementById('scale-candle-decay')?.checked || false;
-                if (candleDecayModeActive && !data.usingGranularData) {
-                    // Process the full dataset ONCE
-                    if (sentimentDataset && sentimentDataset.length > 0) {
-                        const firstPoint = sentimentDataset[0];
-                        if (!firstPoint._candleDecayProcessed) {
-                            console.log(`🕯️ Candle-Based Decay: Processing FULL dataset (${sentimentDataset.length} points)`);
-                            processCandleBasedDecay(sentimentDataset);
-                            // Mark all points as processed
-                            sentimentDataset.forEach(p => p._candleDecayProcessed = true);
-                        } else {
-                            console.log(`✅ Candle-Based Decay: Already processed, skipping`);
+                if (candleDecayModeActive) {
+                    if (data.usingGranularData) {
+                        // GRANULAR MODE: Process granular data directly
+                        console.log(`🕯️ Candle-Based Decay (GRANULAR): Processing ${data.dataPoints.length} points for ${timeframe}`);
+
+                        // Find inherited initial value from minute-level data
+                        let inheritedCandleDecayValue = null;
+                        if (sentimentDataset && sentimentDataset.length > 0 && data.dataPoints.length > 0) {
+                            // Process minute-level data first if not already done
+                            const firstPoint = sentimentDataset[0];
+                            if (!firstPoint._candleDecayProcessed) {
+                                console.log(`   🔄 Processing minute-level data first for inheritance...`);
+                                processCandleBasedDecay(sentimentDataset);
+                                sentimentDataset.forEach(p => p._candleDecayProcessed = true);
+                            }
+
+                            // Find the last minute-level candleDecayValue before granular data starts
+                            const firstGranularTime = data.dataPoints[0].timestamp.getTime();
+                            const minutePointsBeforeGranular = sentimentDataset
+                                .filter(p => p.timestamp && p.timestamp.getTime() <= firstGranularTime)
+                                .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+                            if (minutePointsBeforeGranular.length > 0) {
+                                const lastMinutePoint = minutePointsBeforeGranular[minutePointsBeforeGranular.length - 1];
+                                if (lastMinutePoint.candleDecayValue != null) {
+                                    inheritedCandleDecayValue = lastMinutePoint.candleDecayValue;
+                                    console.log(`   📌 Inheriting candleDecayValue: ${inheritedCandleDecayValue.toFixed(2)} from ${lastMinutePoint.timestamp.toISOString()}`);
+                                }
+                            }
                         }
 
-                        // Copy candleDecayValue from sentimentDataset to visible dataPoints
-                        if (data.dataPoints && data.dataPoints.length > 0) {
-                            const sentimentMap = new Map();
-                            sentimentDataset.forEach(p => {
-                                if (p.timestamp) {
-                                    sentimentMap.set(p.timestamp.getTime(), p.candleDecayValue);
-                                }
-                            });
-                            let copiedCount = 0;
-                            data.dataPoints.forEach(p => {
-                                if (p.timestamp) {
-                                    const value = sentimentMap.get(p.timestamp.getTime());
-                                    if (value !== undefined) {
-                                        p.candleDecayValue = value;
-                                        copiedCount++;
+                        // Process granular data with inherited value and timeframe-specific thresholds
+                        processGranularCandleBasedDecay(data.dataPoints, inheritedCandleDecayValue, timeframe);
+
+                    } else {
+                        // MINUTE MODE: Process the full dataset ONCE
+                        if (sentimentDataset && sentimentDataset.length > 0) {
+                            const firstPoint = sentimentDataset[0];
+                            if (!firstPoint._candleDecayProcessed) {
+                                console.log(`🕯️ Candle-Based Decay: Processing FULL dataset (${sentimentDataset.length} points)`);
+                                processCandleBasedDecay(sentimentDataset);
+                                // Mark all points as processed
+                                sentimentDataset.forEach(p => p._candleDecayProcessed = true);
+                            } else {
+                                console.log(`✅ Candle-Based Decay: Already processed, skipping`);
+                            }
+
+                            // Copy candleDecayValue from sentimentDataset to visible dataPoints
+                            if (data.dataPoints && data.dataPoints.length > 0) {
+                                const sentimentMap = new Map();
+                                sentimentDataset.forEach(p => {
+                                    if (p.timestamp) {
+                                        sentimentMap.set(p.timestamp.getTime(), p.candleDecayValue);
                                     }
-                                }
-                            });
-                            console.log(`✅ Copied candleDecayValue to ${copiedCount}/${data.dataPoints.length} visible points`);
+                                });
+                                let copiedCount = 0;
+                                data.dataPoints.forEach(p => {
+                                    if (p.timestamp) {
+                                        const value = sentimentMap.get(p.timestamp.getTime());
+                                        if (value !== undefined) {
+                                            p.candleDecayValue = value;
+                                            copiedCount++;
+                                        }
+                                    }
+                                });
+                                console.log(`✅ Copied candleDecayValue to ${copiedCount}/${data.dataPoints.length} visible points`);
+                            }
                         }
                     }
                 }
@@ -5574,6 +5895,7 @@
                 window.currentChartData = data.dataPoints;
                 window.currentFullTimeframeData = data.fullTimeframeData;
                 window.currentTimeLabels = data.labels || [];
+                window.currentUsingGranularData = data.usingGranularData || false;
 
                 // Draw sentiment line in oscillator chart
                 drawSentimentOscillator(data.dataPoints, data.fullTimeframeData, window.currentTimeLabels);
@@ -7630,40 +7952,75 @@
                         }
 
                         // Candle-Based Decay mode: Process news up signals with candle-triggered decay
-                        // CRITICAL: Process FULL sentimentDataset once, then copy to visible points
+                        // Works with both minute-by-minute data AND granular data
                         const candleDecayModeActive = radio.value === 'candle-decay';
                         if (candleDecayModeActive) {
-                            // Process the full dataset ONCE
-                            if (sentimentDataset && sentimentDataset.length > 0) {
-                                const firstPoint = sentimentDataset[0];
-                                if (!firstPoint._candleDecayProcessed) {
-                                    console.log(`🕯️ Candle-Based Decay mode activated: Processing FULL dataset (${sentimentDataset.length} points)`);
-                                    processCandleBasedDecay(sentimentDataset);
-                                    // Mark all points as processed
-                                    sentimentDataset.forEach(p => p._candleDecayProcessed = true);
-                                } else {
-                                    console.log(`✅ Candle-Based Decay: Already processed, skipping`);
+                            if (window.currentUsingGranularData) {
+                                // GRANULAR MODE: Process granular data directly
+                                console.log(`🕯️ Candle-Based Decay (GRANULAR): Processing ${window.currentChartData.length} points for ${currentTimeframe}`);
+
+                                // Find inherited initial value from minute-level data
+                                let inheritedCandleDecayValue = null;
+                                if (sentimentDataset && sentimentDataset.length > 0 && window.currentChartData.length > 0) {
+                                    // Process minute-level data first if not already done
+                                    const firstPoint = sentimentDataset[0];
+                                    if (!firstPoint._candleDecayProcessed) {
+                                        console.log(`   🔄 Processing minute-level data first for inheritance...`);
+                                        processCandleBasedDecay(sentimentDataset);
+                                        sentimentDataset.forEach(p => p._candleDecayProcessed = true);
+                                    }
+
+                                    // Find the last minute-level candleDecayValue before granular data starts
+                                    const firstGranularTime = window.currentChartData[0].timestamp.getTime();
+                                    const minutePointsBeforeGranular = sentimentDataset
+                                        .filter(p => p.timestamp && p.timestamp.getTime() <= firstGranularTime)
+                                        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+                                    if (minutePointsBeforeGranular.length > 0) {
+                                        const lastMinutePoint = minutePointsBeforeGranular[minutePointsBeforeGranular.length - 1];
+                                        if (lastMinutePoint.candleDecayValue != null) {
+                                            inheritedCandleDecayValue = lastMinutePoint.candleDecayValue;
+                                            console.log(`   📌 Inheriting candleDecayValue: ${inheritedCandleDecayValue.toFixed(2)} from ${lastMinutePoint.timestamp.toISOString()}`);
+                                        }
+                                    }
                                 }
 
-                                // Copy candleDecayValue from sentimentDataset to visible currentChartData
-                                if (window.currentChartData && window.currentChartData.length > 0) {
-                                    const sentimentMap = new Map();
-                                    sentimentDataset.forEach(p => {
-                                        if (p.timestamp) {
-                                            sentimentMap.set(p.timestamp.getTime(), p.candleDecayValue);
-                                        }
-                                    });
-                                    let copiedCount = 0;
-                                    window.currentChartData.forEach(p => {
-                                        if (p.timestamp) {
-                                            const value = sentimentMap.get(p.timestamp.getTime());
-                                            if (value !== undefined) {
-                                                p.candleDecayValue = value;
-                                                copiedCount++;
+                                // Process granular data with inherited value and timeframe-specific thresholds
+                                processGranularCandleBasedDecay(window.currentChartData, inheritedCandleDecayValue, currentTimeframe);
+
+                            } else {
+                                // MINUTE MODE: Process the full dataset ONCE
+                                if (sentimentDataset && sentimentDataset.length > 0) {
+                                    const firstPoint = sentimentDataset[0];
+                                    if (!firstPoint._candleDecayProcessed) {
+                                        console.log(`🕯️ Candle-Based Decay mode activated: Processing FULL dataset (${sentimentDataset.length} points)`);
+                                        processCandleBasedDecay(sentimentDataset);
+                                        // Mark all points as processed
+                                        sentimentDataset.forEach(p => p._candleDecayProcessed = true);
+                                    } else {
+                                        console.log(`✅ Candle-Based Decay: Already processed, skipping`);
+                                    }
+
+                                    // Copy candleDecayValue from sentimentDataset to visible currentChartData
+                                    if (window.currentChartData && window.currentChartData.length > 0) {
+                                        const sentimentMap = new Map();
+                                        sentimentDataset.forEach(p => {
+                                            if (p.timestamp) {
+                                                sentimentMap.set(p.timestamp.getTime(), p.candleDecayValue);
                                             }
-                                        }
-                                    });
-                                    console.log(`✅ Copied candleDecayValue to ${copiedCount}/${window.currentChartData.length} visible points`);
+                                        });
+                                        let copiedCount = 0;
+                                        window.currentChartData.forEach(p => {
+                                            if (p.timestamp) {
+                                                const value = sentimentMap.get(p.timestamp.getTime());
+                                                if (value !== undefined) {
+                                                    p.candleDecayValue = value;
+                                                    copiedCount++;
+                                                }
+                                            }
+                                        });
+                                        console.log(`✅ Copied candleDecayValue to ${copiedCount}/${window.currentChartData.length} visible points`);
+                                    }
                                 }
                             }
                         }
