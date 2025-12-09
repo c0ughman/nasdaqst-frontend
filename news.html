@@ -467,12 +467,6 @@
             gap: 16px;
         }
 
-        .sentiment-score {
-            font-size: 14px;
-            color: #888;
-            font-weight: 500;
-        }
-
         .article-meta {
             display: flex;
             align-items: center;
@@ -1088,11 +1082,6 @@
             const sanitizedTitle = sanitizeText(article.title || '');
             const sanitizedSummary = article.summary ? sanitizeText(article.summary) : '';
             const sanitizedSource = escapeHtml(article.source || 'Unknown Source');
-            
-            // Get sentiment score if available
-            const sentimentScore = article.sentiment_score !== null && article.sentiment_score !== undefined 
-                ? article.sentiment_score.toFixed(2) 
-                : null;
 
             return `
                 <div class="news-article" onclick="window.open('${article.url}', '_blank')">
@@ -1101,7 +1090,6 @@
                             <span class="article-source">${sanitizedSource}</span>
                             <span class="article-time">${formattedTimestamp}</span>
                         </div>
-                        ${sentimentScore !== null ? `<span class="sentiment-score">${sentimentScore}</span>` : ''}
                     </div>
                     <h2 class="article-title">${sanitizedTitle}</h2>
                     ${sanitizedSummary ? `<p class="article-summary">${sanitizedSummary}</p>` : ''}
