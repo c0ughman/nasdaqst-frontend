@@ -467,6 +467,12 @@
             gap: 16px;
         }
 
+        .sentiment-score {
+            font-size: 14px;
+            color: #888;
+            font-weight: 500;
+        }
+
         .article-meta {
             display: flex;
             align-items: center;
@@ -1016,10 +1022,61 @@
             return div.innerHTML;
         }
 
-        // Sanitize text: remove emojis and escape HTML
+        // Strip HTML tags and markdown from text
+        function stripHtmlAndMarkdown(text) {
+            if (!text) return '';
+            
+            let cleanText = text;
+            
+            // Remove HTML tags using regex (safer than innerHTML)
+            // This regex matches <...> tags and removes them
+            cleanText = cleanText.replace(/<[^>]*>/g, '');
+            
+            // Decode HTML entities (like &amp;, &lt;, &gt;, etc.)
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = cleanText;
+            cleanText = tempDiv.textContent || tempDiv.innerText || '';
+            
+            // Remove markdown patterns
+            // Remove markdown links: [text](url) -> text
+            cleanText = cleanText.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+            
+            // Remove markdown images: ![alt](url) -> alt
+            cleanText = cleanText.replace(/!\[([^\]]*)\]\([^\)]+\)/g, '$1');
+            
+            // Remove markdown bold/italic: **text** or __text__ -> text
+            cleanText = cleanText.replace(/\*\*([^*]+)\*\*/g, '$1');
+            cleanText = cleanText.replace(/__([^_]+)__/g, '$1');
+            cleanText = cleanText.replace(/\*([^*]+)\*/g, '$1');
+            cleanText = cleanText.replace(/_([^_]+)_/g, '$1');
+            
+            // Remove markdown headers: # Header -> Header
+            cleanText = cleanText.replace(/^#{1,6}\s+(.+)$/gm, '$1');
+            
+            // Remove markdown code blocks: `code` -> code
+            cleanText = cleanText.replace(/`([^`]+)`/g, '$1');
+            
+            // Remove markdown lists: - item or * item -> item
+            cleanText = cleanText.replace(/^[\s]*[-*+]\s+/gm, '');
+            
+            // Remove markdown blockquotes: > text -> text
+            cleanText = cleanText.replace(/^>\s+/gm, '');
+            
+            // Remove markdown horizontal rules
+            cleanText = cleanText.replace(/^[-*_]{3,}$/gm, '');
+            
+            // Clean up extra whitespace
+            cleanText = cleanText.replace(/\s+/g, ' ').trim();
+            
+            return cleanText;
+        }
+
+        // Sanitize text: remove emojis, strip HTML/markdown, and escape remaining HTML
         function sanitizeText(text) {
             if (!text) return '';
-            return escapeHtml(removeEmojis(text));
+            let cleaned = stripHtmlAndMarkdown(text);
+            cleaned = removeEmojis(cleaned);
+            return escapeHtml(cleaned);
         }
 
         // Create HTML for a single article
@@ -1031,6 +1088,11 @@
             const sanitizedTitle = sanitizeText(article.title || '');
             const sanitizedSummary = article.summary ? sanitizeText(article.summary) : '';
             const sanitizedSource = escapeHtml(article.source || 'Unknown Source');
+            
+            // Get sentiment score if available
+            const sentimentScore = article.sentiment_score !== null && article.sentiment_score !== undefined 
+                ? article.sentiment_score.toFixed(2) 
+                : null;
 
             return `
                 <div class="news-article" onclick="window.open('${article.url}', '_blank')">
@@ -1039,6 +1101,7 @@
                             <span class="article-source">${sanitizedSource}</span>
                             <span class="article-time">${formattedTimestamp}</span>
                         </div>
+                        ${sentimentScore !== null ? `<span class="sentiment-score">${sentimentScore}</span>` : ''}
                     </div>
                     <h2 class="article-title">${sanitizedTitle}</h2>
                     ${sanitizedSummary ? `<p class="article-summary">${sanitizedSummary}</p>` : ''}
