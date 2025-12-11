@@ -968,9 +968,20 @@
             border: 1px solid #ffffff;
             position: absolute;
             top: 20px;
+            right: 40px;
+            bottom: 20px;
+            width: 25px;
+            pointer-events: none;
+        }
+
+        .chart-side-panel-second {
+            background: #000000;
+            border: 1px solid #ffffff;
+            position: absolute;
+            top: 20px;
             right: 10px;
             bottom: 20px;
-            width: 50px;
+            width: 25px;
             pointer-events: none;
         }
 
@@ -2536,6 +2547,7 @@
                         </div>
                         
                         <div class="chart-side-panel"></div>
+                        <div class="chart-side-panel-second"></div>
                     </div>
 
                     <!-- Oscillator -->
@@ -4757,18 +4769,42 @@
                 }
                 
                 console.log(`   ✅ Processing complete. Detected ${movementsDetected} movements.`);
-                
-                // Update all dataPoints with processedNews values
+
+                // Calculate 5-candle moving average for processedNews
+                console.log('📊 Calculating 5-candle moving average for news...');
+                for (let i = 0; i < sortedPoints.length; i++) {
+                    const point = sortedPoints[i];
+
+                    // Get the last 5 candles (including current)
+                    const startIdx = Math.max(0, i - 4); // Go back 4 candles, plus current = 5 total
+                    const candlesForAverage = sortedPoints.slice(startIdx, i + 1);
+
+                    // Calculate average of processedNews values
+                    const validValues = candlesForAverage
+                        .map(p => p.processedNews)
+                        .filter(v => v != null && !isNaN(v));
+
+                    if (validValues.length > 0) {
+                        const sum = validValues.reduce((acc, val) => acc + val, 0);
+                        point.processedNewsMA5 = sum / validValues.length;
+                    } else {
+                        point.processedNewsMA5 = 0;
+                    }
+                }
+                console.log(`   ✅ Calculated 5-candle moving average for ${sortedPoints.length} points`);
+
+                // Update all dataPoints with processedNews and processedNewsMA5 values
                 sortedPoints.forEach(processedPoint => {
                     if (processedPoint.timestamp) {
                         const ts = processedPoint.timestamp.getTime();
                         const originalPoint = timestampToDataPoint.get(ts);
                         if (originalPoint) {
                             originalPoint.processedNews = processedPoint.processedNews;
+                            originalPoint.processedNewsMA5 = processedPoint.processedNewsMA5;
                         }
                     }
                 });
-                
+
                 return dataPoints;
             } catch (error) {
                 console.error('❌ Error in processNewsScoresWithHoldDecay:', error);
@@ -5888,6 +5924,11 @@
                 // Draw sentiment line in oscillator chart
                 drawSentimentOscillator(data.dataPoints, data.fullTimeframeData, window.currentTimeLabels);
 
+                // Auto-expand oscillator when using granular data
+                if (typeof window.autoExpandOscillatorForGranular === 'function') {
+                    window.autoExpandOscillatorForGranular();
+                }
+
                 // Update oscillator score display with the last value from current view
                 // This ensures the score box shows the last plotted value in the chart
                 if (data.dataPoints && data.dataPoints.length > 0) {
@@ -6714,18 +6755,22 @@
                     maxValue = 100;
                 }
             } else if (scaleMode === 'news') {
-                // News mode: Scale based on raw news values from backend only
+                // News mode: Scale based on BOTH raw news values and moving average
                 // Use actual values without clamping
                 const allNewsValues = [];
                 const datasetToUse = scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints);
-                
+
                 datasetToUse.forEach(p => {
-                    // Include only raw news values from backend (not processedNews)
+                    // Include raw news values from backend
                     if (p.news != null && !isNaN(p.news)) {
                         allNewsValues.push(p.news);
                     }
+                    // Include moving average values
+                    if (p.processedNewsMA5 != null && !isNaN(p.processedNewsMA5)) {
+                        allNewsValues.push(p.processedNewsMA5);
+                    }
                 });
-                
+
                 if (allNewsValues.length > 0) {
                     minValue = Math.min(...allNewsValues);
                     maxValue = Math.max(...allNewsValues);
@@ -6900,35 +6945,32 @@
             // Get summary eye button for mutual exclusivity check
             const summaryEyeBtn = document.getElementById('eye-summary');
 
-            // In news mode, draw only the tracking line
+            // In news mode, draw BOTH raw news (semi-transparent) and moving average (full opacity)
             if (newsModeActive) {
                 console.log(`📊 News mode: minValue=${minValue.toFixed(2)}, maxValue=${maxValue.toFixed(2)}`);
-                
+
                 // Sort points by x coordinate to ensure proper drawing order
                 const sortedDataPoints = [...dataPoints].sort((a, b) => (a.x || 0) - (b.x || 0));
-                
-                // Draw the tracking line (using processedNews)
-                const trackingPoints = sortedDataPoints.filter(p => {
-                    const newsValue = p.processedNews != null ? p.processedNews : 0;
+
+                // FIRST: Draw raw news line (semi-transparent for spike detection)
+                const rawNewsPoints = sortedDataPoints.filter(p => {
+                    const newsValue = p.news != null ? p.news : null;
                     return newsValue != null && !isNaN(newsValue) && p.x != null;
                 });
-                console.log(`📊 Tracking points: ${trackingPoints.length}, sample values:`, 
-                    trackingPoints.slice(0, 3).map(p => ({ x: p.x, processedNews: p.processedNews, y: valueToY(p.processedNews || 0) })));
-                
-                if (trackingPoints.length > 0) {
-                    const getTrackingValue = (point) => point.processedNews != null ? point.processedNews : 0;
-                    const firstTrackingY = valueToY(getTrackingValue(trackingPoints[0]));
-                    let pathD = `M ${trackingPoints[0].x},${firstTrackingY}`;
-                    console.log(`📊 First tracking point: x=${trackingPoints[0].x}, value=${getTrackingValue(trackingPoints[0])}, y=${firstTrackingY}`);
-                    
-                    for (let i = 1; i < trackingPoints.length; i++) {
-                        const x = trackingPoints[i].x;
-                        const y = valueToY(getTrackingValue(trackingPoints[i]));
-                        const prevX = trackingPoints[i - 1].x;
-                        const prevY = valueToY(getTrackingValue(trackingPoints[i - 1]));
-                        
-                        if (i === 1 && trackingPoints.length === 2) {
-                            pathD += ` L ${x},${y}`;
+                console.log(`📊 Raw news points: ${rawNewsPoints.length}`);
+
+                if (rawNewsPoints.length > 0) {
+                    const getRawNewsValue = (point) => point.news != null ? point.news : 0;
+                    let rawPathD = `M ${rawNewsPoints[0].x},${valueToY(getRawNewsValue(rawNewsPoints[0]))}`;
+
+                    for (let i = 1; i < rawNewsPoints.length; i++) {
+                        const x = rawNewsPoints[i].x;
+                        const y = valueToY(getRawNewsValue(rawNewsPoints[i]));
+                        const prevX = rawNewsPoints[i - 1].x;
+                        const prevY = valueToY(getRawNewsValue(rawNewsPoints[i - 1]));
+
+                        if (i === 1 && rawNewsPoints.length === 2) {
+                            rawPathD += ` L ${x},${y}`;
                         } else {
                             const dx = x - prevX;
                             const dy = y - prevY;
@@ -6936,22 +6978,66 @@
                             const cp1Y = prevY + dy * 0.15;
                             const cp2X = x - dx * 0.5;
                             const cp2Y = y - dy * 0.15;
-                            pathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
+                            rawPathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
                         }
                     }
-                    
-                    const trackingPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    trackingPath.setAttribute('d', pathD);
-                    trackingPath.setAttribute('fill', 'none');
-                    trackingPath.setAttribute('stroke', '#ec4899'); // Pink to match news color
-                    trackingPath.setAttribute('stroke-width', '1');
-                    trackingPath.setAttribute('vector-effect', 'non-scaling-stroke');
-                    trackingPath.setAttribute('stroke-linecap', 'round');
-                    trackingPath.setAttribute('stroke-linejoin', 'round');
-                    trackingPath.setAttribute('opacity', '0.9'); // Full opacity
-                    trackingPath.classList.add('oscillator-line-news-tracking');
-                    svg.appendChild(trackingPath);
-                    console.log(`✅ Drew news tracking line with ${trackingPoints.length} points, path length: ${pathD.length}, first 100 chars: ${pathD.substring(0, 100)}`);
+
+                    const rawNewsPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    rawNewsPath.setAttribute('d', rawPathD);
+                    rawNewsPath.setAttribute('fill', 'none');
+                    rawNewsPath.setAttribute('stroke', '#ec4899'); // Pink
+                    rawNewsPath.setAttribute('stroke-width', '1');
+                    rawNewsPath.setAttribute('vector-effect', 'non-scaling-stroke');
+                    rawNewsPath.setAttribute('stroke-linecap', 'round');
+                    rawNewsPath.setAttribute('stroke-linejoin', 'round');
+                    rawNewsPath.setAttribute('opacity', '0.3'); // Semi-transparent for spike detection
+                    rawNewsPath.classList.add('oscillator-line-news-raw');
+                    svg.appendChild(rawNewsPath);
+                    console.log(`✅ Drew raw news line (semi-transparent) with ${rawNewsPoints.length} points`);
+                }
+
+                // SECOND: Draw moving average line (full opacity, main signal)
+                const maPoints = sortedDataPoints.filter(p => {
+                    const maValue = p.processedNewsMA5 != null ? p.processedNewsMA5 : null;
+                    return maValue != null && !isNaN(maValue) && p.x != null;
+                });
+                console.log(`📊 Moving average points: ${maPoints.length}`);
+
+                if (maPoints.length > 0) {
+                    const getMAValue = (point) => point.processedNewsMA5 != null ? point.processedNewsMA5 : 0;
+                    let maPathD = `M ${maPoints[0].x},${valueToY(getMAValue(maPoints[0]))}`;
+
+                    for (let i = 1; i < maPoints.length; i++) {
+                        const x = maPoints[i].x;
+                        const y = valueToY(getMAValue(maPoints[i]));
+                        const prevX = maPoints[i - 1].x;
+                        const prevY = valueToY(getMAValue(maPoints[i - 1]));
+
+                        if (i === 1 && maPoints.length === 2) {
+                            maPathD += ` L ${x},${y}`;
+                        } else {
+                            const dx = x - prevX;
+                            const dy = y - prevY;
+                            const cp1X = prevX + dx * 0.5;
+                            const cp1Y = prevY + dy * 0.15;
+                            const cp2X = x - dx * 0.5;
+                            const cp2Y = y - dy * 0.15;
+                            maPathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
+                        }
+                    }
+
+                    const maPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    maPath.setAttribute('d', maPathD);
+                    maPath.setAttribute('fill', 'none');
+                    maPath.setAttribute('stroke', '#ec4899'); // Pink
+                    maPath.setAttribute('stroke-width', '1.5'); // Slightly thicker for visibility
+                    maPath.setAttribute('vector-effect', 'non-scaling-stroke');
+                    maPath.setAttribute('stroke-linecap', 'round');
+                    maPath.setAttribute('stroke-linejoin', 'round');
+                    maPath.setAttribute('opacity', '0.9'); // Full opacity
+                    maPath.classList.add('oscillator-line-news-ma');
+                    svg.appendChild(maPath);
+                    console.log(`✅ Drew 5-candle moving average line (full opacity) with ${maPoints.length} points`);
                 }
                 
                 // Draw center zero line AFTER all data lines so it's visible on top
@@ -7475,6 +7561,11 @@
                     
                     // Update chart with new data type
                     await updateChart(currentTimeframe);
+                    
+                    // Auto-expand oscillator when using granular data
+                    if (typeof window.autoExpandOscillatorForGranular === 'function') {
+                        window.autoExpandOscillatorForGranular();
+                    }
                 }
             });
         });
@@ -7531,6 +7622,13 @@
 
                 await updateChart(timeframe);
                 currentTimeframe = timeframe; // Update current timeframe for hover
+                
+                // Auto-expand oscillator when using granular data
+                if (config && config.supportsGranular) {
+                    if (typeof autoExpandOscillatorForGranular === 'function') {
+                        autoExpandOscillatorForGranular();
+                    }
+                }
             });
         });
 
@@ -7696,7 +7794,8 @@
                 });
 
                 // Function to update expand/collapse icon based on scale mode
-                function updateExpandIcon() {
+                // Make it globally accessible
+                window.updateExpandIcon = function() {
                     const expandBtn = document.getElementById('oscillator-expand-btn');
                     const expandIcon = expandBtn?.querySelector('.expand-icon');
                     const collapseIcon = expandBtn?.querySelector('.collapse-icon');
@@ -7734,7 +7833,51 @@
                             collapseIcon.style.display = 'none';
                         }
                     }
-                }
+                };
+                // Local reference for use within this scope
+                const updateExpandIcon = window.updateExpandIcon;
+
+                // Function to auto-expand oscillator when granular data is active
+                // Make it globally accessible
+                window.autoExpandOscillatorForGranular = function() {
+                    if (!window.currentUsingGranularData) {
+                        return; // Not using granular data, skip
+                    }
+
+                    const expandBtn = document.getElementById('oscillator-expand-btn');
+                    const visibleRadio = document.getElementById('scale-visible');
+                    const fixedRadio = document.getElementById('scale-fixed');
+                    const candleDecayRadio = document.getElementById('scale-candle-decay');
+
+                    if (!expandBtn) return;
+
+                    const isCandleDecayMode = candleDecayRadio?.checked || false;
+
+                    if (isCandleDecayMode) {
+                        // Candle-decay mode: set expanded state to true
+                        if (expandBtn.dataset.candleDecayExpanded !== 'true') {
+                            expandBtn.dataset.candleDecayExpanded = 'true';
+                            if (typeof window.updateExpandIcon === 'function') {
+                                window.updateExpandIcon();
+                            }
+                            // Redraw chart with new scale
+                            if (window.currentChartData) {
+                                drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData, window.currentTimeLabels || []);
+                            }
+                        }
+                    } else if (visibleRadio && fixedRadio) {
+                        // Other modes: switch to visible (expanded/min-max) mode
+                        if (!visibleRadio.checked) {
+                            visibleRadio.checked = true;
+                            fixedRadio.checked = false;
+                            if (typeof window.updateExpandIcon === 'function') {
+                                window.updateExpandIcon();
+                            }
+                            // Dispatch change event to trigger chart update
+                            visibleRadio.dispatchEvent(new Event('change'));
+                        }
+                    }
+                };
 
                 // Add click handler for expand/collapse button
                 // Toggles between fixed (-100 to +100) and visible (min-max) modes
