@@ -7768,33 +7768,8 @@
                     toggleEyeIcon(indicatorsEyeBtn, false);
                 }
                 
-                // Initialize candle-decay expanded state (collapsed/fixed by default)
-                const expandBtn = document.getElementById('oscillator-expand-btn');
-                if (expandBtn && !expandBtn.dataset.candleDecayExpanded) {
-                    expandBtn.dataset.candleDecayExpanded = 'false';
-                }
-
-                // Initialize expand/collapse icon
-                updateExpandIcon();
-
-                // Add event listeners to all eye icon buttons
-                const allEyeButtons = [
-                    { btn: document.getElementById('eye-sentiment'), line: 'sentiment' },
-                    { btn: document.getElementById('eye-news'), line: 'news' },
-                    { btn: document.getElementById('eye-indicators'), line: 'indicators' },
-                    { btn: document.getElementById('eye-summary'), line: 'summary' }
-                ];
-
-                allEyeButtons.forEach(({ btn, line }) => {
-                    if (btn) {
-                        btn.addEventListener('click', () => {
-                            handleEyeClick(btn, line);
-                        });
-                    }
-                });
-
                 // Function to update expand/collapse icon based on scale mode
-                // Make it globally accessible
+                // Make it globally accessible - DEFINE BEFORE USE
                 window.updateExpandIcon = function() {
                     const expandBtn = document.getElementById('oscillator-expand-btn');
                     const expandIcon = expandBtn?.querySelector('.expand-icon');
@@ -7836,6 +7811,31 @@
                 };
                 // Local reference for use within this scope
                 const updateExpandIcon = window.updateExpandIcon;
+
+                // Initialize candle-decay expanded state (collapsed/fixed by default)
+                const expandBtn = document.getElementById('oscillator-expand-btn');
+                if (expandBtn && !expandBtn.dataset.candleDecayExpanded) {
+                    expandBtn.dataset.candleDecayExpanded = 'false';
+                }
+
+                // Initialize expand/collapse icon
+                updateExpandIcon();
+
+                // Add event listeners to all eye icon buttons
+                const allEyeButtons = [
+                    { btn: document.getElementById('eye-sentiment'), line: 'sentiment' },
+                    { btn: document.getElementById('eye-news'), line: 'news' },
+                    { btn: document.getElementById('eye-indicators'), line: 'indicators' },
+                    { btn: document.getElementById('eye-summary'), line: 'summary' }
+                ];
+
+                allEyeButtons.forEach(({ btn, line }) => {
+                    if (btn) {
+                        btn.addEventListener('click', () => {
+                            handleEyeClick(btn, line);
+                        });
+                    }
+                });
 
                 // Function to auto-expand oscillator when granular data is active
                 // Make it globally accessible
