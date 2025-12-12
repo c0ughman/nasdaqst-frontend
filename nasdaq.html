@@ -7838,10 +7838,18 @@
                 });
 
                 // Function to auto-expand oscillator when granular data is active
+                // Only auto-expands once when granular data is first detected, then allows manual toggling
                 // Make it globally accessible
                 window.autoExpandOscillatorForGranular = function() {
                     if (!window.currentUsingGranularData) {
+                        // Reset flag when not using granular data
+                        window.granularAutoExpanded = false;
                         return; // Not using granular data, skip
+                    }
+
+                    // Only auto-expand once per granular session
+                    if (window.granularAutoExpanded) {
+                        return; // Already auto-expanded, allow manual toggling
                     }
 
                     const expandBtn = document.getElementById('oscillator-expand-btn');
@@ -7854,9 +7862,10 @@
                     const isCandleDecayMode = candleDecayRadio?.checked || false;
 
                     if (isCandleDecayMode) {
-                        // Candle-decay mode: set expanded state to true
+                        // Candle-decay mode: set expanded state to true (only if not already set)
                         if (expandBtn.dataset.candleDecayExpanded !== 'true') {
                             expandBtn.dataset.candleDecayExpanded = 'true';
+                            window.granularAutoExpanded = true; // Mark as auto-expanded
                             if (typeof window.updateExpandIcon === 'function') {
                                 window.updateExpandIcon();
                             }
@@ -7864,17 +7873,24 @@
                             if (window.currentChartData) {
                                 drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData, window.currentTimeLabels || []);
                             }
+                        } else {
+                            // Already expanded, mark as done
+                            window.granularAutoExpanded = true;
                         }
                     } else if (visibleRadio && fixedRadio) {
-                        // Other modes: switch to visible (expanded/min-max) mode
+                        // Other modes: switch to visible (expanded/min-max) mode (only if not already set)
                         if (!visibleRadio.checked) {
                             visibleRadio.checked = true;
                             fixedRadio.checked = false;
+                            window.granularAutoExpanded = true; // Mark as auto-expanded
                             if (typeof window.updateExpandIcon === 'function') {
                                 window.updateExpandIcon();
                             }
                             // Dispatch change event to trigger chart update
                             visibleRadio.dispatchEvent(new Event('change'));
+                        } else {
+                            // Already in visible mode, mark as done
+                            window.granularAutoExpanded = true;
                         }
                     }
                 };
@@ -7939,6 +7955,10 @@
                 scaleRadios.forEach(radio => {
                     radio.addEventListener('change', async () => {
                         console.log(`Scale mode changed to: ${radio.value}`);
+                        
+                        // Reset auto-expand flag when switching chart modes
+                        // This allows auto-expand to work again when switching back to granular
+                        window.granularAutoExpanded = false;
                         
                         // Update expand/collapse icon
                         updateExpandIcon();
