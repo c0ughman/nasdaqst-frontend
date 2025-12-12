@@ -7049,8 +7049,10 @@
                 }
                 
                 // Draw center zero line AFTER all data lines so it's visible on top
+                // Only draw if zero is within or near the visible range (data crosses zero or includes zero)
                 const zeroY = valueToY(0);
-                if (zeroY >= 0 && zeroY <= 100) {
+                const shouldDrawZeroLine = (minValue <= 0 && maxValue >= 0); // Zero is within range
+                if (shouldDrawZeroLine && zeroY >= 0 && zeroY <= 100) {
                     const centerLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                     centerLine.setAttribute('x1', '2');
                     centerLine.setAttribute('y1', zeroY.toString());
@@ -7064,6 +7066,8 @@
                     centerLine.setAttribute('stroke-linecap', 'round');
                     svg.appendChild(centerLine);
                     console.log(`✅ Drew zero line at Y=${zeroY.toFixed(2)}`);
+                } else if (!shouldDrawZeroLine) {
+                    console.log(`⏭️ Skipped zero line (not in range: ${minValue.toFixed(2)} to ${maxValue.toFixed(2)})`);
                 }
                 
                 // IMPORTANT: Append SVG to DOM before returning!
