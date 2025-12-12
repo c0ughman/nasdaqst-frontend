@@ -6755,31 +6755,39 @@
                     maxValue = 100;
                 }
             } else if (scaleMode === 'news') {
-                // News mode: Scale based on BOTH raw news values and moving average
-                // Use actual values without clamping
-                const allNewsValues = [];
-                const datasetToUse = scaleMode === 'visible' ? dataPoints : (fullTimeframeData || dataPoints);
+                // News mode: Check expand state (similar to candle-decay)
+                const expandBtn = document.getElementById('oscillator-expand-btn');
+                const isExpanded = expandBtn?.dataset.newsExpanded === 'true';
 
-                datasetToUse.forEach(p => {
-                    // Include raw news values from backend
-                    if (p.news != null && !isNaN(p.news)) {
-                        allNewsValues.push(p.news);
-                    }
-                    // Include moving average values
-                    if (p.processedNewsMA5 != null && !isNaN(p.processedNewsMA5)) {
-                        allNewsValues.push(p.processedNewsMA5);
-                    }
-                });
+                if (isExpanded) {
+                    // Expanded: Use min-max of news values from visible dataPoints
+                    const allNewsValues = [];
 
-                if (allNewsValues.length > 0) {
-                    minValue = Math.min(...allNewsValues);
-                    maxValue = Math.max(...allNewsValues);
-                    // Add 10% padding to ensure both lines are fully visible
-                    const range = maxValue - minValue;
-                    const padding = range * 0.1 || 10;
-                    minValue -= padding;
-                    maxValue += padding;
+                    dataPoints.forEach(p => {
+                        // Include raw news values from backend
+                        if (p.news != null && !isNaN(p.news)) {
+                            allNewsValues.push(p.news);
+                        }
+                        // Include moving average values
+                        if (p.processedNewsMA5 != null && !isNaN(p.processedNewsMA5)) {
+                            allNewsValues.push(p.processedNewsMA5);
+                        }
+                    });
+
+                    if (allNewsValues.length > 0) {
+                        minValue = Math.min(...allNewsValues);
+                        maxValue = Math.max(...allNewsValues);
+                        // Add 10% padding to ensure both lines are fully visible
+                        const range = maxValue - minValue;
+                        const padding = range * 0.1 || 10;
+                        minValue -= padding;
+                        maxValue += padding;
+                    } else {
+                        minValue = -100;
+                        maxValue = 100;
+                    }
                 } else {
+                    // Collapsed: Fixed scale -100 to +100
                     minValue = -100;
                     maxValue = 100;
                 }
@@ -7777,14 +7785,28 @@
                     const visibleRadio = document.getElementById('scale-visible');
                     const fixedRadio = document.getElementById('scale-fixed');
                     const candleDecayRadio = document.getElementById('scale-candle-decay');
+                    const newsRadio = document.getElementById('scale-news');
                     const isVisibleMode = visibleRadio?.checked || false;
                     const isFixedMode = fixedRadio?.checked || false;
                     const isCandleDecayMode = candleDecayRadio?.checked || false;
+                    const isNewsMode = newsRadio?.checked || false;
 
                     if (expandBtn && expandIcon && collapseIcon) {
                         if (isCandleDecayMode) {
                             // Candle-decay mode: check expanded state
                             const isExpanded = expandBtn.dataset.candleDecayExpanded === 'true';
+                            if (isExpanded) {
+                                // Show collapse icon - expanded/min-max view
+                                expandIcon.style.display = 'none';
+                                collapseIcon.style.display = 'block';
+                            } else {
+                                // Show expand icon - collapsed/fixed view
+                                expandIcon.style.display = 'block';
+                                collapseIcon.style.display = 'none';
+                            }
+                        } else if (isNewsMode) {
+                            // News mode: check expanded state
+                            const isExpanded = expandBtn.dataset.newsExpanded === 'true';
                             if (isExpanded) {
                                 // Show collapse icon - expanded/min-max view
                                 expandIcon.style.display = 'none';
@@ -7816,6 +7838,11 @@
                 const expandBtn = document.getElementById('oscillator-expand-btn');
                 if (expandBtn && !expandBtn.dataset.candleDecayExpanded) {
                     expandBtn.dataset.candleDecayExpanded = 'false';
+                }
+
+                // Initialize news mode expanded state (expanded/min-max by default)
+                if (expandBtn && !expandBtn.dataset.newsExpanded) {
+                    expandBtn.dataset.newsExpanded = 'true';
                 }
 
                 // Initialize expand/collapse icon
@@ -7857,10 +7884,12 @@
                     const visibleRadio = document.getElementById('scale-visible');
                     const fixedRadio = document.getElementById('scale-fixed');
                     const candleDecayRadio = document.getElementById('scale-candle-decay');
+                    const newsRadio = document.getElementById('scale-news');
 
                     if (!expandBtn) return;
 
                     const isCandleDecayMode = candleDecayRadio?.checked || false;
+                    const isNewsMode = newsRadio?.checked || false;
 
                     if (isCandleDecayMode) {
                         // Candle-decay mode: set expanded state to true (only if not already set)
@@ -7878,8 +7907,24 @@
                             // Already expanded, mark as done
                             window.granularAutoExpanded = true;
                         }
+                    } else if (isNewsMode) {
+                        // News mode: set expanded state to true (only if not already set)
+                        if (expandBtn.dataset.newsExpanded !== 'true') {
+                            expandBtn.dataset.newsExpanded = 'true';
+                            window.granularAutoExpanded = true; // Mark as auto-expanded
+                            if (typeof window.updateExpandIcon === 'function') {
+                                window.updateExpandIcon();
+                            }
+                            // Redraw chart with new scale
+                            if (window.currentChartData) {
+                                drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData, window.currentTimeLabels || []);
+                            }
+                        } else {
+                            // Already expanded, mark as done
+                            window.granularAutoExpanded = true;
+                        }
                     } else {
-                        // For other modes (signal, news, weighted, etc.), do NOT change the radio selection
+                        // For other modes (signal, weighted, etc.), do NOT change the radio selection
                         // The radio buttons are mutually exclusive, so changing visible/fixed would uncheck the user's selected mode
                         // Just mark as done - the user's selected view mode should be preserved
                         window.granularAutoExpanded = true;
@@ -7894,12 +7939,25 @@
                         const visibleRadio = document.getElementById('scale-visible');
                         const fixedRadio = document.getElementById('scale-fixed');
                         const candleDecayRadio = document.getElementById('scale-candle-decay');
+                        const newsRadio = document.getElementById('scale-news');
 
                         // Check if in candle-decay mode
                         if (candleDecayRadio?.checked) {
                             // Toggle candle-decay expanded state
                             const isExpanded = expandBtn.dataset.candleDecayExpanded === 'true';
                             expandBtn.dataset.candleDecayExpanded = isExpanded ? 'false' : 'true';
+
+                            // Update icon
+                            updateExpandIcon();
+
+                            // Redraw chart with new scale
+                            if (window.currentChartData) {
+                                drawSentimentOscillator(window.currentChartData, window.currentFullTimeframeData, window.currentTimeLabels || []);
+                            }
+                        } else if (newsRadio?.checked) {
+                            // Toggle news mode expanded state
+                            const isExpanded = expandBtn.dataset.newsExpanded === 'true';
+                            expandBtn.dataset.newsExpanded = isExpanded ? 'false' : 'true';
 
                             // Update icon
                             updateExpandIcon();
