@@ -3655,29 +3655,29 @@
                 if (lastPoint && lastPoint.candleDecayValue != null) {
                     sentiment = lastPoint.candleDecayValue;
                 }
-            } else if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
-                // Get the most recent data point's processed news value (or fallback to regular news)
+            } else if ((sentimentEyeActive || summaryEyeActive) && window.currentChartData && window.currentChartData.length > 0) {
+                // Sentiment or Summary eye icon is active (check FIRST for priority) - show candleDecayValue
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
-                if (lastPoint) {
-                    sentiment = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
+                if (lastPoint && lastPoint.candleDecayValue != null) {
+                    sentiment = lastPoint.candleDecayValue;
                 }
             } else if (newsEyeActive && window.currentChartData && window.currentChartData.length > 0) {
-                // News eye icon is active - show news value
+                // News eye icon is active - show news MA5 value
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                 if (lastPoint) {
-                    sentiment = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
+                    sentiment = lastPoint.processedNewsMA5 != null ? lastPoint.processedNewsMA5 : (lastPoint.processedNews != null ? lastPoint.processedNews : 0);
+                }
+            } else if (newsModeActive && window.currentChartData && window.currentChartData.length > 0) {
+                // News mode active - show news MA5 value
+                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                if (lastPoint) {
+                    sentiment = lastPoint.processedNewsMA5 != null ? lastPoint.processedNewsMA5 : (lastPoint.processedNews != null ? lastPoint.processedNews : 0);
                 }
             } else if (indicatorsEyeActive && window.currentChartData && window.currentChartData.length > 0) {
                 // Indicators eye icon is active - show indicators value
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                 if (lastPoint && lastPoint.indicators != null) {
                     sentiment = lastPoint.indicators;
-                }
-            } else if ((sentimentEyeActive || summaryEyeActive) && window.currentChartData && window.currentChartData.length > 0) {
-                // Sentiment or Summary eye icon is active - show candleDecayValue
-                const lastPoint = window.currentChartData[window.currentChartData.length - 1];
-                if (lastPoint && lastPoint.candleDecayValue != null) {
-                    sentiment = lastPoint.candleDecayValue;
                 }
             }
 
@@ -7385,12 +7385,12 @@
                             }
                         }
 
-                        // Draw raw news path (semi-transparent, thinner)
+                        // Draw raw news path (semi-transparent, much thinner)
                         const rawPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                         rawPath.setAttribute('d', rawPathD);
                         rawPath.setAttribute('fill', 'none');
                         rawPath.setAttribute('stroke', driver.color);
-                        rawPath.setAttribute('stroke-width', '0.5');
+                        rawPath.setAttribute('stroke-width', '0.25');
                         rawPath.setAttribute('vector-effect', 'non-scaling-stroke');
                         rawPath.setAttribute('stroke-linecap', 'round');
                         rawPath.setAttribute('stroke-linejoin', 'round');
@@ -8735,8 +8735,10 @@
                     tooltipLabel = 'Candle Decay';
                     tooltipColor = '#ff8c42'; // Orange for candle-based decay
                 } else if (newsModeActive || newsEyeActive) {
-                    // Use processedNewsMA5 (5th view with moving average)
-                    displayValue = result.processedNewsMA5 != null ? result.processedNewsMA5 : 0;
+                    // Use processedNewsMA5 (5th view with moving average), fallback to processedNews
+                    displayValue = result.processedNewsMA5 != null ? result.processedNewsMA5 :
+                                   (result.processedNews != null ? result.processedNews :
+                                   (result.news != null ? result.news : 0));
                     tooltipLabel = 'News Score';
                     tooltipColor = '#ec4899'; // Pink for news
                 } else if (indicatorsEyeActive && result.indicators != null) {
