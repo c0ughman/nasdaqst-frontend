@@ -1035,7 +1035,7 @@
             bottom: 150px;
             left: 0;
             background: #ff8c42;
-            color: #ffffff;
+            color: #000000;
             padding: 2px 6px;
             border-radius: 2px;
             font-size: 9px;
@@ -5957,6 +5957,9 @@
                     updateSentimentDisplay({
                         composite_score: displayValue
                     });
+
+                    // Also update sentiment drivers to reflect current values
+                    updateSentimentDrivers({}, null, displayValue);
                 }
 
                 console.log('=== UPDATE CHART COMPLETE ===');
@@ -7808,6 +7811,9 @@
                                 updateSentimentDisplay({
                                     composite_score: displayValue
                                 });
+
+                                // Also update sentiment drivers to reflect current values
+                                updateSentimentDrivers({}, null, displayValue);
                             }
                         }
                     }
@@ -8639,7 +8645,7 @@
             timeLabel.classList.add('show');
             timeLabel.innerHTML = `<strong>${result.time}</strong>`;
             timeLabel.style.backgroundColor = activeColor; // Color the background
-            timeLabel.style.color = '#ffffff'; // Keep text white
+            timeLabel.style.color = '#000000'; // Keep text black
             // Position time label to follow cursor x-position (same as hover line)
             const labelWidth = 50;
             const labelXRelativeToCanvas = Math.max(0, Math.min(clampedMouseX - (labelWidth / 2), chartCanvasRect.width - labelWidth));
