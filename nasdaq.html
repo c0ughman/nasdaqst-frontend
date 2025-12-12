@@ -7394,7 +7394,7 @@
                         rawPath.setAttribute('vector-effect', 'non-scaling-stroke');
                         rawPath.setAttribute('stroke-linecap', 'round');
                         rawPath.setAttribute('stroke-linejoin', 'round');
-                        rawPath.setAttribute('opacity', '0.9'); // Much less transparent (90% opacity)
+                        rawPath.setAttribute('opacity', '0.95'); // Almost fully opaque (95% opacity)
                         rawPath.classList.add('oscillator-line-news-raw');
                         svg.appendChild(rawPath);
 
@@ -8616,15 +8616,32 @@
             // Interpolate the value based on X position
             const result = interpolateValue(percentX, window.currentChartData);
 
+            // Determine active view color for hover line and time label
+            const newsEyeActive = document.getElementById('eye-news')?.classList.contains('active') || false;
+            const indicatorsEyeActive = document.getElementById('eye-indicators')?.classList.contains('active') || false;
+            const sentimentEyeActive = document.getElementById('eye-sentiment')?.classList.contains('active') || false;
+            const summaryEyeActive = document.getElementById('eye-summary')?.classList.contains('active') || false;
+
+            let activeColor = '#888888'; // Default gray
+            if (newsEyeActive) {
+                activeColor = '#ec4899'; // Pink for news
+            } else if (indicatorsEyeActive) {
+                activeColor = '#3b82f6'; // Blue for indicators
+            } else if (sentimentEyeActive || summaryEyeActive) {
+                activeColor = '#ff8c42'; // Orange for sentiment/summary
+            }
+
             // Show unified hover line (spans both charts) - position relative to charts-wrapper
             const chartsWrapperRect = chartsWrapper.getBoundingClientRect();
             const chartCanvasOffsetX = chartCanvasRect.left - chartsWrapperRect.left;
             unifiedHoverLine.style.display = 'block';
             unifiedHoverLine.style.left = (clampedMouseX + chartCanvasOffsetX) + 'px';
+            unifiedHoverLine.style.borderColor = activeColor; // Color the hover line
 
             // Show time label between charts and oscillator (follows cursor x-position)
             timeLabel.classList.add('show');
             timeLabel.innerHTML = `<strong>${result.time}</strong>`;
+            timeLabel.style.color = activeColor; // Color the time label
             // Position time label to follow cursor x-position (same as hover line)
             const labelWidth = 50;
             const labelXRelativeToCanvas = Math.max(0, Math.min(clampedMouseX - (labelWidth / 2), chartCanvasRect.width - labelWidth));
@@ -8650,35 +8667,37 @@
                     const signalModeActive = document.getElementById('scale-signal')?.checked || false;
                     const newsModeActive = document.getElementById('scale-news')?.checked || false;
                     const weightedModeActive = document.getElementById('scale-weighted')?.checked || false;
-                    
-                    // Check which eye icon is active (for driver toggles)
-                    const newsEyeActive = document.getElementById('eye-news')?.classList.contains('active') || false;
-                    const indicatorsEyeActive = document.getElementById('eye-indicators')?.classList.contains('active') || false;
-                    const sentimentEyeActive = document.getElementById('eye-sentiment')?.classList.contains('active') || false;
-
-                    const summaryEyeActive = document.getElementById('eye-summary')?.classList.contains('active') || false;
 
                     let displayValue = null;
+                    let scoreColor = '#ff8c42'; // Default orange for sentiment/summary
+
                     if (signalModeActive && result.signalValue != null) {
                         displayValue = result.signalValue; // Use signal value in signal mode
+                        scoreColor = '#ffffff'; // White for signal
                     } else if (weightedModeActive && result.weightedValue != null) {
                         displayValue = result.weightedValue; // Use weighted average value
+                        scoreColor = '#ff8c42'; // Orange for weighted
                     } else if (newsModeActive || newsEyeActive) {
                         // Use processedNewsMA5 (moving average) if available, fallback to processedNews, then news
                         displayValue = result.processedNewsMA5 != null ? result.processedNewsMA5 :
                                      (result.processedNews != null ? result.processedNews :
                                      (result.news != null ? result.news : 0));
+                        scoreColor = '#ec4899'; // Pink for news
                     } else if (indicatorsEyeActive && result.indicators != null) {
                         displayValue = result.indicators; // Use indicators value
+                        scoreColor = '#3b82f6'; // Blue for indicators
                     } else if ((sentimentEyeActive || summaryEyeActive) && result.candleDecayValue != null) {
                         displayValue = result.candleDecayValue; // Use candle decay value
+                        scoreColor = '#ff8c42'; // Orange for sentiment/summary
                     } else if (result.candleDecayValue != null) {
                         displayValue = result.candleDecayValue; // Use candle decay as fallback
+                        scoreColor = '#ff8c42'; // Orange
                     }
 
                     if (displayValue != null) {
                         const sentimentDisplay = displayValue > 0 ? `+${Math.round(displayValue)}` : Math.round(displayValue);
                         tooltipSentiment.textContent = `Score: ${sentimentDisplay}`;
+                        tooltipSentiment.style.color = scoreColor; // Apply color to score
                         tooltipSentiment.style.display = 'block';
                     } else {
                         tooltipSentiment.style.display = 'none';
