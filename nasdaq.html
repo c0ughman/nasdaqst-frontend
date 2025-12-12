@@ -5728,10 +5728,10 @@
                     });
                 }
 
-                // News mode: Process news scores with hold/decay logic
+                // ALWAYS process news scores with hold/decay logic (now used as default news line)
                 // Apply to both regular and granular data
                 const newsModeActive = document.getElementById('scale-news')?.checked || false;
-                if (newsModeActive && data.dataPoints && data.dataPoints.length > 0) {
+                if (data.dataPoints && data.dataPoints.length > 0) {
                     const dataType = data.usingGranularData ? (granularDataType === 'second' ? 'granular (second)' : 'granular (tick)') : 'regular';
                     console.log(`📰 News mode active - processing news scores with hold/decay for ${dataType} data (${data.dataPoints.length} points)`);
                     
@@ -5761,12 +5761,12 @@
                     processNewsScoresWithHoldDecay(data.dataPoints, initialProcessedNews);
                 }
 
-                // Candle-Based Decay mode: Process news up signals with candle-triggered decay
+                // ALWAYS process Candle-Based Decay (now used as default sentiment line)
                 // Works with both minute-by-minute data AND granular data
                 // CRITICAL: Process FULL sentimentDataset once for minute data, then copy to visible points
                 // For granular data: Process granular dataset directly with inheritance
                 const candleDecayModeActive = document.getElementById('scale-candle-decay')?.checked || false;
-                if (candleDecayModeActive) {
+                if (true) { // Always process candle decay
                     if (data.usingGranularData) {
                         // GRANULAR MODE: Process granular data directly
                         console.log(`🕯️ Candle-Based Decay (GRANULAR): Processing ${data.dataPoints.length} points for ${timeframe}`);
