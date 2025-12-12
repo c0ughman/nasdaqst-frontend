@@ -6942,10 +6942,10 @@
             const newsPriceModeActive = document.getElementById('scale-news-price')?.checked || false;
 
             // Define which drivers to plot and their colors
-            // sentiment → candleDecayValue (purple view, but colored orange)
+            // sentiment → candleDecayValue (candle-decay view, colored orange)
             // news → processedNewsMA5 (5th view with moving average)
             const driverConfig = [
-                { key: 'sentiment', dataKey: 'candleDecayValue', color: '#a855f7', label: 'Composite', eyeBtn: document.getElementById('eye-sentiment') }, // Purple for candle-decay
+                { key: 'sentiment', dataKey: 'candleDecayValue', color: '#ff8c42', label: 'Composite', eyeBtn: document.getElementById('eye-sentiment') }, // Orange for candle-decay
                 { key: 'news', dataKey: 'processedNewsMA5', color: '#ec4899', label: 'News', eyeBtn: document.getElementById('eye-news') }, // Pink for news MA
                 { key: 'indicators', color: '#3b82f6', label: 'Indicators', eyeBtn: document.getElementById('eye-indicators') } // Blue
             ];
@@ -7354,6 +7354,51 @@
                         }
                     }
                     return;
+                }
+
+                // For news driver, also draw raw processedNews line (semi-transparent)
+                if (driver.key === 'news' && points.length > 1) {
+                    // Get raw processedNews points
+                    const rawNewsPoints = dataPoints.filter(p => p.processedNews != null && !isNaN(p.processedNews) && p.x != null);
+
+                    if (rawNewsPoints.length > 1) {
+                        // Build path for raw news
+                        let rawPathD = `M ${rawNewsPoints[0].x},${valueToY(rawNewsPoints[0].processedNews)}`;
+
+                        for (let i = 1; i < rawNewsPoints.length; i++) {
+                            const x = rawNewsPoints[i].x;
+                            const y = valueToY(rawNewsPoints[i].processedNews);
+                            const prevX = rawNewsPoints[i - 1].x;
+                            const prevY = valueToY(rawNewsPoints[i - 1].processedNews);
+
+                            if (i === 1 && rawNewsPoints.length === 2) {
+                                rawPathD += ` L ${x},${y}`;
+                            } else {
+                                const dx = x - prevX;
+                                const dy = y - prevY;
+                                const cp1X = prevX + dx * 0.5;
+                                const cp1Y = prevY + dy * 0.15;
+                                const cp2X = x - dx * 0.5;
+                                const cp2Y = y - dy * 0.15;
+                                rawPathD += ` C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x},${y}`;
+                            }
+                        }
+
+                        // Draw raw news path (semi-transparent)
+                        const rawPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        rawPath.setAttribute('d', rawPathD);
+                        rawPath.setAttribute('fill', 'none');
+                        rawPath.setAttribute('stroke', driver.color);
+                        rawPath.setAttribute('stroke-width', '1');
+                        rawPath.setAttribute('vector-effect', 'non-scaling-stroke');
+                        rawPath.setAttribute('stroke-linecap', 'round');
+                        rawPath.setAttribute('stroke-linejoin', 'round');
+                        rawPath.setAttribute('opacity', '0.5'); // Semi-transparent
+                        rawPath.classList.add('oscillator-line-news-raw');
+                        svg.appendChild(rawPath);
+
+                        console.log(`✅ Drew raw news line with ${rawNewsPoints.length} points (semi-transparent)`);
+                    }
                 }
 
                 // Create smooth path with ease-in-out curves
