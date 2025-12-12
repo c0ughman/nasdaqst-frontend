@@ -3623,7 +3623,8 @@
             const newsEyeActive = document.getElementById('eye-news')?.classList.contains('active') || false;
             const indicatorsEyeActive = document.getElementById('eye-indicators')?.classList.contains('active') || false;
             const sentimentEyeActive = document.getElementById('eye-sentiment')?.classList.contains('active') || false;
-            
+            const summaryEyeActive = document.getElementById('eye-summary')?.classList.contains('active') || false;
+
             if (signalModeActive && window.currentChartData && window.currentChartData.length > 0) {
                 // Get the most recent data point's signal value
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
@@ -3672,11 +3673,11 @@
                 if (lastPoint && lastPoint.indicators != null) {
                     sentiment = lastPoint.indicators;
                 }
-            } else if (sentimentEyeActive && window.currentChartData && window.currentChartData.length > 0) {
-                // Sentiment eye icon is active - show sentiment value
+            } else if ((sentimentEyeActive || summaryEyeActive) && window.currentChartData && window.currentChartData.length > 0) {
+                // Sentiment or Summary eye icon is active - show candleDecayValue
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
-                if (lastPoint && lastPoint.sentiment != null) {
-                    sentiment = lastPoint.sentiment;
+                if (lastPoint && lastPoint.candleDecayValue != null) {
+                    sentiment = lastPoint.candleDecayValue;
                 }
             }
 
@@ -7384,16 +7385,16 @@
                             }
                         }
 
-                        // Draw raw news path (semi-transparent)
+                        // Draw raw news path (semi-transparent, thinner)
                         const rawPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                         rawPath.setAttribute('d', rawPathD);
                         rawPath.setAttribute('fill', 'none');
                         rawPath.setAttribute('stroke', driver.color);
-                        rawPath.setAttribute('stroke-width', '1');
+                        rawPath.setAttribute('stroke-width', '0.5');
                         rawPath.setAttribute('vector-effect', 'non-scaling-stroke');
                         rawPath.setAttribute('stroke-linecap', 'round');
                         rawPath.setAttribute('stroke-linejoin', 'round');
-                        rawPath.setAttribute('opacity', '0.5'); // Semi-transparent
+                        rawPath.setAttribute('opacity', '0.7'); // Less transparent (70% opacity)
                         rawPath.classList.add('oscillator-line-news-raw');
                         svg.appendChild(rawPath);
 
@@ -8706,11 +8707,12 @@
                 const newsEyeActive = document.getElementById('eye-news')?.classList.contains('active') || false;
                 const indicatorsEyeActive = document.getElementById('eye-indicators')?.classList.contains('active') || false;
                 const sentimentEyeActive = document.getElementById('eye-sentiment')?.classList.contains('active') || false;
+                const summaryEyeActive = document.getElementById('eye-summary')?.classList.contains('active') || false;
 
                 // Display sentiment as main value (radio buttons take priority, then eye icons)
                 let displayValue = null;
                 let tooltipLabel = 'Sentiment Score';
-                let tooltipColor = '#a855f7'; // Default purple (for candle decay)
+                let tooltipColor = '#ff8c42'; // Default orange (for candle decay)
 
                 if (signalModeActive && result.signalValue != null) {
                     displayValue = result.signalValue; // Use binary signal value
@@ -8731,7 +8733,7 @@
                 } else if (candleDecayModeActive && result.candleDecayValue != null) {
                     displayValue = result.candleDecayValue; // Use candle decay value
                     tooltipLabel = 'Candle Decay';
-                    tooltipColor = '#a855f7'; // Purple for candle-based decay
+                    tooltipColor = '#ff8c42'; // Orange for candle-based decay
                 } else if (newsModeActive || newsEyeActive) {
                     // Use processedNewsMA5 (5th view with moving average)
                     displayValue = result.processedNewsMA5 != null ? result.processedNewsMA5 : 0;
@@ -8741,14 +8743,14 @@
                     displayValue = result.indicators; // Use indicators value
                     tooltipLabel = 'Indicators Score';
                     tooltipColor = '#3b82f6'; // Blue for indicators
-                } else if (sentimentEyeActive && result.candleDecayValue != null) {
+                } else if ((sentimentEyeActive || summaryEyeActive) && result.candleDecayValue != null) {
                     displayValue = result.candleDecayValue; // Use candle decay value
-                    tooltipLabel = 'Sentiment Score';
-                    tooltipColor = '#a855f7'; // Purple for candle decay
+                    tooltipLabel = 'Composite Score';
+                    tooltipColor = '#ff8c42'; // Orange for candle decay
                 } else if (result.candleDecayValue != null) {
                     displayValue = result.candleDecayValue; // Use candle decay as fallback
-                    tooltipLabel = 'Sentiment Score';
-                    tooltipColor = '#a855f7'; // Purple for default
+                    tooltipLabel = 'Composite Score';
+                    tooltipColor = '#ff8c42'; // Orange for default
                 }
 
                 // Update tooltip label
