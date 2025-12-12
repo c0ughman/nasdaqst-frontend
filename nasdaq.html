@@ -5958,8 +5958,44 @@
                         composite_score: displayValue
                     });
 
-                    // Also update sentiment drivers to reflect current values
-                    updateSentimentDrivers({}, null, displayValue);
+                    // Update Summary driver directly without affecting other drivers
+                    const summaryDriverItem = document.querySelector('.driver-item:first-child');
+                    if (summaryDriverItem && window.currentChartData && window.currentChartData.length > 0) {
+                        const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                        const summaryValue = lastPoint.candleDecayValue != null ? lastPoint.candleDecayValue : 0;
+
+                        const valueElement = summaryDriverItem.querySelector('.driver-value');
+                        const progressFill = summaryDriverItem.querySelector('.progress-fill');
+
+                        if (valueElement) {
+                            const displayText = summaryValue > 0 ? `+${summaryValue.toFixed(1)}` : summaryValue.toFixed(1);
+                            valueElement.textContent = displayText;
+
+                            valueElement.classList.remove('positive', 'negative', 'neutral');
+                            if (summaryValue > 0) {
+                                valueElement.classList.add('positive');
+                            } else if (summaryValue < 0) {
+                                valueElement.classList.add('negative');
+                            } else {
+                                valueElement.classList.add('neutral');
+                            }
+                        }
+
+                        if (progressFill) {
+                            const width = Math.abs(summaryValue);
+                            const clampedWidth = Math.max(0, Math.min(100, width));
+                            progressFill.style.width = `${clampedWidth}%`;
+
+                            progressFill.classList.remove('positive', 'negative', 'neutral');
+                            if (summaryValue > 0) {
+                                progressFill.classList.add('positive');
+                            } else if (summaryValue < 0) {
+                                progressFill.classList.add('negative');
+                            } else {
+                                progressFill.classList.add('neutral');
+                            }
+                        }
+                    }
                 }
 
                 console.log('=== UPDATE CHART COMPLETE ===');
@@ -7812,8 +7848,44 @@
                                     composite_score: displayValue
                                 });
 
-                                // Also update sentiment drivers to reflect current values
-                                updateSentimentDrivers({}, null, displayValue);
+                                // Update Summary driver directly without affecting other drivers
+                                const summaryDriverItem = document.querySelector('.driver-item:first-child');
+                                if (summaryDriverItem && window.currentChartData && window.currentChartData.length > 0) {
+                                    const lastPoint = window.currentChartData[window.currentChartData.length - 1];
+                                    const summaryValue = lastPoint.candleDecayValue != null ? lastPoint.candleDecayValue : 0;
+
+                                    const valueElement = summaryDriverItem.querySelector('.driver-value');
+                                    const progressFill = summaryDriverItem.querySelector('.progress-fill');
+
+                                    if (valueElement) {
+                                        const displayText = summaryValue > 0 ? `+${summaryValue.toFixed(1)}` : summaryValue.toFixed(1);
+                                        valueElement.textContent = displayText;
+
+                                        valueElement.classList.remove('positive', 'negative', 'neutral');
+                                        if (summaryValue > 0) {
+                                            valueElement.classList.add('positive');
+                                        } else if (summaryValue < 0) {
+                                            valueElement.classList.add('negative');
+                                        } else {
+                                            valueElement.classList.add('neutral');
+                                        }
+                                    }
+
+                                    if (progressFill) {
+                                        const width = Math.abs(summaryValue);
+                                        const clampedWidth = Math.max(0, Math.min(100, width));
+                                        progressFill.style.width = `${clampedWidth}%`;
+
+                                        progressFill.classList.remove('positive', 'negative', 'neutral');
+                                        if (summaryValue > 0) {
+                                            progressFill.classList.add('positive');
+                                        } else if (summaryValue < 0) {
+                                            progressFill.classList.add('negative');
+                                        } else {
+                                            progressFill.classList.add('neutral');
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
