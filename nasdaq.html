@@ -7839,6 +7839,7 @@
 
                 // Function to auto-expand oscillator when granular data is active
                 // Only auto-expands once when granular data is first detected, then allows manual toggling
+                // IMPORTANT: This only affects the expand/collapse (zoom) state, NOT the view mode selection
                 // Make it globally accessible
                 window.autoExpandOscillatorForGranular = function() {
                     if (!window.currentUsingGranularData) {
@@ -7877,21 +7878,11 @@
                             // Already expanded, mark as done
                             window.granularAutoExpanded = true;
                         }
-                    } else if (visibleRadio && fixedRadio) {
-                        // Other modes: switch to visible (expanded/min-max) mode (only if not already set)
-                        if (!visibleRadio.checked) {
-                            visibleRadio.checked = true;
-                            fixedRadio.checked = false;
-                            window.granularAutoExpanded = true; // Mark as auto-expanded
-                            if (typeof window.updateExpandIcon === 'function') {
-                                window.updateExpandIcon();
-                            }
-                            // Dispatch change event to trigger chart update
-                            visibleRadio.dispatchEvent(new Event('change'));
-                        } else {
-                            // Already in visible mode, mark as done
-                            window.granularAutoExpanded = true;
-                        }
+                    } else {
+                        // For other modes (signal, news, weighted, etc.), do NOT change the radio selection
+                        // The radio buttons are mutually exclusive, so changing visible/fixed would uncheck the user's selected mode
+                        // Just mark as done - the user's selected view mode should be preserved
+                        window.granularAutoExpanded = true;
                     }
                 };
 
