@@ -1035,7 +1035,7 @@
             bottom: 150px;
             left: 0;
             background: #ff8c42;
-            color: #000;
+            color: #ffffff;
             padding: 2px 6px;
             border-radius: 2px;
             font-size: 9px;
@@ -3823,15 +3823,12 @@
                 vixScore = Math.max(-100, Math.min(100, ((15 - vxnIndex) / 15) * 100));
             }
 
-            // Get sentiment score (composite score) - use passed parameter first, then fallbacks
-            let sentimentScore = 0;
-            if (compositeScore !== undefined && compositeScore !== null) {
-                sentimentScore = compositeScore;
-            } else if (window.currentCompositeScore !== undefined && window.currentCompositeScore !== null) {
-                sentimentScore = window.currentCompositeScore;
-            } else if (window.currentChartData && window.currentChartData.length > 0) {
+            // Get Summary score - always use candleDecayValue from current chart data
+            let summaryScore = 0;
+            if (window.currentChartData && window.currentChartData.length > 0) {
                 const lastPoint = window.currentChartData[window.currentChartData.length - 1];
-                sentimentScore = lastPoint.sentiment != null ? lastPoint.sentiment : (lastPoint.composite_score != null ? lastPoint.composite_score : 0);
+                // Use candleDecayValue (the new purple/orange view that replaced composite)
+                summaryScore = lastPoint.candleDecayValue != null ? lastPoint.candleDecayValue : 0;
             }
 
             // Update the drivers with real data from API
@@ -3839,7 +3836,7 @@
                 {
                     name: 'Summary',
                     translationKey: null,
-                    value: sentimentScore,
+                    value: summaryScore,
                     weight: 0
                 },
                 {
@@ -8641,7 +8638,8 @@
             // Show time label between charts and oscillator (follows cursor x-position)
             timeLabel.classList.add('show');
             timeLabel.innerHTML = `<strong>${result.time}</strong>`;
-            timeLabel.style.color = activeColor; // Color the time label
+            timeLabel.style.backgroundColor = activeColor; // Color the background
+            timeLabel.style.color = '#ffffff'; // Keep text white
             // Position time label to follow cursor x-position (same as hover line)
             const labelWidth = 50;
             const labelXRelativeToCanvas = Math.max(0, Math.min(clampedMouseX - (labelWidth / 2), chartCanvasRect.width - labelWidth));
