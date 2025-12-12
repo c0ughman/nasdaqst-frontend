@@ -7394,7 +7394,7 @@
                         rawPath.setAttribute('vector-effect', 'non-scaling-stroke');
                         rawPath.setAttribute('stroke-linecap', 'round');
                         rawPath.setAttribute('stroke-linejoin', 'round');
-                        rawPath.setAttribute('opacity', '0.7'); // Less transparent (70% opacity)
+                        rawPath.setAttribute('opacity', '0.9'); // Much less transparent (90% opacity)
                         rawPath.classList.add('oscillator-line-news-raw');
                         svg.appendChild(rawPath);
 
@@ -7793,16 +7793,20 @@
                         if (window.currentChartData.length > 0) {
                             const lastPoint = window.currentChartData[window.currentChartData.length - 1];
                             let displayValue = null;
-                            
-                            // Determine which driver is active
-                            if (lineType === 'news' && clickedBtn.classList.contains('active')) {
-                                displayValue = lastPoint.processedNews != null ? lastPoint.processedNews : (lastPoint.news != null ? lastPoint.news : 0);
+
+                            // Determine which driver is active and get correct value
+                            if ((lineType === 'summary' || lineType === 'sentiment') && clickedBtn.classList.contains('active')) {
+                                // Summary/Sentiment eye active - show candleDecayValue
+                                displayValue = lastPoint.candleDecayValue != null ? lastPoint.candleDecayValue : 0;
+                            } else if (lineType === 'news' && clickedBtn.classList.contains('active')) {
+                                // News eye active - show processedNewsMA5
+                                displayValue = lastPoint.processedNewsMA5 != null ? lastPoint.processedNewsMA5 :
+                                             (lastPoint.processedNews != null ? lastPoint.processedNews : 0);
                             } else if (lineType === 'indicators' && clickedBtn.classList.contains('active')) {
+                                // Indicators eye active - show indicators
                                 displayValue = lastPoint.indicators != null ? lastPoint.indicators : 0;
-                            } else if (lineType === 'sentiment' && clickedBtn.classList.contains('active')) {
-                                displayValue = lastPoint.sentiment != null ? lastPoint.sentiment : 0;
                             }
-                            
+
                             if (displayValue != null) {
                                 updateSentimentDisplay({
                                     composite_score: displayValue
@@ -8549,6 +8553,7 @@
             // Get other driver values from closest point (no interpolation for these)
             const news = closestPoint.news != null ? closestPoint.news : null;
             const processedNews = closestPoint.processedNews != null ? closestPoint.processedNews : null;
+            const processedNewsMA5 = closestPoint.processedNewsMA5 != null ? closestPoint.processedNewsMA5 : null;
             const indicators = closestPoint.indicators != null ? closestPoint.indicators : null;
             const weightedValue = closestPoint.weightedValue != null ? closestPoint.weightedValue : null;
             const newsCompositeValue = closestPoint.newsCompositeValue != null ? closestPoint.newsCompositeValue : null;
@@ -8563,19 +8568,20 @@
                 hour12: false
             }) || 'N/A';
 
-            return { 
-                price: price, 
-                sentiment: sentiment, 
-                signalValue: signalValue, 
+            return {
+                price: price,
+                sentiment: sentiment,
+                signalValue: signalValue,
                 news: news,
                 processedNews: processedNews,
+                processedNewsMA5: processedNewsMA5,
                 indicators: indicators,
                 weightedValue: weightedValue,
                 newsCompositeValue: newsCompositeValue,
                 newsPriceValue: newsPriceValue,
                 candleDecayValue: candleDecayValue,
-                time: time, 
-                timestamp: closestPoint.timestamp 
+                time: time,
+                timestamp: closestPoint.timestamp
             };
         }
 
@@ -8650,20 +8656,24 @@
                     const indicatorsEyeActive = document.getElementById('eye-indicators')?.classList.contains('active') || false;
                     const sentimentEyeActive = document.getElementById('eye-sentiment')?.classList.contains('active') || false;
 
+                    const summaryEyeActive = document.getElementById('eye-summary')?.classList.contains('active') || false;
+
                     let displayValue = null;
                     if (signalModeActive && result.signalValue != null) {
                         displayValue = result.signalValue; // Use signal value in signal mode
                     } else if (weightedModeActive && result.weightedValue != null) {
                         displayValue = result.weightedValue; // Use weighted average value
                     } else if (newsModeActive || newsEyeActive) {
-                        // Use processedNews if available, otherwise fallback to news
-                        displayValue = result.processedNews != null ? result.processedNews : (result.news != null ? result.news : 0);
+                        // Use processedNewsMA5 (moving average) if available, fallback to processedNews, then news
+                        displayValue = result.processedNewsMA5 != null ? result.processedNewsMA5 :
+                                     (result.processedNews != null ? result.processedNews :
+                                     (result.news != null ? result.news : 0));
                     } else if (indicatorsEyeActive && result.indicators != null) {
                         displayValue = result.indicators; // Use indicators value
-                    } else if (sentimentEyeActive && result.sentiment != null) {
-                        displayValue = result.sentiment; // Use sentiment value
-                    } else if (result.sentiment != null) {
-                        displayValue = result.sentiment; // Use regular sentiment as fallback
+                    } else if ((sentimentEyeActive || summaryEyeActive) && result.candleDecayValue != null) {
+                        displayValue = result.candleDecayValue; // Use candle decay value
+                    } else if (result.candleDecayValue != null) {
+                        displayValue = result.candleDecayValue; // Use candle decay as fallback
                     }
 
                     if (displayValue != null) {
